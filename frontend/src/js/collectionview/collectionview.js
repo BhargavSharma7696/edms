@@ -1352,18 +1352,18 @@
             [
                 'folder-row',
                 'border-b',
-                'border-slate-800',
+                'border-slate-200 dark:border-slate-800',
                 'transition-colors',
                 'duration-100',
                 'cursor-pointer',
-                'hover:bg-slate-800/60',
+                'hover:bg-slate-100 dark:hover:bg-slate-800/60',
 
                 isSelected
-                    ? 'bg-cyan-500/[0.045]'
+                    ? 'bg-slate-100 dark:bg-cyan-500/[0.045]'
                     : '',
 
                 isActive
-                    ? 'bg-sky-500/[0.055]'
+                    ? 'bg - slate - 100 dark: bg - sky - 500 / [0.055]'
                     : ''
             ]
                 .filter(Boolean)
@@ -1387,7 +1387,7 @@
 
         <td
             class="px-2 py-2
-                   font-medium text-slate-200"
+                   font-medium text-slate-800 dark:text-slate-200"
         >
 
             <div
@@ -1666,10 +1666,11 @@
                     class="folder-tag
                            inline-flex
                            rounded
-                           bg-sky-900/40
+                           bg-slate-200 dark:bg-slate-800
                            px-1.5 py-0.5
                            text-[10px]
-                           text-sky-300
+                           text-sky-600 dark:text-sky-300
+
                            transition
                            hover:bg-sky-500/20
                            hover:text-sky-200"
@@ -1698,7 +1699,7 @@
             class="inline-flex min-w-6
                    items-center
                    justify-center
-                   rounded-md bg-slate-800
+                   rounded-md bg-slate-200 dark:bg-slate-800
                    px-1.5 py-0.5
                    text-[10px]
                    ${color}"
@@ -4528,7 +4529,7 @@
                    border border-slate-700
                    bg-slate-950 p-3
                    text-xs leading-5
-                   text-slate-300
+                   text-slate-800 dark:text-slate-300
                    outline-none
                    focus:border-cyan-500"
         >${escapeHtml(
@@ -4670,7 +4671,7 @@
             class="my-4 max-h-48
                    overflow-y-auto
                    rounded-lg
-                   border border-slate-800"
+                   border border-slate-200 dark:border-slate-800"
         >
 
             ${folders
@@ -4679,7 +4680,7 @@
 
                             <div
                                 class="border-b
-                                       border-slate-800
+                                       border-slate-200 dark:border-slate-800
                                        px-3 py-2
                                        last:border-0"
                             >
@@ -4687,7 +4688,7 @@
                                 <p
                                     class="font-mono
                                            text-xs
-                                           text-slate-300"
+                                           text-slate-800 dark:text-slate-300"
                                 >
                                     ${escapeHtml(
                         folder.name
@@ -4805,7 +4806,7 @@
 
         <p
             class="text-xs leading-5
-                   text-slate-400"
+                 text-slate-800 dark:text-slate-300"
         >
             Import is not currently provided
             by the backend collection API.
@@ -4814,9 +4815,9 @@
 
         <div
             class="mt-4 rounded-lg
-                   border border-slate-800
-                   bg-slate-950/60 p-3
-                   text-xs text-slate-400"
+                  border border-slate-200 dark:border-slate-800
+bg-slate-100 dark:bg-slate-950/60 p-3
+                   text-xs  text-slate-800 dark:text-slate-300"
         >
             ${state.folders.length}
             collections are currently loaded
@@ -4828,17 +4829,19 @@
             class="mt-4 flex justify-end"
         >
 
-            <button
-                type="button"
-                data-modal-close
-                class="rounded-md
-                       border border-slate-700
-                       px-3 py-1.5
-                       text-xs text-slate-400
-                       hover:bg-slate-800"
-            >
-                Close
-            </button>
+           <button
+    type="button"
+    data-modal-close
+    class="rounded-md
+           border border-slate-300 dark:border-slate-700
+           px-3 py-1.5
+           text-xs
+           text-slate-800 dark:text-slate-300
+           hover:bg-slate-100 dark:hover:bg-slate-800
+           hover:border-slate-400 dark:hover:border-slate-600"
+>
+    Close
+</button>
 
         </div>
 
@@ -4879,7 +4882,7 @@
 
         <p
             class="text-xs leading-5
-                   text-slate-400"
+                   text-slate-800 dark:text-slate-300"
         >
             Export is not currently provided
             by the backend collection API.
@@ -4888,8 +4891,8 @@
 
         <div
             class="my-4 rounded-lg
-                   border border-slate-800
-                   bg-slate-950/60 p-3"
+                   border border-slate-200 dark:border-slate-800
+bg-slate-100 dark:bg-slate-950/60 p-3"
         >
 
             ${targets.length
@@ -4903,14 +4906,14 @@
                                            items-center
                                            justify-between
                                            border-b
-                                           border-slate-800
+                                           border-slate-200 dark:border-slate-800
                                            py-2 last:border-0"
                                 >
 
                                     <span
                                         class="truncate
                                                text-xs
-                                               text-slate-300"
+                                              text-slate-800 dark:text-slate-300"
                                     >
                                         ${escapeHtml(
                             folder.name
@@ -4955,17 +4958,19 @@
             class="flex justify-end"
         >
 
-            <button
-                type="button"
-                data-modal-close
-                class="rounded-md
-                       border border-slate-700
-                       px-3 py-1.5
-                       text-xs text-slate-400
-                       hover:bg-slate-800"
-            >
-                Close
-            </button>
+           <button
+    type="button"
+    data-modal-close
+    class="rounded-md
+           border border-slate-300 dark:border-slate-700
+           px-3 py-1.5
+           text-xs
+           text-slate-800 dark:text-slate-300
+           hover:bg-slate-100 dark:hover:bg-slate-800
+           hover:border-slate-400 dark:hover:border-slate-600"
+>
+    Close
+</button>
 
         </div>
 
@@ -5157,7 +5162,7 @@
         return {
 
             GET:
-                'text-emerald-400',
+                'text-dark:emerald-400',
 
             POST:
                 'text-sky-400',

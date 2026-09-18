@@ -149,7 +149,7 @@ function createStatsTable({
                     class="
                         px-3 py-2.5
                         font-medium
-                        text-slate-600 dark:text-slate-300
+                        text-slate-800 dark:text-slate-300
                     "
                 >
                     ${row.name}
@@ -187,7 +187,7 @@ function createStatsTable({
                     class="
                         text-sm
                         font-semibold
-                        text-slate-700 dark:text-slate-200
+                        text-slate-800 dark:text-slate-200
                     "
                 >
                     ${title}
@@ -226,10 +226,10 @@ function createStatsTable({
                                 "
                             >
                                 <div class="flex flex-col gap-0.5">
-                                    <span class="text-[10px] font-semibold text-slate-600 dark:text-slate-300">
+                                    <span class="text-[10px] font-semibold text-slate-800 dark:text-slate-300">
                                         Endpoints ${endpoints}
                                     </span>
-                                    <span class="text-[10px] font-semibold text-slate-600 dark:text-slate-300">
+                                    <span class="text-[10px] font-semibold text-slate-800 dark:text-slate-300">
                                         Entries ${entries}
                                     </span>
                                 </div>
@@ -246,7 +246,7 @@ function createStatsTable({
                                 border-b
                                 border-slate-300 dark:border-slate-800
                                 text-[10px]
-                                text-slate-400 dark:text-slate-500
+                                text-slate-500 dark:text-slate-500
                             "
                         >
 

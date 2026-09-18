@@ -255,10 +255,10 @@
 
                     const matchesMethod =
                         state.method ===
-                            'all' ||
+                        'all' ||
 
                         method ===
-                            state.method;
+                        state.method;
 
 
                     const matchesTag =
@@ -515,8 +515,8 @@
                                text-slate-300"
                     >
                         ${renderEndpointPath(
-                            endpoint.endpoint
-                        )}
+            endpoint.endpoint
+        )}
                     </span>
 
                 </div>
@@ -531,11 +531,10 @@
                            gap-1"
                 >
 
-                    ${
-                        tags.length
-                            ? tags
-                                .map(
-                                    tag => `
+                    ${tags.length
+                ? tags
+                    .map(
+                        tag => `
 
                                         <button
                                             type="button"
@@ -547,19 +546,19 @@
                                                    text-sky-300
                                                    hover:bg-sky-500/20"
                                             data-tag="${escapeAttr(
-                                                tag
-                                            )}"
+                            tag
+                        )}"
                                         >
                                             ${escapeHtml(
-                                                tag
-                                            )}
+                            tag
+                        )}
                                         </button>
 
                                     `
-                                )
-                                .join('')
+                    )
+                    .join('')
 
-                            : `
+                : `
                                 <span
                                     class="text-[10px]
                                            text-slate-600"
@@ -567,7 +566,7 @@
                                     —
                                 </span>
                               `
-                    }
+            }
 
                 </div>
 
@@ -604,12 +603,12 @@
                 <span
                     class="line-clamp-2"
                     title="${escapeAttr(
-                        annotation
-                    )}"
+                annotation
+            )}"
                 >
                     ${escapeHtml(
-                        annotation
-                    )}
+                annotation
+            )}
                 </span>
 
             </td>
@@ -1061,7 +1060,7 @@
         const end =
             Math.min(
                 state.page *
-                    PAGE_SIZE,
+                PAGE_SIZE,
                 total
             );
 
@@ -1246,10 +1245,10 @@
                 );
 
             page <=
-                Math.min(
-                    total - 1,
-                    current + 1
-                );
+            Math.min(
+                total - 1,
+                current + 1
+            );
 
             page++
         ) {
@@ -1367,13 +1366,13 @@
         selectAll.checked =
             items.length > 0 &&
             selectedCount ===
-                items.length;
+            items.length;
 
 
         selectAll.indeterminate =
             selectedCount > 0 &&
             selectedCount <
-                items.length;
+            items.length;
 
     }
 
@@ -1746,8 +1745,8 @@
                                text-rose-400"
                     >
                         ${escapeHtml(
-                            message
-                        )}
+            message
+        )}
                     </p>
 
                     <button
@@ -1827,7 +1826,7 @@
         if (
             endpoint.queryParams &&
             typeof endpoint.queryParams ===
-                'object'
+            'object'
         ) {
 
             return Object.keys(
@@ -1840,7 +1839,7 @@
         if (
             endpoint.qp &&
             typeof endpoint.qp ===
-                'object'
+            'object'
         ) {
 
             return Object.keys(
@@ -1890,20 +1889,19 @@
                                    hover:bg-cyan-500/10
                                    hover:text-cyan-300"
                             data-segment="${escapeAttr(
-                                segment
-                            )}"
+                        segment
+                    )}"
                         >
-                            ${
-                                index === 0
-                                    ? '/' +
-                                      escapeHtml(
-                                          segment
-                                      )
-                                    : '/' +
-                                      escapeHtml(
-                                          segment
-                                      )
-                            }
+                            ${index === 0
+                            ? '/' +
+                            escapeHtml(
+                                segment
+                            )
+                            : '/' +
+                            escapeHtml(
+                                segment
+                            )
+                        }
                         </span>
 
                     `;
@@ -1955,7 +1953,7 @@
 
         return text
             ? text.charAt(0).toUpperCase() +
-              text.slice(1)
+            text.slice(1)
             : '';
 
     }

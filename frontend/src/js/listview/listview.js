@@ -150,7 +150,7 @@ async function init() {
             if (
                 !window.EdmsAPI ||
                 typeof window.EdmsAPI.addEndpointTag !==
-                    "function"
+                "function"
             ) {
 
                 throw new Error(
@@ -179,7 +179,7 @@ async function init() {
             if (
                 !window.EdmsAPI ||
                 typeof window.EdmsAPI.removeEndpointTag !==
-                    "function"
+                "function"
             ) {
 
                 throw new Error(
@@ -420,7 +420,7 @@ async function loadData() {
 
                             tags:
                                 Array.isArray(bookmark.tags) &&
-                                bookmark.tags.length
+                                    bookmark.tags.length
                                     ? bookmark.tags
                                     : Array.isArray(
                                         backendEndpoint.tags
@@ -456,7 +456,7 @@ async function loadData() {
         if (
             window.EdmsAPI &&
             typeof window.EdmsAPI.listEndpointTags ===
-                "function"
+            "function"
         ) {
 
             await Promise.all(
@@ -544,7 +544,7 @@ function loadBookmarksFromBackend() {
             if (
                 !window.EdmsAPI ||
                 typeof window.EdmsAPI.connectBookmarkLoader !==
-                    "function"
+                "function"
             ) {
 
                 reject(
@@ -574,7 +574,7 @@ function loadBookmarksFromBackend() {
 
                     try {
                         ws.close();
-                    } catch {}
+                    } catch { }
 
                     callback(value);
 
@@ -598,7 +598,7 @@ function loadBookmarksFromBackend() {
 
                         if (
                             message.type ===
-                                "snapshot" &&
+                            "snapshot" &&
                             Array.isArray(
                                 message.bookmarks
                             )
@@ -677,7 +677,7 @@ function loadEndpointsFromBackend() {
             if (
                 !window.EdmsAPI ||
                 typeof window.EdmsAPI.connectEndpointLoader !==
-                    "function"
+                "function"
             ) {
 
                 reject(
@@ -707,7 +707,7 @@ function loadEndpointsFromBackend() {
 
                     try {
                         ws.close();
-                    } catch {}
+                    } catch { }
 
                     callback(value);
 
@@ -726,7 +726,7 @@ function loadEndpointsFromBackend() {
 
                         if (
                             message.type ===
-                                "snapshot" &&
+                            "snapshot" &&
                             Array.isArray(
                                 message.endpoints
                             )
@@ -913,7 +913,7 @@ function applyFilters() {
                 const matchesCRUD =
                     activeFilters.crud === "All CRUD" ||
                     endpoint.method ===
-                        activeFilters.crud;
+                    activeFilters.crud;
 
                 const matchesTags =
                     activeFilters.tags.size === 0 ||
@@ -1095,13 +1095,13 @@ function renderTags() {
                         class="tag-filter-button min-w-0 flex-1
                                truncate rounded px-1.5 py-1
                                text-left text-[11px]
-                               text-slate-400 transition
+                               text-slate-500 dark:text-slate-400 transition
                                hover:bg-sky-500/10
-                               hover:text-sky-300"
+                               hover:text-sky-700 dark:hover:text-sky-300"
                         data-tag="${escapeAttribute(tag)}"
                     >
                         ${escapeHTML(tag)}
-                        <span class="text-slate-600">
+                        <span class="text-slate-400 dark:text-slate-600">
                             (${count})
                         </span>
                     </button>
@@ -1248,13 +1248,13 @@ function renderSegments() {
                         class="segment-filter-button min-w-0
                                flex-1 truncate rounded px-1.5 py-1
                                text-left text-[11px]
-                               text-slate-400 transition
+                               text-slate-500 dark:text-slate-400 transition
                                hover:bg-cyan-500/10
-                               hover:text-cyan-300"
+                               hover:text-cyan-700 dark:hover:text-cyan-300"
                         data-segment="${escapeAttribute(segment)}"
                     >
                         ${escapeHTML(segment)}
-                        <span class="text-slate-600">
+                        <span class="text-slate-400 dark:text-slate-600">
                             (${count})
                         </span>
                     </button>
@@ -1366,14 +1366,14 @@ function renderTable() {
 
                         <p
                             class="text-sm font-medium
-                                   text-slate-400"
+                                   text-slate-500 dark:text-slate-400"
                         >
                             No endpoints found
                         </p>
 
                         <p
                             class="mt-1 text-xs
-                                   text-slate-600"
+                                   text-slate-400 dark:text-slate-600"
                         >
                             Try changing the current
                             search or filters.
@@ -1426,10 +1426,12 @@ function createRow(endpoint) {
         [
             "endpoint-row",
             "border-b",
-            "border-slate-800",
+            "border-slate-200",
+            "dark:border-slate-800",
             "transition-colors",
             "duration-100",
-            "hover:bg-slate-800/60",
+            "hover:bg-slate-100",
+            "dark:hover:bg-slate-800/60",
             "cursor-pointer",
             "group",
             isSelected
@@ -1449,33 +1451,33 @@ function createRow(endpoint) {
         endpoint;
 
     let methodColor =
-        "text-white";
+        "text-slate-800 dark:text-white";
 
     switch (endpoint.method) {
 
         case "GET":
             methodColor =
-                "text-emerald-400";
+                "text-emerald-600 dark:text-emerald-400";
             break;
 
         case "POST":
             methodColor =
-                "text-sky-400";
+                "text-sky-600 dark:text-sky-400";
             break;
 
         case "PUT":
             methodColor =
-                "text-amber-400";
+                "text-amber-600 dark:text-amber-400";
             break;
 
         case "PATCH":
             methodColor =
-                "text-violet-400";
+                "text-violet-600 dark:text-violet-400";
             break;
 
         case "DELETE":
             methodColor =
-                "text-rose-400";
+                "text-rose-600 dark:text-rose-400";
             break;
 
     }
@@ -1489,12 +1491,12 @@ function createRow(endpoint) {
                         <button
                             type="button"
                             class="row-tag mr-1 inline-flex
-                                   rounded bg-sky-900/40
+                                   rounded bg-sky-100 dark:bg-sky-900/40
                                    px-1.5 py-0.5 text-[10px]
-                                   text-sky-300
+                                   text-sky-700 dark:text-sky-300
                                    transition
-                                   hover:bg-sky-500/20
-                                   hover:text-sky-200"
+                                   hover:bg-sky-200 dark:hover:bg-sky-500/20
+                                   hover:text-sky-800 dark:hover:text-sky-200"
                             data-tag="${escapeAttribute(tag)}"
                         >
                             ${escapeHTML(tag)}
@@ -1518,7 +1520,7 @@ function createRow(endpoint) {
 
         </td>
 
-        <td class="px-2 py-2 font-mono text-slate-500">
+        <td class="px-2 py-2 font-mono text-slate-600 dark:text-slate-500">
             ${escapeHTML(endpoint.id)}
         </td>
 
@@ -1530,13 +1532,13 @@ function createRow(endpoint) {
 
         <td
             class="endpoint-cell px-2 py-2 font-mono
-                   text-[11px] text-slate-300"
+                   text-[11px] text-slate-800 dark:text-slate-300"
         >
             <button
                 type="button"
                 class="row-segment-trigger max-w-full
                        truncate text-left
-                       hover:text-cyan-300"
+                       hover:text-cyan-600 dark:hover:text-cyan-300"
                 title="Click segments to filter"
             >
                 ${escapeHTML(endpoint.endpoint)}
@@ -1554,14 +1556,13 @@ function createRow(endpoint) {
             <span
                 class="inline-flex min-w-6 items-center
                        justify-center rounded-md
-                       bg-slate-800 px-1.5 py-0.5
-                       text-[10px] text-slate-400"
+                       bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5
+                       text-[10px] text-slate-600 dark:text-slate-400"
             >
-                ${
-                    Array.isArray(endpoint.qps)
-                        ? endpoint.qps.length
-                        : 0
-                }
+                ${Array.isArray(endpoint.qps)
+            ? endpoint.qps.length
+            : 0
+        }
             </span>
 
         </td>
@@ -1573,18 +1574,18 @@ function createRow(endpoint) {
             <span
                 class="line-clamp-2"
                 title="${escapeAttribute(
-                    endpoint.annotation || ""
-                )}"
+            endpoint.annotation || ""
+        )}"
             >
                 ${escapeHTML(
-                    endpoint.annotation || "—"
-                )}
+            endpoint.annotation || "—"
+        )}
             </span>
         </td>
 
         <td
             class="px-2 py-2 text-[10px]
-                   text-slate-600"
+                   text-slate-400 dark:text-slate-600"
         >
             ${formatDate(endpoint.updated)}
         </td>
@@ -1784,7 +1785,7 @@ function renderQP(endpoint) {
 
             <div
                 class="py-6 text-center
-                       text-[10px] text-slate-600"
+                       text-[10px] text-slate-400 dark:text-slate-600"
             >
                 No QP
             </div>
@@ -1822,14 +1823,18 @@ function renderQP(endpoint) {
                     "justify-center",
                     "rounded-md",
                     "border",
-                    "border-slate-700",
-                    "bg-slate-800",
+                    "border-slate-300",
+                    "dark:border-slate-700",
+                    "bg-white",
+                    "dark:bg-slate-800",
                     "text-[10px]",
-                    "text-slate-400",
+                    "text-slate-600",
+                    "dark:text-slate-400",
                     "transition",
                     "hover:border-cyan-500/40",
                     "hover:bg-cyan-500/15",
-                    "hover:text-cyan-300"
+                    "hover:text-cyan-700",
+                    "dark:hover:text-cyan-300"
                 ].join(" ");
 
             button.textContent =
@@ -1841,12 +1846,15 @@ function renderQP(endpoint) {
             ) {
 
                 button.classList.remove(
-                    "bg-slate-800",
-                    "text-slate-400"
+                    "bg-white",
+                    "dark:bg-slate-800",
+                    "text-slate-600",
+                    "dark:text-slate-400"
                 );
 
                 button.classList.add(
-                    "bg-cyan-500",
+                    "bg-slate-900",
+                    "dark:bg-cyan-500",
                     "text-white"
                 );
 
@@ -1922,25 +1930,31 @@ function selectQP(
             btn => {
 
                 btn.classList.remove(
-                    "bg-cyan-500",
+                    "bg-slate-900",
+                    "dark:bg-cyan-500",
                     "text-white"
                 );
 
                 btn.classList.add(
-                    "bg-slate-800",
-                    "text-slate-400"
+                    "bg-white",
+                    "dark:bg-slate-800",
+                    "text-slate-600",
+                    "dark:text-slate-400"
                 );
 
             }
         );
 
     button.classList.remove(
-        "bg-slate-800",
-        "text-slate-400"
+        "bg-white",
+        "dark:bg-slate-800",
+        "text-slate-600",
+        "dark:text-slate-400"
     );
 
     button.classList.add(
-        "bg-cyan-500",
+        "bg-slate-900",
+        "dark:bg-cyan-500",
         "text-white"
     );
 
@@ -2102,7 +2116,7 @@ function setupDetailsViewer() {
             if (
                 event.target === detailsOverlay ||
                 event.target ===
-                    detailsOverlay.firstElementChild
+                detailsOverlay.firstElementChild
             ) {
 
                 hideRequestResponse();
@@ -2376,8 +2390,10 @@ function openAddQPModal() {
                     <input
                         id="newQPName"
                         class="h-9 w-full rounded-md
-                               border border-slate-700
-                               bg-slate-950 px-3 text-xs
+                               border border-slate-300 dark:border-slate-700
+                               bg-white dark:bg-slate-950 px-3 text-xs
+                               text-slate-800 dark:text-slate-100
+                               placeholder:text-slate-400 dark:placeholder:text-slate-600
                                outline-none
                                focus:border-cyan-500"
                         placeholder="Example: Valid Request"
@@ -2387,8 +2403,8 @@ function openAddQPModal() {
 
                 <div
                     class="rounded-lg border
-                           border-slate-800
-                           bg-slate-950/50 p-3"
+                           border-slate-200 dark:border-slate-800
+                           bg-slate-50 dark:bg-slate-950/50 p-3"
                 >
 
                     <p
@@ -2407,10 +2423,10 @@ function openAddQPModal() {
                         type="button"
                         data-modal-close
                         class="rounded-md border
-                               border-slate-700
+                               border-slate-300 dark:border-slate-700
                                px-3 py-1.5 text-xs
-                               text-slate-400
-                               hover:bg-slate-800"
+                               text-slate-600 dark:text-slate-400
+                               hover:bg-slate-100 dark:hover:bg-slate-800"
                     >
                         Cancel
                     </button>
@@ -2418,10 +2434,10 @@ function openAddQPModal() {
                     <button
                         id="confirmAddQP"
                         type="button"
-                        class="rounded-md bg-cyan-600
+                        class="rounded-md bg-slate-900 dark:bg-cyan-600
                                px-3 py-1.5 text-xs
                                font-medium text-white
-                               hover:bg-cyan-500"
+                               hover:bg-slate-800 dark:hover:bg-cyan-500"
                     >
                         Add QP
                     </button>
@@ -2584,8 +2600,8 @@ function renderPagination() {
                     "text-[11px]",
                     "transition",
                     active
-                        ? "bg-cyan-500 text-white"
-                        : "border border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-white",
+                        ? "bg-slate-900 dark:bg-cyan-500 text-white"
+                        : "border border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white",
                     disabled
                         ? "cursor-not-allowed opacity-30"
                         : ""
@@ -2638,7 +2654,7 @@ function renderPagination() {
                     );
 
                 span.className =
-                    "px-1 text-slate-600";
+                    "px-1 text-slate-400 dark:text-slate-600";
 
                 span.textContent =
                     "…";
@@ -3077,14 +3093,14 @@ function updateSelectionUI() {
 
                         <span
                             class="shrink-0 rounded-md
-                                   border border-slate-700
-                                   bg-slate-800 px-2 py-1
+                                   border border-slate-300 dark:border-slate-700
+                                   bg-slate-100 dark:bg-slate-800 px-2 py-1
                                    font-mono text-[10px]
-                                   text-slate-400"
+                                   text-slate-600 dark:text-slate-400"
                         >
                             ${escapeHTML(
-                                endpoint.id
-                            )}
+                        endpoint.id
+                    )}
                         </span>
 
                     `
@@ -3200,7 +3216,7 @@ function openBulkDeleteModal() {
                 >
 
                     <p
-                        class="text-xs text-rose-300"
+                        class="text-xs text-rose-700 dark:text-rose-300"
                     >
                         ${selected.length}
                         endpoint(s) will be removed
@@ -3212,16 +3228,16 @@ function openBulkDeleteModal() {
                 <div
                     class="max-h-48 overflow-y-auto
                            rounded-lg border
-                           border-slate-800"
+                           border-slate-200 dark:border-slate-800"
                 >
 
                     ${selected
-                        .map(
-                            endpoint => `
+            .map(
+                endpoint => `
 
                                 <div
                                     class="border-b
-                                           border-slate-800
+                                           border-slate-200 dark:border-slate-800
                                            px-3 py-2
                                            last:border-0"
                                 >
@@ -3229,28 +3245,28 @@ function openBulkDeleteModal() {
                                     <p
                                         class="font-mono
                                                text-[11px]
-                                               text-slate-300"
+                                               text-slate-800 dark:text-slate-300"
                                     >
                                         ${escapeHTML(
-                                            endpoint.id
-                                        )}
+                    endpoint.id
+                )}
                                     </p>
 
                                     <p
                                         class="truncate
                                                text-[10px]
-                                               text-slate-600"
+                                               text-slate-400 dark:text-slate-600"
                                     >
                                         ${escapeHTML(
-                                            endpoint.endpoint
-                                        )}
+                    endpoint.endpoint
+                )}
                                     </p>
 
                                 </div>
 
                             `
-                        )
-                        .join("")}
+            )
+            .join("")}
 
                 </div>
 
@@ -3260,10 +3276,10 @@ function openBulkDeleteModal() {
                         type="button"
                         data-modal-close
                         class="rounded-md border
-                               border-slate-700
+                               border-slate-300 dark:border-slate-700
                                px-3 py-1.5 text-xs
-                               text-slate-400
-                               hover:bg-slate-800"
+                               text-slate-600 dark:text-slate-400
+                               hover:bg-slate-100 dark:hover:bg-slate-800"
                     >
                         Cancel
                     </button>
@@ -3383,7 +3399,7 @@ function openBulkDeleteModal() {
 
                     showToast(
                         error.message ||
-                            "Failed to delete selected endpoints.",
+                        "Failed to delete selected endpoints.",
                         "error"
                     );
 
@@ -3495,31 +3511,31 @@ function openEndpointContextMenu(
     contextMenu.innerHTML = `
 
         ${contextMenuItem(
-            "select",
-            "Select",
-            iconCheck()
-        )}
+        "select",
+        "Select",
+        iconCheck()
+    )}
 
         ${contextMenuItem(
-            "modify",
-            "Modify Data",
-            iconEdit()
-        )}
+        "modify",
+        "Modify Data",
+        iconEdit()
+    )}
 
         ${contextMenuItem(
-            "tags",
-            "Edit Tags",
-            iconTag()
-        )}
+        "tags",
+        "Edit Tags",
+        iconTag()
+    )}
 
-        <div class="my-1 border-t border-slate-800"></div>
+        <div class="my-1 border-t border-slate-200 dark:border-slate-800"></div>
 
         ${contextMenuItem(
-            "delete",
-            "Delete",
-            iconTrash(),
-            "text-rose-400 hover:bg-rose-500/10"
-        )}
+        "delete",
+        "Delete",
+        iconTrash(),
+        "text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10"
+    )}
 
     `;
 
@@ -3590,25 +3606,25 @@ function openQPContextMenu(
     contextMenu.innerHTML = `
 
         ${contextMenuItem(
-            "open",
-            "Open Request / Response",
-            iconExternal()
-        )}
+        "open",
+        "Open Request / Response",
+        iconExternal()
+    )}
 
         ${contextMenuItem(
-            "edit",
-            "Edit QP",
-            iconEdit()
-        )}
+        "edit",
+        "Edit QP",
+        iconEdit()
+    )}
 
-        <div class="my-1 border-t border-slate-800"></div>
+        <div class="my-1 border-t border-slate-200 dark:border-slate-800"></div>
 
         ${contextMenuItem(
-            "delete",
-            "Delete QP",
-            iconTrash(),
-            "text-rose-400 hover:bg-rose-500/10"
-        )}
+        "delete",
+        "Delete QP",
+        iconTrash(),
+        "text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10"
+    )}
 
     `;
 
@@ -3692,8 +3708,8 @@ function contextMenuItem(
             data-context-action="${id}"
             class="flex w-full items-center gap-2
                    px-3 py-2 text-left text-xs
-                   text-slate-300 transition
-                   hover:bg-slate-800
+                   text-slate-800 dark:text-slate-300 transition
+                   hover:bg-slate-100 dark:hover:bg-slate-800
                    ${extraClass}"
         >
             ${icon}
@@ -3753,16 +3769,16 @@ function showContextMenu(
         Math.min(
             x,
             window.innerWidth -
-                menuWidth -
-                8
+            menuWidth -
+            8
         );
 
     const top =
         Math.min(
             y,
             window.innerHeight -
-                menuHeight -
-                8
+            menuHeight -
+            8
         );
 
     contextMenu.style.left =
@@ -3812,11 +3828,12 @@ function openModifyDataModal(
                     <input
                         id="modifyEndpoint"
                         value="${escapeAttribute(
-                            endpoint.endpoint || ""
-                        )}"
+            endpoint.endpoint || ""
+        )}"
                         class="h-9 w-full rounded-md
-                               border border-slate-700
-                               bg-slate-950 px-3 text-xs
+                               border border-slate-300 dark:border-slate-700
+                               bg-white dark:bg-slate-950 px-3 text-xs
+                               text-slate-800 dark:text-slate-100
                                outline-none
                                focus:border-cyan-500"
                     >
@@ -3835,39 +3852,38 @@ function openModifyDataModal(
                     <select
                         id="modifyMethod"
                         class="h-9 w-full rounded-md
-                               border border-slate-700
-                               bg-slate-950 px-3 text-xs
-                               text-slate-300 outline-none
+                               border border-slate-300 dark:border-slate-700
+                               bg-white dark:bg-slate-950 px-3 text-xs
+                               text-slate-800 dark:text-slate-300 outline-none
                                focus:border-cyan-500"
                     >
 
                         ${[
-                            "GET",
-                            "POST",
-                            "PUT",
-                            "PATCH",
-                            "DELETE",
-                            "HEAD",
-                            "OPTIONS"
-                        ]
-                            .map(
-                                method => `
+            "GET",
+            "POST",
+            "PUT",
+            "PATCH",
+            "DELETE",
+            "HEAD",
+            "OPTIONS"
+        ]
+            .map(
+                method => `
 
                                     <option
                                         value="${method}"
-                                        ${
-                                            endpoint.method ===
-                                            method
-                                                ? "selected"
-                                                : ""
-                                        }
+                                        ${endpoint.method ===
+                        method
+                        ? "selected"
+                        : ""
+                    }
                                     >
                                         ${method}
                                     </option>
 
                                 `
-                            )
-                            .join("")}
+            )
+            .join("")}
 
                     </select>
 
@@ -3886,14 +3902,14 @@ function openModifyDataModal(
                         id="modifyAnnotation"
                         rows="4"
                         class="w-full resize-y rounded-md
-                               border border-slate-700
-                               bg-slate-950 p-3 text-xs
-                               leading-5 text-slate-300
+                               border border-slate-300 dark:border-slate-700
+                               bg-white dark:bg-slate-950 p-3 text-xs
+                               leading-5 text-slate-800 dark:text-slate-300
                                outline-none
                                focus:border-cyan-500"
                     >${escapeHTML(
-                        endpoint.annotation || ""
-                    )}</textarea>
+                endpoint.annotation || ""
+            )}</textarea>
 
                 </div>
 
@@ -3909,11 +3925,12 @@ function openModifyDataModal(
                     <input
                         id="modifyTags"
                         value="${escapeAttribute(
-                            tags
-                        )}"
+                tags
+            )}"
                         class="h-9 w-full rounded-md
-                               border border-slate-700
-                               bg-slate-950 px-3 text-xs
+                               border border-slate-300 dark:border-slate-700
+                               bg-white dark:bg-slate-950 px-3 text-xs
+                               text-slate-800 dark:text-slate-100
                                outline-none
                                focus:border-cyan-500"
                         placeholder="tag1, tag2"
@@ -3921,7 +3938,7 @@ function openModifyDataModal(
 
                     <p
                         class="mt-1 text-[10px]
-                               text-slate-600"
+                               text-slate-400 dark:text-slate-600"
                     >
                         Separate tags with commas.
                     </p>
@@ -3930,8 +3947,8 @@ function openModifyDataModal(
 
                 <div
                     class="rounded-lg border
-                           border-slate-800
-                           bg-slate-950/40 p-3"
+                           border-slate-200 dark:border-slate-800
+                           bg-slate-50 dark:bg-slate-950/40 p-3"
                 >
 
                     <p
@@ -3952,10 +3969,10 @@ function openModifyDataModal(
                         type="button"
                         data-modal-close
                         class="rounded-md border
-                               border-slate-700
+                               border-slate-300 dark:border-slate-700
                                px-3 py-1.5 text-xs
-                               text-slate-400
-                               hover:bg-slate-800"
+                               text-slate-600 dark:text-slate-400
+                               hover:bg-slate-100 dark:hover:bg-slate-800"
                     >
                         Cancel
                     </button>
@@ -3963,10 +3980,10 @@ function openModifyDataModal(
                     <button
                         id="saveModifyData"
                         type="button"
-                        class="rounded-md bg-cyan-600
+                        class="rounded-md bg-slate-900 dark:bg-cyan-600
                                px-3 py-1.5 text-xs
                                font-medium text-white
-                               hover:bg-cyan-500"
+                               hover:bg-slate-800 dark:hover:bg-cyan-500"
                     >
                         Save
                     </button>
@@ -4073,9 +4090,9 @@ function openModifyDataModal(
                     if (
                         window.EdmsAPI &&
                         typeof window.EdmsAPI.addEndpointTag ===
-                            "function" &&
+                        "function" &&
                         typeof window.EdmsAPI.removeEndpointTag ===
-                            "function"
+                        "function"
                     ) {
 
                         for (
@@ -4159,7 +4176,7 @@ function openModifyDataModal(
 
                     showToast(
                         error.message ||
-                            "Failed to update endpoint data.",
+                        "Failed to update endpoint data.",
                         "error"
                     );
 
@@ -4203,18 +4220,19 @@ function openTagEditor(
                     <input
                         id="tagEditorInput"
                         value="${escapeAttribute(
-                            currentTags
-                        )}"
+            currentTags
+        )}"
                         class="h-9 w-full rounded-md
-                               border border-slate-700
-                               bg-slate-950 px-3
-                               text-xs outline-none
+                               border border-slate-300 dark:border-slate-700
+                               bg-white dark:bg-slate-950 px-3
+                               text-xs text-slate-800 dark:text-slate-100
+                               outline-none
                                focus:border-cyan-500"
                     >
 
                     <p
                         class="mt-1 text-[10px]
-                               text-slate-600"
+                               text-slate-400 dark:text-slate-600"
                     >
                         Separate tags with commas.
                     </p>
@@ -4227,10 +4245,10 @@ function openTagEditor(
                         type="button"
                         data-modal-close
                         class="rounded-md border
-                               border-slate-700
+                               border-slate-300 dark:border-slate-700
                                px-3 py-1.5 text-xs
-                               text-slate-400
-                               hover:bg-slate-800"
+                               text-slate-600 dark:text-slate-400
+                               hover:bg-slate-100 dark:hover:bg-slate-800"
                     >
                         Cancel
                     </button>
@@ -4238,10 +4256,10 @@ function openTagEditor(
                     <button
                         id="saveTags"
                         type="button"
-                        class="rounded-md bg-cyan-600
+                        class="rounded-md bg-slate-900 dark:bg-cyan-600
                                px-3 py-1.5 text-xs
                                font-medium text-white
-                               hover:bg-cyan-500"
+                               hover:bg-slate-800 dark:hover:bg-cyan-500"
                     >
                         Save
                     </button>
@@ -4316,9 +4334,9 @@ function openTagEditor(
                     if (
                         !window.EdmsAPI ||
                         typeof window.EdmsAPI.addEndpointTag !==
-                            "function" ||
+                        "function" ||
                         typeof window.EdmsAPI.removeEndpointTag !==
-                            "function"
+                        "function"
                     ) {
 
                         throw new Error(
@@ -4384,7 +4402,7 @@ function openTagEditor(
 
                     showToast(
                         error.message ||
-                            "Failed to update tags.",
+                        "Failed to update tags.",
                         "error"
                     );
 
@@ -4430,7 +4448,7 @@ function openDeleteSingleModal(
                 >
 
                     <p
-                        class="text-xs text-rose-300"
+                        class="text-xs text-rose-700 dark:text-rose-300"
                     >
                         This endpoint will be removed
                         from the current Bookmark View.
@@ -4440,27 +4458,27 @@ function openDeleteSingleModal(
 
                 <div
                     class="rounded-lg border
-                           border-slate-800
-                           bg-slate-950/40 p-3"
+                           border-slate-200 dark:border-slate-800
+                           bg-slate-50 dark:bg-slate-950/40 p-3"
                 >
 
                     <p
                         class="font-mono text-xs
-                               text-slate-300"
+                               text-slate-800 dark:text-slate-300"
                     >
                         ${escapeHTML(
-                            endpoint.id
-                        )}
+            endpoint.id
+        )}
                     </p>
 
                     <p
                         class="mt-1 truncate
                                font-mono text-[10px]
-                               text-slate-600"
+                               text-slate-400 dark:text-slate-600"
                     >
                         ${escapeHTML(
-                            endpoint.endpoint
-                        )}
+            endpoint.endpoint
+        )}
                     </p>
 
                 </div>
@@ -4471,10 +4489,10 @@ function openDeleteSingleModal(
                         type="button"
                         data-modal-close
                         class="rounded-md border
-                               border-slate-700
+                               border-slate-300 dark:border-slate-700
                                px-3 py-1.5 text-xs
-                               text-slate-400
-                               hover:bg-slate-800"
+                               text-slate-600 dark:text-slate-400
+                               hover:bg-slate-100 dark:hover:bg-slate-800"
                     >
                         Cancel
                     </button>
@@ -4585,7 +4603,7 @@ function openDeleteSingleModal(
 
                     showToast(
                         error.message ||
-                            "Failed to delete endpoint.",
+                        "Failed to delete endpoint.",
                         "error"
                     );
 
@@ -4607,7 +4625,7 @@ async function deleteActiveBookmark(
     if (
         window.EdmsAPI &&
         typeof window.EdmsAPI.deleteActiveBookmark ===
-            "function"
+        "function"
     ) {
 
         const result =
@@ -4635,7 +4653,7 @@ async function deleteActiveBookmark(
     if (
         !window.EdmsAPI ||
         typeof window.EdmsAPI.createWebSocket !==
-            "function"
+        "function"
     ) {
 
         throw new Error(
@@ -4666,7 +4684,7 @@ async function deleteActiveBookmark(
 
                     try {
                         ws.close();
-                    } catch {}
+                    } catch { }
 
                     callback(value);
 
@@ -4701,7 +4719,7 @@ async function deleteActiveBookmark(
 
                         if (
                             message.type ===
-                                "error" ||
+                            "error" ||
                             message.error
                         ) {
 
@@ -4781,12 +4799,13 @@ function openQPEditor(
                     <input
                         id="qpNameInput"
                         value="${escapeAttribute(
-                            qp.name || ""
-                        )}"
+            qp.name || ""
+        )}"
                         class="h-9 w-full rounded-md
-                               border border-slate-700
-                               bg-slate-950 px-3
-                               text-xs outline-none
+                               border border-slate-300 dark:border-slate-700
+                               bg-white dark:bg-slate-950 px-3
+                               text-xs text-slate-800 dark:text-slate-100
+                               outline-none
                                focus:border-cyan-500"
                     >
 
@@ -4798,10 +4817,10 @@ function openQPEditor(
                         type="button"
                         data-modal-close
                         class="rounded-md border
-                               border-slate-700
+                               border-slate-300 dark:border-slate-700
                                px-3 py-1.5 text-xs
-                               text-slate-400
-                               hover:bg-slate-800"
+                               text-slate-600 dark:text-slate-400
+                               hover:bg-slate-100 dark:hover:bg-slate-800"
                     >
                         Cancel
                     </button>
@@ -4809,10 +4828,10 @@ function openQPEditor(
                     <button
                         id="saveQP"
                         type="button"
-                        class="rounded-md bg-cyan-600
+                        class="rounded-md bg-slate-900 dark:bg-cyan-600
                                px-3 py-1.5 text-xs
                                font-medium text-white
-                               hover:bg-cyan-500"
+                               hover:bg-slate-800 dark:hover:bg-cyan-500"
                     >
                         Save
                     </button>
@@ -4939,8 +4958,8 @@ function openSegmentChooser(
                 </p>
 
                 ${segments
-                    .map(
-                        segment => `
+            .map(
+                segment => `
 
                             <button
                                 type="button"
@@ -4948,30 +4967,30 @@ function openSegmentChooser(
                                        flex w-full items-center
                                        justify-between
                                        rounded-lg border
-                                       border-slate-800
-                                       bg-slate-950/40
+                                       border-slate-200 dark:border-slate-800
+                                       bg-slate-50 dark:bg-slate-950/40
                                        px-3 py-2 text-left
                                        transition
                                        hover:border-cyan-500/30
                                        hover:bg-cyan-500/5"
                                 data-segment="${escapeAttribute(
-                                    segment
-                                )}"
+                    segment
+                )}"
                             >
 
                                 <span
                                     class="font-mono
                                            text-xs
-                                           text-slate-300"
+                                           text-slate-800 dark:text-slate-300"
                                 >
                                     ${escapeHTML(
-                                        segment
-                                    )}
+                    segment
+                )}
                                 </span>
 
                                 <span
                                     class="text-[10px]
-                                           text-slate-600"
+                                           text-slate-400 dark:text-slate-600"
                                 >
                                     Filter
                                 </span>
@@ -4979,8 +4998,8 @@ function openSegmentChooser(
                             </button>
 
                         `
-                    )
-                    .join("")}
+            )
+            .join("")}
 
             </div>
 
@@ -5157,8 +5176,8 @@ function showToast(
 
     const color =
         type === "error"
-            ? "border-rose-500/20 text-rose-300"
-            : "border-emerald-500/20 text-emerald-300";
+            ? "border-rose-500/20 text-rose-700 dark:text-rose-300"
+            : "border-emerald-500/20 text-emerald-700 dark:text-emerald-300";
 
     toast.className =
         `
@@ -5166,7 +5185,7 @@ function showToast(
             flex -translate-x-1/2
             items-center gap-2
             rounded-lg border
-            bg-slate-900
+            bg-white dark:bg-slate-900
             px-3 py-2
             text-xs shadow-2xl
             ${color}
@@ -5422,7 +5441,7 @@ function getStatusColor(
         value < 300
     ) {
 
-        return "text-emerald-400";
+        return "text-emerald-600 dark:text-emerald-400";
 
     }
 
@@ -5431,7 +5450,7 @@ function getStatusColor(
         value < 500
     ) {
 
-        return "text-amber-400";
+        return "text-amber-600 dark:text-amber-400";
 
     }
 
@@ -5439,11 +5458,11 @@ function getStatusColor(
         value >= 500
     ) {
 
-        return "text-rose-400";
+        return "text-rose-600 dark:text-rose-400";
 
     }
 
-    return "text-slate-400";
+    return "text-slate-500 dark:text-slate-400";
 
 }
 

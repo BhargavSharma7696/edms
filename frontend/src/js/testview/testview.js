@@ -496,7 +496,7 @@ function loadEndpointsFromBackend() {
 
                         if (
                             message.type ===
-                                "snapshot" &&
+                            "snapshot" &&
                             Array.isArray(
                                 message.endpoints
                             )
@@ -517,7 +517,7 @@ function loadEndpointsFromBackend() {
 
                             try {
                                 ws.close();
-                            } catch {}
+                            } catch { }
 
                         }
 
@@ -611,7 +611,7 @@ function normalizeBackendEndpoint(endpoint) {
         endpoint:
             parsedURL
                 ? parsedURL.pathname +
-                  parsedURL.search
+                parsedURL.search
                 : fullURL,
 
         baseUrl:
@@ -687,7 +687,7 @@ function loadBookmarksFromBackend() {
 
                         if (
                             message.type ===
-                                "snapshot" &&
+                            "snapshot" &&
                             Array.isArray(
                                 message.bookmarks
                             )
@@ -706,7 +706,7 @@ function loadBookmarksFromBackend() {
 
                             try {
                                 ws.close();
-                            } catch {}
+                            } catch { }
 
                         }
 
@@ -798,7 +798,7 @@ function loadHistoryFromBackend() {
 
                         if (
                             message.type ===
-                                "snapshot" &&
+                            "snapshot" &&
                             Array.isArray(
                                 message.history
                             )
@@ -833,7 +833,7 @@ function loadHistoryFromBackend() {
 
                             try {
                                 ws.close();
-                            } catch {}
+                            } catch { }
 
                         }
 
@@ -1069,7 +1069,7 @@ function restoreLocalQPs() {
 
             const savedQPs =
                 qpStore[
-                    String(endpoint.id)
+                String(endpoint.id)
                 ];
 
             if (
@@ -1268,15 +1268,13 @@ function renderTestEndpoints() {
 
     testEndpointList.innerHTML = "";
 
-    if (
-        filteredTestEndpoints.length === 0
-    ) {
+    if (filteredTestEndpoints.length === 0) {
 
         testEndpointList.innerHTML = `
-            <div class="p-4 text-sm text-slate-500">
-                No ${escapeHTML(activeSidebarTab)} found.
-            </div>
-        `;
+        <div class="p-4 text-sm text-slate-500 dark:text-slate-500">
+            No ${escapeHTML(activeSidebarTab)} found.
+        </div>
+    `;
 
         return;
 
@@ -1299,7 +1297,6 @@ function renderTestEndpoints() {
 // ============================================================
 // ENDPOINT CARD
 // ============================================================
-
 function createTestEndpointCard(item) {
 
     const card =
@@ -1315,9 +1312,9 @@ function createTestEndpointCard(item) {
         group
         rounded-lg
         border
-        border-slate-800
-        bg-slate-900
-        hover:bg-slate-800/80
+        border-slate-200 dark:border-slate-800
+        bg-white dark:bg-slate-900
+        hover:bg-slate-100 dark:hover:bg-slate-800/80
         hover:border-cyan-500/50
         transition-all
         duration-200
@@ -1342,49 +1339,49 @@ function createTestEndpointCard(item) {
                 class="px-2 py-1 rounded-md text-[11px]
                        font-semibold border
                        ${getMethodColor(
-                           item.method ||
-                           endpoint.method
-                       )}">
+        item.method ||
+        endpoint.method
+    )}">
                 ${escapeHTML(
-                    item.method ||
-                    endpoint.method ||
-                    ""
-                )}
+        item.method ||
+        endpoint.method ||
+        ""
+    )}
             </span>
 
             <span
                 class="text-[11px]
-                       text-slate-500
-                       group-hover:text-slate-300">
+                       text-slate-500 dark:text-slate-500
+                       group-hover:text-slate-700 dark:group-hover:text-slate-300">
                 ${escapeHTML(
-                    formatEndpointDate(
-                        item.updated
-                    )
-                )}
+        formatEndpointDate(
+            item.updated
+        )
+    )}
             </span>
 
         </div>
 
         <p
             class="mt-2 text-sm font-medium
-                   text-slate-200 truncate
-                   group-hover:text-white">
+                   text-slate-800 dark:text-slate-200 truncate
+                   group-hover:text-slate-950 dark:group-hover:text-white">
             ${escapeHTML(
-                item.endpoint ||
-                endpoint.endpoint ||
-                ""
-            )}
+        item.endpoint ||
+        endpoint.endpoint ||
+        ""
+    )}
         </p>
 
         <div
             class="mt-2 flex items-center
                    justify-between text-[11px]
-                   text-slate-500">
+                   text-slate-500 dark:text-slate-500">
 
             <span>
                 ${escapeHTML(
-                    getItemBadge(item)
-                )}
+        getItemBadge(item)
+    )}
             </span>
 
             <span>
@@ -1428,7 +1425,6 @@ function createTestEndpointCard(item) {
     return card;
 
 }
-
 // ============================================================
 // HISTORY CONTEXT MENU
 // ============================================================
@@ -1458,8 +1454,8 @@ function setupHistoryContextMenu() {
         min-w-[190px]
         rounded-lg
         border
-        border-slate-700
-        bg-slate-900
+        border-slate-200 dark:border-slate-700
+        bg-white dark:bg-slate-900
         shadow-xl
         overflow-hidden
     `;
@@ -1475,8 +1471,8 @@ function setupHistoryContextMenu() {
                 py-2.5
                 text-left
                 text-sm
-                text-slate-200
-                hover:bg-slate-800
+                text-slate-700 dark:text-slate-200
+                hover:bg-slate-100 dark:hover:bg-slate-800
             "
         >
             Add to Bookmark
@@ -1491,8 +1487,8 @@ function setupHistoryContextMenu() {
                 py-2.5
                 text-left
                 text-sm
-                text-red-400
-                hover:bg-slate-800
+                text-red-600 dark:text-red-400
+                hover:bg-slate-100 dark:hover:bg-slate-800
             "
         >
             Clear All
@@ -1503,319 +1499,253 @@ function setupHistoryContextMenu() {
         menu
     );
 
-    menu.addEventListener(
-        "click",
-        async event => {
-
-            const button =
-                event.target.closest(
-                    "[data-history-action]"
-                );
-
-            if (!button) return;
-
-            const action =
-                button.dataset.historyAction;
-
-            const history =
-                menu._historyItem;
-
-            hideHistoryContextMenu();
-
-            if (!history) {
-                return;
-            }
-
-            if (
-                action ===
-                "bookmark"
-            ) {
-
-                await addHistoryToBookmark(
-                    history
-                );
-
-            }
-
-            if (
-                action ===
-                "clear"
-            ) {
-
-                await clearAllHistory();
-
-            }
-
-        }
-    );
-
-    document.addEventListener(
-        "click",
-        () => {
-
-            hideHistoryContextMenu();
-
-        }
-    );
-
-    window.addEventListener(
-        "blur",
-        hideHistoryContextMenu
-    );
-
-    document.addEventListener(
-        "scroll",
-        hideHistoryContextMenu,
-        true
-    );
-
-}
-
-function showHistoryContextMenu(
-    event,
-    historyItem
-) {
-
-    event.preventDefault();
-    event.stopPropagation();
-
-    setupHistoryContextMenu();
-
-    const menu =
-        document.getElementById(
-            "testHistoryContextMenu"
-        );
-
-    if (!menu) return;
-
-    menu._historyItem =
-        historyItem;
-
-    const alreadySaved =
-        isEndpointBookmarked(
-            historyItem.endpointId
-        );
-
-    const bookmarkButton =
-        menu.querySelector(
-            '[data-history-action="bookmark"]'
-        );
-
-    if (bookmarkButton) {
-
-        bookmarkButton.disabled =
-            alreadySaved;
-
-        bookmarkButton.textContent =
-            alreadySaved
-                ? "Already Bookmarked"
-                : "Add to Bookmark";
-
-        bookmarkButton.classList.toggle(
-            "opacity-50",
-            alreadySaved
-        );
-
-        bookmarkButton.classList.toggle(
-            "cursor-not-allowed",
-            alreadySaved
-        );
-
-    }
-
-    menu.classList.remove(
-        "hidden"
-    );
-
-    const menuWidth =
-        menu.offsetWidth;
-
-    const menuHeight =
-        menu.offsetHeight;
-
-    const left =
-        Math.min(
-            event.clientX,
-            window.innerWidth -
-            menuWidth -
-            8
-        );
-
-    const top =
-        Math.min(
-            event.clientY,
-            window.innerHeight -
-            menuHeight -
-            8
-        );
-
-    menu.style.left =
-        `${Math.max(left, 8)}px`;
-
-    menu.style.top =
-        `${Math.max(top, 8)}px`;
-
-}
-
-function hideHistoryContextMenu() {
-
-    const menu =
-        document.getElementById(
-            "testHistoryContextMenu"
-        );
-
-    if (!menu) return;
-
-    menu.classList.add(
-        "hidden"
-    );
-
-    menu._historyItem =
-        null;
-
-}
-
-// ============================================================
-// HISTORY → ACTIVE COLLECTION
-// ============================================================
-
-async function addHistoryToBookmark(
-    historyItem
-) {
-
-    const endpointId =
-        historyItem.endpointId;
-
-    if (
-        endpointId === undefined ||
-        endpointId === null
+    // ...rest of the function is unchanged (event listeners)
+    function showHistoryContextMenu(
+        event,
+        historyItem
     ) {
 
-        console.warn(
-            "History item has no endpoint_id."
+        event.preventDefault();
+        event.stopPropagation();
+
+        setupHistoryContextMenu();
+
+        const menu =
+            document.getElementById(
+                "testHistoryContextMenu"
+            );
+
+        if (!menu) return;
+
+        menu._historyItem =
+            historyItem;
+
+        const alreadySaved =
+            isEndpointBookmarked(
+                historyItem.endpointId
+            );
+
+        const bookmarkButton =
+            menu.querySelector(
+                '[data-history-action="bookmark"]'
+            );
+
+        if (bookmarkButton) {
+
+            bookmarkButton.disabled =
+                alreadySaved;
+
+            bookmarkButton.textContent =
+                alreadySaved
+                    ? "Already Bookmarked"
+                    : "Add to Bookmark";
+
+            bookmarkButton.classList.toggle(
+                "opacity-50",
+                alreadySaved
+            );
+
+            bookmarkButton.classList.toggle(
+                "cursor-not-allowed",
+                alreadySaved
+            );
+
+        }
+
+        menu.classList.remove(
+            "hidden"
         );
 
-        return;
+        const menuWidth =
+            menu.offsetWidth;
+
+        const menuHeight =
+            menu.offsetHeight;
+
+        const left =
+            Math.min(
+                event.clientX,
+                window.innerWidth -
+                menuWidth -
+                8
+            );
+
+        const top =
+            Math.min(
+                event.clientY,
+                window.innerHeight -
+                menuHeight -
+                8
+            );
+
+        menu.style.left =
+            `${Math.max(left, 8)}px`;
+
+        menu.style.top =
+            `${Math.max(top, 8)}px`;
 
     }
 
-    await saveEndpointToActiveCollection(
+    function hideHistoryContextMenu() {
+
+        const menu =
+            document.getElementById(
+                "testHistoryContextMenu"
+            );
+
+        if (!menu) return;
+
+        menu.classList.add(
+            "hidden"
+        );
+
+        menu._historyItem =
+            null;
+
+    }
+
+    // ============================================================
+    // HISTORY → ACTIVE COLLECTION
+    // ============================================================
+
+    async function addHistoryToBookmark(
+        historyItem
+    ) {
+
+        const endpointId =
+            historyItem.endpointId;
+
+        if (
+            endpointId === undefined ||
+            endpointId === null
+        ) {
+
+            console.warn(
+                "History item has no endpoint_id."
+            );
+
+            return;
+
+        }
+
+        await saveEndpointToActiveCollection(
+            endpointId
+        );
+
+    }
+
+    // ============================================================
+    // SAVE SELECTED ENDPOINT → ACTIVE COLLECTION
+    // ============================================================
+
+    async function saveSelectedEndpoint() {
+
+        if (!selectedTestEndpoint) {
+
+            console.warn(
+                "No endpoint selected."
+            );
+
+            return;
+
+        }
+
+        await saveEndpointToActiveCollection(
+            selectedTestEndpoint.id
+        );
+
+    }
+
+    // ============================================================
+    // SAVE ENDPOINT → ACTIVE COLLECTION
+    // ============================================================
+
+    async function saveEndpointToActiveCollection(
         endpointId
-    );
-
-}
-
-// ============================================================
-// SAVE SELECTED ENDPOINT → ACTIVE COLLECTION
-// ============================================================
-
-async function saveSelectedEndpoint() {
-
-    if (!selectedTestEndpoint) {
-
-        console.warn(
-            "No endpoint selected."
-        );
-
-        return;
-
-    }
-
-    await saveEndpointToActiveCollection(
-        selectedTestEndpoint.id
-    );
-
-}
-
-// ============================================================
-// SAVE ENDPOINT → ACTIVE COLLECTION
-// ============================================================
-
-async function saveEndpointToActiveCollection(
-    endpointId
-) {
-
-    if (
-        endpointId === undefined ||
-        endpointId === null
     ) {
 
-        return;
+        if (
+            endpointId === undefined ||
+            endpointId === null
+        ) {
 
-    }
+            return;
 
-    if (
-        isEndpointBookmarked(
-            endpointId
-        )
-    ) {
+        }
 
-        console.log(
-            "Endpoint is already in Active Collection:",
-            endpointId
-        );
+        if (
+            isEndpointBookmarked(
+                endpointId
+            )
+        ) {
 
-        return;
-
-    }
-
-    try {
-
-        await window.EdmsAPI.addActiveBookmark(
-            endpointId
-        );
-
-        const result =
-            await window.EdmsAPI.saveActiveBookmark(
+            console.log(
+                "Endpoint is already in Active Collection:",
                 endpointId
             );
 
-        if (!result.ok) {
+            return;
 
-            throw new Error(
-                result.data?.message ||
-                `Bookmark save failed: ${result.status}`
+        }
+
+        try {
+
+            await window.EdmsAPI.addActiveBookmark(
+                endpointId
+            );
+
+            const result =
+                await window.EdmsAPI.saveActiveBookmark(
+                    endpointId
+                );
+
+            if (!result.ok) {
+
+                throw new Error(
+                    result.data?.message ||
+                    `Bookmark save failed: ${result.status}`
+                );
+
+            }
+
+            console.log(
+                "Added endpoint to Active Collection:",
+                endpointId
+            );
+
+            await loadBookmarksFromBackend();
+
+            historyRecords =
+                historyRecords.map(
+                    history => ({
+
+                        ...history,
+
+                        saved:
+                            isEndpointBookmarked(
+                                history.endpointId
+                            )
+
+                    })
+                );
+
+            applyTestFilters();
+
+        } catch (error) {
+
+            console.error(
+                "Failed to add endpoint to Active Collection:",
+                error
+            );
+
+            window.alert(
+                error?.message ||
+                "Could not add this endpoint to Bookmark."
             );
 
         }
 
-        console.log(
-            "Added endpoint to Active Collection:",
-            endpointId
-        );
-
-        await loadBookmarksFromBackend();
-
-        historyRecords =
-            historyRecords.map(
-                history => ({
-
-                    ...history,
-
-                    saved:
-                        isEndpointBookmarked(
-                            history.endpointId
-                        )
-
-                })
-            );
-
-        applyTestFilters();
-
-    } catch (error) {
-
-        console.error(
-            "Failed to add endpoint to Active Collection:",
-            error
-        );
-
-        window.alert(
-            error?.message ||
-            "Could not add this endpoint to Bookmark."
-        );
-
     }
-
 }
 
 // ============================================================
@@ -1876,29 +1806,28 @@ async function clearAllHistory() {
 function getMethodColor(method) {
 
     switch (
-        String(method || "")
-            .toUpperCase()
+    String(method || "")
+        .toUpperCase()
     ) {
 
         case "GET":
-            return "bg-emerald-500/15 text-emerald-400 border-emerald-500/20";
+            return "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 dark:border-emerald-500/20";
 
         case "POST":
-            return "bg-amber-500/15 text-amber-400 border-amber-500/20";
+            return "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 dark:border-amber-500/20";
 
         case "PUT":
-            return "bg-sky-500/15 text-sky-400 border-sky-500/20";
+            return "bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30 dark:border-sky-500/20";
 
         case "DELETE":
-            return "bg-red-500/15 text-red-400 border-red-500/20";
+            return "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30 dark:border-red-500/20";
 
         default:
-            return "bg-slate-700 text-slate-300 border-slate-600";
+            return "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600";
 
     }
 
 }
-
 // ============================================================
 // BADGE
 // ============================================================
@@ -2140,7 +2069,7 @@ function updateSelectedEndpointHighlight() {
                     selectedId !== undefined &&
                     selectedId !== null &&
                     String(cardEndpointId) ===
-                        String(selectedId);
+                    String(selectedId);
 
                 card.classList.toggle(
                     "bg-sky-500/10",
@@ -2243,22 +2172,22 @@ function renderTestQP(
                 "button";
 
             button.className = `
-                qp-btn
-                w-full
-                min-h-10
-                rounded-md
-                border
-                border-slate-700
-                bg-slate-800
-                px-1
-                py-2
-                text-xs
-                text-slate-300
-                hover:bg-cyan-500
-                hover:text-white
-                transition-all
-                duration-150
-            `;
+    qp-btn
+    w-full
+    min-h-10
+    rounded-md
+    border
+    border-slate-300 dark:border-slate-700
+    bg-white dark:bg-slate-800
+    px-1
+    py-2
+    text-xs
+    text-slate-600 dark:text-slate-300
+    hover:bg-cyan-500
+    hover:text-white
+    transition-all
+    duration-150
+`;
 
             button.textContent =
                 qp.name ||
@@ -2441,7 +2370,7 @@ function setupQPMenu() {
                     event.target
                 ) &&
                 event.target !==
-                    qpMenuButton
+                qpMenuButton
             ) {
 
                 qpMenu.classList.add(
@@ -2715,13 +2644,16 @@ function selectTestQP(
             item => {
 
                 item.classList.remove(
-                    "bg-cyan-500",
+                    "bg-slate-900",
+                    "dark:bg-cyan-500",
                     "text-white"
                 );
 
                 item.classList.add(
-                    "bg-slate-800",
-                    "text-slate-300"
+                    "bg-white",
+                    "dark:bg-slate-800",
+                    "text-slate-600",
+                    "dark:text-slate-300"
                 );
 
             }
@@ -2730,12 +2662,15 @@ function selectTestQP(
     if (button) {
 
         button.classList.remove(
-            "bg-slate-800",
-            "text-slate-300"
+            "bg-white",
+            "dark:bg-slate-800",
+            "text-slate-600",
+            "dark:text-slate-300"
         );
 
         button.classList.add(
-            "bg-cyan-500",
+            "bg-slate-900",
+            "dark:bg-cyan-500",
             "text-white"
         );
 
@@ -2769,7 +2704,7 @@ function renderCurrentRequest() {
 
     const content =
         activeRequestTab ===
-        "headers"
+            "headers"
 
             ? request.headers || {}
 
@@ -2805,7 +2740,7 @@ function renderCurrentResponse() {
 
     const content =
         activeResponseTab ===
-        "headers"
+            "headers"
 
             ? getResponseHeadersPreview(
                 response
@@ -2961,7 +2896,7 @@ function setupMethodFilters() {
 
                     activeTestMethod =
                         activeTestMethod ===
-                        method
+                            method
                             ? "ALL"
                             : method;
 
@@ -3111,9 +3046,9 @@ function applyTestFilters() {
 
                         (
                             activeTestMethod ===
-                                "ALL" ||
+                            "ALL" ||
                             item.method ===
-                                activeTestMethod
+                            activeTestMethod
                         ) &&
 
                         (
@@ -3185,7 +3120,7 @@ function matchesTimeFilter(
         now - date;
 
     switch (
-        activeTimeFilter
+    activeTimeFilter
     ) {
 
         case "today":
@@ -3202,7 +3137,7 @@ function matchesTimeFilter(
             return (
                 difference >= 0 &&
                 difference <=
-                    7 * day
+                7 * day
             );
 
         case "30days":
@@ -3210,7 +3145,7 @@ function matchesTimeFilter(
             return (
                 difference >= 0 &&
                 difference <=
-                    30 * day
+                30 * day
             );
 
         default:
@@ -3529,7 +3464,7 @@ async function runTestEndpoint() {
 
         if (
             activeRequestTab ===
-                "body" &&
+            "body" &&
             requestContent
         ) {
 
@@ -3625,9 +3560,9 @@ async function runTestEndpoint() {
 
         if (
             resolvedEndpointId ===
-                undefined ||
+            undefined ||
             resolvedEndpointId ===
-                null
+            null
         ) {
 
             console.log(
@@ -3675,9 +3610,9 @@ async function runTestEndpoint() {
 
         if (
             resolvedEndpointId ===
-                undefined ||
+            undefined ||
             resolvedEndpointId ===
-                null
+            null
         ) {
 
             throw new Error(
@@ -3742,7 +3677,7 @@ async function runTestEndpoint() {
 
             if (
                 selectedTestEndpoint.qps.length ===
-                    0
+                0
             ) {
 
                 selectedTestEndpoint.qps.push(
@@ -3754,7 +3689,7 @@ async function runTestEndpoint() {
                     String(localQP.id)
                 ) &&
                 String(localQP.id) ===
-                    "default"
+                "default"
             ) {
 
                 selectedTestEndpoint.qps.unshift(
@@ -3838,9 +3773,9 @@ async function runTestEndpoint() {
 
         if (
             requestNumber ===
-                undefined ||
+            undefined ||
             requestNumber ===
-                null
+            null
         ) {
 
             throw new Error(
@@ -4183,7 +4118,7 @@ async function runTestEndpoint() {
             applyTestFilters();
 
         } catch (
-            historyReloadError
+        historyReloadError
         ) {
 
             console.warn(
@@ -4224,7 +4159,7 @@ async function runTestEndpoint() {
 
                 testWS.close();
 
-            } catch {}
+            } catch { }
 
             testWS =
                 null;
@@ -4347,9 +4282,9 @@ function handleTestStarted(event) {
 
     if (
         requestNumber !==
-            undefined &&
+        undefined &&
         requestNumber !==
-            null
+        null
     ) {
 
         activeRequestNumber =
@@ -4516,9 +4451,9 @@ function handleTestFinished(event) {
 
     if (
         requestNumber !==
-            undefined &&
+        undefined &&
         requestNumber !==
-            null
+        null
     ) {
 
         activeRequestNumber =
@@ -4619,9 +4554,9 @@ async function stopTestEndpoint() {
 
     if (
         activeRequestNumber ===
-            null ||
+        null ||
         activeRequestNumber ===
-            undefined
+        undefined
     ) {
 
         console.warn(
@@ -4634,9 +4569,9 @@ async function stopTestEndpoint() {
 
     if (
         selectedTestEndpoint.id ===
-            undefined ||
+        undefined ||
         selectedTestEndpoint.id ===
-            null
+        null
     ) {
 
         console.warn(
@@ -4687,7 +4622,7 @@ async function stopTestEndpoint() {
 
             testWS.close();
 
-        } catch {}
+        } catch { }
 
         testWS =
             null;
@@ -5043,7 +4978,6 @@ function renderSelectedEndpointTags() {
 
     endpointTags.innerHTML =
         "";
-
     if (
         !selectedTestEndpoint ||
         !Array.isArray(
@@ -5053,10 +4987,10 @@ function renderSelectedEndpointTags() {
     ) {
 
         endpointTags.innerHTML = `
-            <span class="text-xs text-slate-500">
-                No tags selected.
-            </span>
-        `;
+        <span class="text-xs text-slate-500 dark:text-slate-500">
+            No tags selected.
+        </span>
+    `;
 
         return;
 
@@ -5249,7 +5183,7 @@ function updateContentTabButtons(
 
     const ids =
         panel ===
-        "request"
+            "request"
 
             ? {
                 headers:
@@ -5282,12 +5216,22 @@ function updateContentTabButtons(
                 activeTab;
 
             button.classList.toggle(
-                "bg-cyan-500",
+                "bg-slate-900",
                 active
             );
 
             button.classList.toggle(
-                "text-slate-950",
+                "dark:bg-cyan-500",
+                active
+            );
+
+            button.classList.toggle(
+                "text-white",
+                active
+            );
+
+            button.classList.toggle(
+                "dark:text-slate-950",
                 active
             );
 
@@ -5297,12 +5241,32 @@ function updateContentTabButtons(
             );
 
             button.classList.toggle(
-                "bg-slate-800",
+                "bg-white",
                 !active
             );
 
             button.classList.toggle(
-                "text-slate-300",
+                "dark:bg-slate-800",
+                !active
+            );
+
+            button.classList.toggle(
+                "text-slate-600",
+                !active
+            );
+
+            button.classList.toggle(
+                "dark:text-slate-300",
+                !active
+            );
+
+            button.classList.toggle(
+                "border",
+                !active
+            );
+
+            button.classList.toggle(
+                "border-slate-200",
                 !active
             );
 
@@ -5310,7 +5274,6 @@ function updateContentTabButtons(
     );
 
 }
-
 // ============================================================
 // PANEL CONTROLS
 // ============================================================
@@ -5445,44 +5408,42 @@ function togglePanelFullscreen(
     siblingPanel
 ) {
 
+    const reqResGroup =
+        document.getElementById(
+            "reqResGroup"
+        );
+
+    if (!reqResGroup) return;
+
     const isFullscreen =
-        panel.dataset.fullscreen ===
+        reqResGroup.dataset.fullscreen ===
         "true";
 
-    resetPanels();
+    if (isFullscreen) {
 
-    if (isFullscreen) return;
+        reqResGroup.dataset.fullscreen =
+            "false";
 
-    panel.dataset.fullscreen =
-        "true";
+        reqResGroup.classList.remove(
+            "fullscreen"
+        );
 
-    panel.style.position =
-        "fixed";
+        document.body.style.overflow =
+            "";
 
-    panel.style.inset =
-        "16px";
-
-    panel.style.zIndex =
-        "50";
-
-    panel.style.height =
-        "auto";
-
-    panel.style.maxHeight =
-        "calc(100vh - 32px)";
-
-    panel.style.display =
-        "flex";
-
-    if (siblingPanel) {
-
-        siblingPanel.style.display =
-            "none";
-
+        return;
     }
 
-}
+    reqResGroup.dataset.fullscreen =
+        "true";
 
+    reqResGroup.classList.add(
+        "fullscreen"
+    );
+
+    document.body.style.overflow =
+        "hidden";
+}
 // ============================================================
 // RESET PANELS
 // ============================================================
@@ -5520,9 +5481,7 @@ function resetPanels() {
 
         }
     );
-
 }
-
 // ============================================================
 // SIDEBAR TABS
 // ============================================================
@@ -5772,9 +5731,8 @@ function updateSidebarTabUnderline() {
         `${activeRect.width}px`;
 
     underline.style.transform =
-        `translateX(${
-            activeRect.left -
-            parentRect.left
+        `translateX(${activeRect.left -
+        parentRect.left
         }px)`;
 
 }
@@ -6028,9 +5986,9 @@ function isEndpointBookmarked(
 
     if (
         endpointId ===
-            undefined ||
+        undefined ||
         endpointId ===
-            null
+        null
     ) {
 
         return false;

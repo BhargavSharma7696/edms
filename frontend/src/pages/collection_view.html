@@ -44,19 +44,12 @@
                        justify-between gap-3
                        border-b border-slate-200 dark:border-slate-700/40
                        bg-slate-50 dark:bg-[#162235] px-3 py-2 sm:px-4">
+                <a href="./index.html" class="brand flex items-center gap-2.5 shrink-0 group">
 
-                <a href="./index.html" class="brand
-flex
-items-center
-gap-2.5
-shrink-0
-group">
+                    <img src="/public/ht-logo.png" alt="HashedTokens" class="h-8 w-auto object-contain">
 
-                    <span class="text-lg
-    font-bold
-    tracking-tight
-    text-slate-900 dark:text-white">
-                        Logo HashedTokens EDMS
+                    <span class="text-lg font-bold tracking-tight text-slate-800 dark:text-white">
+                        HashedTokens EDMS
                     </span>
 
                 </a>
@@ -202,7 +195,7 @@ group">
 
             <section class="flex shrink-0 flex-wrap items-center
                        gap-2 border-b border-slate-200 dark:border-slate-700
-                       bg-slate-50 dark:bg-slate-900/80 px-3 py-2">
+                       bg-slate-50 dark:bg-slate-900 px-3 py-2">
 
                 <!-- Search -->
 
@@ -220,7 +213,8 @@ group">
                     <input id="collectionSearch" type="search" placeholder="Search collections..." class="h-8 w-full rounded-md
                                border border-slate-300 dark:border-slate-700
                                bg-slate-100 dark:bg-slate-800/80 pl-8 pr-3
-                               text-xs outline-none
+                               text-xs text-slate-800 dark:text-slate-100
+                               outline-none
                                transition
                                focus:border-cyan-500
                                focus:ring-1
@@ -234,6 +228,7 @@ group">
                 <select id="purposeFilter" class="h-8 rounded-md
                            border border-slate-300 dark:border-slate-700
                            bg-slate-100 dark:bg-slate-800 px-2.5 text-xs
+                           text-slate-800 dark:text-slate-100
                            outline-none
                            focus:border-cyan-500">
                     <option value="all">All Purpose</option>
@@ -248,7 +243,7 @@ group">
                            gap-1.5 rounded-md
                            border border-slate-300 dark:border-slate-700
                            bg-slate-100 dark:bg-slate-800 px-2.5
-                           text-xs text-slate-600 dark:text-slate-300
+                           text-xs text-slate-800 dark:text-slate-300
                            transition
                            hover:bg-slate-200 dark:hover:bg-slate-700">
 
@@ -290,7 +285,7 @@ group">
                                gap-1.5 rounded-md
                                border border-slate-300 dark:border-slate-700
                                bg-slate-100 dark:bg-slate-800 px-2.5
-                               text-xs text-slate-600 dark:text-slate-300
+                               text-xs text-slate-800 dark:text-slate-300
                                transition hover:bg-slate-200 dark:hover:bg-slate-700">
 
                         <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -309,7 +304,7 @@ group">
                                gap-1.5 rounded-md
                                border border-slate-300 dark:border-slate-700
                                bg-slate-100 dark:bg-slate-800 px-2.5
-                               text-xs text-slate-600 dark:text-slate-300
+                               text-xs text-slate-800 dark:text-slate-300
                                transition hover:bg-slate-200 dark:hover:bg-slate-700">
 
                         <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -371,10 +366,10 @@ group">
                 ================================================== -->
 
                 <aside id="filterSidebar" class="relative flex w-48 shrink-0
-                           flex-col overflow-hidden
-                           border-r border-slate-200 dark:border-slate-700
-                           bg-slate-50 dark:bg-slate-900
-                           transition-all duration-200">
+           flex-col overflow-hidden
+           border-r border-slate-100 dark:border-slate-700
+           bg-slate-50 dark:bg-slate-900
+           transition-all duration-200">
 
                     <div class="flex shrink-0 items-center
                                justify-between
@@ -382,7 +377,7 @@ group">
                                px-3 py-2.5">
 
                         <span id="sidebarTitle" class="text-xs font-semibold
-                                   text-slate-700 dark:text-slate-200">
+                                   text-slate-800 dark:text-slate-200">
                             Filters
                         </span>
 
@@ -417,7 +412,7 @@ group">
                                        border-slate-200 dark:border-slate-700
                                        pb-1.5">
                                 <h3 class="text-xs font-semibold
-                                           text-slate-600 dark:text-slate-300">
+                                           text-slate-800 dark:text-slate-300">
                                     Stats
                                 </h3>
                             </div>
@@ -432,7 +427,7 @@ group">
                                     </span>
 
                                     <span id="folderStat" class="text-xs font-medium
-                                               text-slate-600 dark:text-slate-300">
+                                               text-slate-800 dark:text-slate-300">
                                         0
                                     </span>
                                 </div>
@@ -445,7 +440,7 @@ group">
                                     </span>
 
                                     <span id="endpointStat" class="text-xs font-medium
-                                               text-slate-600 dark:text-slate-300">
+                                               text-slate-800 dark:text-slate-300">
                                         0
                                     </span>
                                 </div>
@@ -458,7 +453,7 @@ group">
                                     </span>
 
                                     <span id="tagStat" class="text-xs font-medium
-                                               text-slate-600 dark:text-slate-300">
+                                               text-slate-800 dark:text-slate-300">
                                         0
                                     </span>
                                 </div>
@@ -483,7 +478,7 @@ group">
                                        border-slate-200 dark:border-slate-700
                                        pb-1.5">
                                 <h3 class="text-xs font-semibold
-                                           text-slate-600 dark:text-slate-300">
+                                           text-slate-800 dark:text-slate-300">
                                     Tags
                                 </h3>
                             </div>
@@ -504,7 +499,7 @@ group">
                 ================================================== -->
 
                 <main class="min-w-0 flex-1 overflow-hidden
-                           bg-slate-100/40 dark:bg-slate-950/20">
+                           bg-slate-100 dark:bg-slate-950">
 
                     <div class="flex h-full min-w-0 flex-col">
 
@@ -522,9 +517,9 @@ group">
                                        table-fixed text-xs">
 
                                 <thead class="sticky top-0 z-20
-                                           border-b border-slate-200 dark:border-slate-700
-                                           bg-slate-50/98 dark:bg-slate-900/98
-                                           backdrop-blur">
+           border-b border-slate-200 dark:border-slate-700
+           bg-slate-50 dark:bg-slate-900
+           backdrop-blur">
 
                                     <tr class="text-left
                                                text-slate-500 dark:text-slate-400">
@@ -610,7 +605,7 @@ group">
                                    flex-wrap items-center
                                    justify-between gap-3
                                    border-t border-slate-200 dark:border-slate-700
-                                   bg-slate-50 dark:bg-slate-900
+                                   bg-white dark:bg-slate-900
                                    px-3 py-2.5">
 
                             <p class="text-[11px]
@@ -619,21 +614,21 @@ group">
                                 Showing
 
                                 <span id="paginationRangeStart" class="font-medium
-                                           text-slate-600 dark:text-slate-300">
+                                           text-slate-800 dark:text-slate-300">
                                     0
                                 </span>
 
                                 –
 
                                 <span id="paginationRangeEnd" class="font-medium
-                                           text-slate-600 dark:text-slate-300">
+                                           text-slate-800 dark:text-slate-300">
                                     0
                                 </span>
 
                                 of
 
                                 <span id="paginationTotal" class="font-medium
-                                           text-slate-600 dark:text-slate-300">
+                                           text-slate-800 dark:text-slate-300">
                                     0
                                 </span>
 
@@ -698,7 +693,7 @@ group">
     ========================================================== -->
 
     <div id="contextMenu"
-        class="hidden fixed z-[1000] w-56 overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 shadow-2xl shadow-black/50">
+        class="hidden fixed z-[1000] w-56 overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl shadow-black/50">
     </div>
 
     <!-- =========================================================
@@ -713,7 +708,7 @@ group">
         <div id="modalContent" class="max-h-[85vh] w-full max-w-2xl
                    overflow-y-auto rounded-xl
                    border border-slate-200 dark:border-slate-700
-                   bg-slate-50 dark:bg-slate-900 p-5 shadow-2xl
+                   bg-white dark:bg-slate-900 p-5 shadow-2xl
                    scrollbar scrollbar-thin
                    scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700"></div>
 

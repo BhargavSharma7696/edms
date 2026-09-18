@@ -261,8 +261,8 @@
             tbody.innerHTML = `
                 <tr>
                     <td colspan="15" class="px-4 py-16 text-center">
-                        <p class="text-sm font-medium text-slate-400">No repo views found</p>
-                        <p class="mt-1 text-xs text-slate-600">Try changing the current search or filters.</p>
+                        <p class="text-sm font-medium text-slate-500 dark:text-slate-400">No repo views found</p>
+                        <p class="mt-1 text-xs text-slate-400 dark:text-slate-600">Try changing the current search or filters.</p>
                     </td>
                 </tr>
             `;
@@ -295,10 +295,12 @@
         row.className = [
             'repo-row',
             'border-b',
-            'border-slate-800',
+            'border-slate-200',
+            'dark:border-slate-800',
             'transition-colors',
             'duration-100',
-            'hover:bg-slate-800/60',
+            'hover:bg-slate-200/60',
+            'dark:hover:bg-slate-800/60',
             isSelected ? 'bg-cyan-500/[0.045]' : ''
         ].filter(Boolean).join(' ');
 
@@ -313,10 +315,10 @@
             </td>
 
             <!-- Folder Name -->
-            <td class="px-2 py-2 font-medium text-slate-200">
+            <td class="px-2 py-2 font-medium text-slate-800 dark:text-slate-200">
                 <button
                     type="button"
-                    class="repo-name-btn truncate text-left hover:text-cyan-400"
+                    class="repo-name-btn truncate text-left hover:text-cyan-600 dark:hover:text-cyan-400"
                     title="${escapeAttr(repo.name)}">
                     ${escapeHtml(repo.name)}
                 </button>
@@ -330,54 +332,62 @@
             </td>
 
             <!-- Date Created -->
-            <td class="px-2 py-2 text-slate-500 whitespace-nowrap">
+            <td class="px-2 py-2 text-slate-500 dark:text-slate-500 whitespace-nowrap">
                 ${escapeHtml(repo.dateCreated || '—')}
             </td>
 
-            <!-- GET -->
-            <td class="px-1 py-2 text-center">${crudCountBadge(repo.crud?.GET, 'text-emerald-400')}</td>
-            <!-- POST -->
-            <td class="px-1 py-2 text-center">${crudCountBadge(repo.crud?.POST, 'text-sky-400')}</td>
-            <!-- PUT -->
-            <td class="px-1 py-2 text-center">${crudCountBadge(repo.crud?.PUT, 'text-amber-400')}</td>
-            <!-- PATCH -->
-            <td class="px-1 py-2 text-center">${crudCountBadge(repo.crud?.PATCH, 'text-violet-400')}</td>
-            <!-- DELETE -->
-            <td class="px-1 py-2 text-center">${crudCountBadge(repo.crud?.DELETE, 'text-rose-400')}</td>
+          <td class="px-1 py-2 text-center">
+    ${crudCountBadge(repo.crud?.GET, 'text-slate-400')}
+</td>
 
+<td class="px-1 py-2 text-center">
+    ${crudCountBadge(repo.crud?.POST, 'text-slate-400')}
+</td>
+
+<td class="px-1 py-2 text-center">
+    ${crudCountBadge(repo.crud?.PUT, 'text-slate-400')}
+</td>
+
+<td class="px-1 py-2 text-center">
+    ${crudCountBadge(repo.crud?.PATCH, 'text-slate-400')}
+</td>
+
+<td class="px-1 py-2 text-center">
+    ${crudCountBadge(repo.crud?.DELETE, 'text-slate-400')}
+</td>
             <!-- Size -->
             <td class="px-2 py-2">
-                <button type="button" class="repo-size-btn text-slate-300 hover:text-cyan-400">
+                <button type="button" class="repo-size-btn text-slate-800 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400">
                     ${formatSize(repo.dataSizeBytes, sizeUnits[repo.id])}
                 </button>
             </td>
 
             <!-- EID Count -->
-            <td class="px-2 py-2 text-slate-300">${repo.eidCount ?? 0}</td>
+            <td class="px-2 py-2 text-slate-800 dark:text-slate-300">${repo.eidCount ?? 0}</td>
 
             <!-- Segments -->
-            <td class="px-2 py-2 text-slate-300">${segmentCount}</td>
+            <td class="px-2 py-2 text-slate-800 dark:text-slate-300">${segmentCount}</td>
 
             <!-- Data Tags -->
             <td class="px-2 py-2">
                 <button
                     type="button"
-                    class="repo-datatags-btn rounded-md border border-slate-700 bg-slate-800 px-2 py-0.5 text-[11px] text-slate-300 transition hover:border-cyan-500/60 hover:text-cyan-400">
+                    class="repo-datatags-btn rounded-md border border-slate-300 dark:border-slate-700 bg-slate-200 dark:bg-slate-800 px-2 py-0.5 text-[11px] text-slate-800 dark:text-slate-300 transition hover:border-cyan-500/60 hover:text-cyan-600 dark:hover:text-cyan-400">
                     ${dataTagsCount} tag${dataTagsCount === 1 ? '' : 's'}
                 </button>
             </td>
 
             <!-- QP Count -->
-            <td class="px-2 py-2 text-slate-300">${repo.qpCount ?? 0}</td>
+            <td class="px-2 py-2 text-slate-800 dark:text-slate-300">${repo.qpCount ?? 0}</td>
 
             <!-- Index Lists -->
-            <td class="px-2 py-2 text-slate-300">${repo.indexLists ?? 0}</td>
+            <td class="px-2 py-2 text-slate-800 dark:text-slate-300">${repo.indexLists ?? 0}</td>
 
             <!-- Annotation -->
             <td class="px-2 py-2">
                 <button
                     type="button"
-                    class="repo-annotation-btn block max-w-xs truncate text-left text-[11px] text-slate-500 hover:text-cyan-400"
+                    class="repo-annotation-btn block max-w-xs truncate text-left text-[11px] text-slate-500 dark:text-slate-500 hover:text-cyan-600 dark:hover:text-cyan-400"
                     title="${escapeAttr(repo.annotation || '')}">
                     ${escapeHtml(repo.annotation || '—')}
                 </button>
@@ -479,13 +489,13 @@
         const tags = Array.isArray(repo.tags) ? repo.tags : [];
 
         if (!tags.length) {
-            return `<span class="text-[10px] text-slate-600">—</span>`;
+            return `<span class="text-[10px] text-slate-400 dark:text-slate-600">—</span>`;
         }
 
         return tags.map(tag => `
             <button
                 type="button"
-                class="repo-tag inline-flex rounded bg-sky-900/40 px-1.5 py-0.5 text-[10px] text-sky-300 transition hover:bg-sky-500/20 hover:text-sky-200"
+                class="repo-tag inline-flex rounded bg-sky-100 dark:bg-sky-900/40 px-1.5 py-0.5 text-[10px] text-sky-700 dark:text-sky-300 transition hover:bg-sky-200 dark:hover:bg-sky-500/20 hover:text-sky-800 dark:hover:text-sky-200"
                 data-tag="${escapeAttr(tag)}">
                 ${escapeHtml(tag)}
             </button>
@@ -499,11 +509,10 @@
         const value = Number(count || 0);
 
         return `
-            <span class="inline-flex min-w-6 items-center justify-center rounded-md bg-slate-800 px-1.5 py-0.5 text-[10px] ${value > 0 ? color : 'text-slate-600'}">
-                ${value}
-            </span>
-        `;
-
+    <span class="inline-flex min-w-6 items-center justify-center rounded-md bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 text-[10px] ${color}">
+        ${value}
+    </span>
+`;
     }
 
 
@@ -521,21 +530,21 @@
 
         openModal(`
 
-            <h2 class="mb-4 text-sm font-semibold text-white">Tags in Data</h2>
+            <h2 class="mb-4 text-sm font-semibold text-slate-800 dark:text-white">Tags in Data</h2>
 
             <div class="flex flex-wrap gap-2">
                 ${tags.length
                 ? tags.map(tag => `
-                            <span class="rounded-md border border-slate-700 bg-slate-800 px-2.5 py-1 text-xs text-slate-300">
+                            <span class="rounded-md border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs text-slate-800 dark:text-slate-300">
                                 ${escapeHtml(tag)}
                             </span>
                         `).join('')
-                : '<span class="text-xs text-slate-600">No tags in data.</span>'
+                : '<span class="text-xs text-slate-400 dark:text-slate-600">No tags in data.</span>'
             }
             </div>
 
             <div class="mt-4 flex justify-end">
-                <button type="button" data-modal-close class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">
+                <button type="button" data-modal-close class="rounded-md border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-xs text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800">
                     Close
                 </button>
             </div>
@@ -572,7 +581,7 @@
             if (page === '...') {
 
                 const span = document.createElement('span');
-                span.className = 'px-1 text-slate-600';
+                span.className = 'px-1 text-slate-400 dark:text-slate-600';
                 span.textContent = '…';
                 numbers.appendChild(span);
                 return;
@@ -584,8 +593,8 @@
             button.textContent = page;
 
             button.className = page === state.page
-                ? 'min-w-7 rounded-md bg-cyan-500 px-2 py-1 text-[11px] text-white'
-                : 'min-w-7 rounded-md border border-slate-700 px-2 py-1 text-[11px] text-slate-400 transition hover:bg-slate-800 hover:text-white';
+                ? 'min-w-7 rounded-md bg-slate-900 dark:bg-cyan-500 px-2 py-1 text-[11px] text-white'
+                : 'min-w-7 rounded-md border border-slate-300 dark:border-slate-700 px-2 py-1 text-[11px] text-slate-500 dark:text-slate-400 transition hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white';
 
             button.addEventListener('click', () => {
                 state.page = page;
@@ -700,8 +709,8 @@
 
                 wrapper.innerHTML = `
                     <input type="checkbox" class="repo-tag-checkbox h-3.5 w-3.5 accent-cyan-400" data-tag="${escapeAttr(tag)}">
-                    <button type="button" class="repo-tag-filter min-w-0 flex-1 truncate rounded px-1.5 py-1 text-left text-[11px] text-slate-400 transition hover:bg-sky-500/10 hover:text-sky-300" data-tag="${escapeAttr(tag)}">
-                        ${escapeHtml(tag)} <span class="text-slate-600">(${count})</span>
+                    <button type="button" class="repo-tag-filter min-w-0 flex-1 truncate rounded px-1.5 py-1 text-left text-[11px] text-slate-500 dark:text-slate-400 transition hover:bg-sky-500/10 hover:text-sky-700 dark:hover:text-sky-300" data-tag="${escapeAttr(tag)}">
+                        ${escapeHtml(tag)} <span class="text-slate-400 dark:text-slate-600">(${count})</span>
                     </button>
                 `;
 
@@ -742,7 +751,7 @@
 
         if (Object.keys(counts).length === 0) {
 
-            container.innerHTML = `<span class="text-[11px] text-slate-600">No segment data available.</span>`;
+            container.innerHTML = `<span class="text-[11px] text-slate-400 dark:text-slate-600">No segment data available.</span>`;
             return;
 
         }
@@ -756,8 +765,8 @@
 
                 wrapper.innerHTML = `
                     <input type="checkbox" class="repo-segment-checkbox h-3.5 w-3.5 accent-cyan-400" data-segment="${escapeAttr(segment)}">
-                    <button type="button" class="repo-segment-filter min-w-0 flex-1 truncate rounded px-1.5 py-1 text-left text-[11px] text-slate-400 transition hover:bg-cyan-500/10 hover:text-cyan-300" data-segment="${escapeAttr(segment)}">
-                        ${escapeHtml(segment)} <span class="text-slate-600">(${count})</span>
+                    <button type="button" class="repo-segment-filter min-w-0 flex-1 truncate rounded px-1.5 py-1 text-left text-[11px] text-slate-500 dark:text-slate-400 transition hover:bg-cyan-500/10 hover:text-cyan-700 dark:hover:text-cyan-300" data-segment="${escapeAttr(segment)}">
+                        ${escapeHtml(segment)} <span class="text-slate-400 dark:text-slate-600">(${count})</span>
                     </button>
                 `;
 
@@ -899,7 +908,7 @@
         if (list) {
 
             list.innerHTML = selected.map(repo => `
-                <span class="shrink-0 rounded-md border border-cyan-500/20 bg-cyan-500/10 px-2 py-1 font-mono text-[10px] text-cyan-300">
+                <span class="shrink-0 rounded-md border border-cyan-500/20 bg-cyan-500/10 px-2 py-1 font-mono text-[10px] text-cyan-700 dark:text-cyan-300">
                     ${escapeHtml(repo.name)}
                 </span>
             `).join('');
@@ -1000,16 +1009,35 @@
 
         openModal(`
 
-        <h2 class="mb-4 text-sm font-semibold text-slate-900 dark:text-white">Create Repo View</h2>
+        <h2 class="mb-4 text-sm font-semibold text-slate-800 dark:text-white">Create Repo View</h2>
 
         <label class="mb-1 block text-[11px] text-slate-500 dark:text-slate-500">Folder Name</label>
-        <input id="createName" class="mb-3 h-9 w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 outline-none focus:border-cyan-500" placeholder="e.g. Production APIs">
+        <input id="createName" class="mb-3 h-9 w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 outline-none focus:border-cyan-500" placeholder="e.g. Production APIs">
 
-        <label class="mb-1 block text-[11px] text-slate-500 dark:text-slate-500">Tags</label>
-        <input id="createTags" class="mb-3 h-9 w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 outline-none focus:border-cyan-500" placeholder="api, production, users">
+       <label class="mb-1 block text-[11px] text-slate-500 dark:text-slate-500">
+    Tags
+</label>
 
+<input
+    id="createTags"
+    class="
+        mb-3
+        h-9
+        w-full
+        rounded-md
+        border border-slate-300 dark:border-slate-700
+        bg-white dark:bg-slate-950
+        px-3
+        text-xs
+        text-slate-800 dark:text-slate-100
+        placeholder:text-slate-400 dark:placeholder:text-slate-600
+        outline-none
+        focus:border-cyan-500
+    "
+    placeholder="api, production, users"
+>
         <label class="mb-1 block text-[11px] text-slate-500 dark:text-slate-500">Annotation</label>
-        <textarea id="createAnnotation" class="mb-4 h-20 w-full resize-none rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 outline-none focus:border-cyan-500" placeholder="Repository description..."></textarea>
+        <textarea id="createAnnotation" class="mb-4 h-20 w-full resize-none rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 outline-none focus:border-cyan-500" placeholder="Repository description..."></textarea>
 
         <div class="flex justify-end gap-2">
             <button type="button" data-modal-close class="rounded-md border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
@@ -1113,23 +1141,23 @@
         openModal(`
 
             <div class="flex items-start gap-3 rounded-lg border border-rose-500/20 bg-rose-500/5 p-3">
-                <div class="mt-0.5 text-rose-400">${iconTrash()}</div>
+                <div class="mt-0.5 text-rose-600 dark:text-rose-400">${iconTrash()}</div>
                 <div>
-                    <h2 class="text-sm font-semibold text-rose-300">Delete ${repos.length > 1 ? 'Repo Views' : 'Repo View'}</h2>
-                    <p class="mt-1 text-[11px] text-slate-500">This removes the selected repo view(s) from the current prototype session.</p>
+                    <h2 class="text-sm font-semibold text-rose-700 dark:text-rose-300">Delete ${repos.length > 1 ? 'Repo Views' : 'Repo View'}</h2>
+                    <p class="mt-1 text-[11px] text-slate-500 dark:text-slate-500">This removes the selected repo view(s) from the current prototype session.</p>
                 </div>
             </div>
 
-            <div class="my-4 max-h-48 overflow-y-auto rounded-lg border border-slate-800">
+            <div class="my-4 max-h-48 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-800">
                 ${repos.map(repo => `
-                    <div class="border-b border-slate-800 px-3 py-2 last:border-0">
-                        <p class="font-mono text-xs text-slate-300">${escapeHtml(repo.name)}</p>
+                    <div class="border-b border-slate-200 dark:border-slate-800 px-3 py-2 last:border-0">
+                        <p class="font-mono text-xs text-slate-800 dark:text-slate-300">${escapeHtml(repo.name)}</p>
                     </div>
                 `).join('')}
             </div>
 
             <div class="flex justify-end gap-2">
-                <button type="button" data-modal-close class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">Cancel</button>
+                <button type="button" data-modal-close class="rounded-md border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-xs text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800">Cancel</button>
                 <button id="confirmDelete" type="button" class="rounded-md bg-rose-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-rose-500">Delete</button>
             </div>
 
@@ -1169,17 +1197,17 @@
 
         openModal(`
 
-            <h2 class="mb-4 text-sm font-semibold text-white">Edit Repo View</h2>
+            <h2 class="mb-4 text-sm font-semibold text-slate-800 dark:text-white">Edit Repo View</h2>
 
-            <label class="mb-1 block text-[11px] text-slate-500">Folder Name</label>
-            <input id="editRepoName" value="${escapeAttr(repo.name)}" class="mb-3 h-9 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500">
+            <label class="mb-1 block text-[11px] text-slate-500 dark:text-slate-500">Folder Name</label>
+            <input id="editRepoName" value="${escapeAttr(repo.name)}" class="mb-3 h-9 w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 text-xs text-slate-800 dark:text-slate-100 outline-none focus:border-cyan-500">
 
-            <label class="mb-1 block text-[11px] text-slate-500">Tags</label>
-            <input id="editRepoTags" value="${escapeAttr((repo.tags || []).join(', '))}" class="mb-4 h-9 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500">
+            <label class="mb-1 block text-[11px] text-slate-500 dark:text-slate-500">Tags</label>
+            <input id="editRepoTags" value="${escapeAttr((repo.tags || []).join(', '))}" class="mb-4 h-9 w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 text-xs text-slate-800 dark:text-slate-100 outline-none focus:border-cyan-500">
 
             <div class="flex justify-end gap-2">
-                <button type="button" data-modal-close class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">Cancel</button>
-                <button id="saveRepoEdit" type="button" class="rounded-md bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-cyan-500">Save</button>
+                <button type="button" data-modal-close class="rounded-md border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-xs text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800">Cancel</button>
+                <button id="saveRepoEdit" type="button" class="rounded-md bg-slate-900 dark:bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800 dark:hover:bg-cyan-500">Save</button>
             </div>
 
         `);
@@ -1229,15 +1257,15 @@
 
         openModal(`
 
-            <h2 class="mb-4 text-sm font-semibold text-white">Annotation</h2>
+            <h2 class="mb-4 text-sm font-semibold text-slate-800 dark:text-white">Annotation</h2>
 
-            <p class="mb-2 text-[11px] text-slate-500">Markdown annotation</p>
+            <p class="mb-2 text-[11px] text-slate-500 dark:text-slate-500">Markdown annotation</p>
 
-            <textarea id="annotationEditor" class="h-64 w-full resize-none rounded-md border border-slate-700 bg-slate-950 px-3 py-2 font-mono text-sm text-slate-300 outline-none focus:border-cyan-500">${escapeHtml(repo.annotation || '')}</textarea>
+            <textarea id="annotationEditor" class="h-64 w-full resize-none rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 font-mono text-sm text-slate-800 dark:text-slate-300 outline-none focus:border-cyan-500">${escapeHtml(repo.annotation || '')}</textarea>
 
             <div class="mt-4 flex justify-end gap-2">
-                <button type="button" data-modal-close class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">Cancel</button>
-                <button id="saveAnnotation" type="button" class="rounded-md bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-cyan-500">Save</button>
+                <button type="button" data-modal-close class="rounded-md border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-xs text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800">Cancel</button>
+                <button id="saveAnnotation" type="button" class="rounded-md bg-slate-900 dark:bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800 dark:hover:bg-cyan-500">Save</button>
             </div>
 
         `);

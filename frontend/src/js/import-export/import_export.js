@@ -111,7 +111,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const row =
                 document.createElement("tr");
             row.className =
-                "transition hover:bg-slate-800/40";
+                "transition hover:bg-slate-200 dark:hover:bg-slate-800/40";
 
             row.innerHTML = `
 
@@ -119,7 +119,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             <td class="px-5 py-3
                        font-medium
-                       text-slate-900 dark:text-slate-200">
+                       text-slate-800 dark:text-slate-200">
 
                 ${item.name}
 
@@ -180,10 +180,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 <span class="
                     rounded-full
-                    bg-emerald-500/10
+                    bg-emerald-100 dark:bg-emerald-500/10
                     px-2 py-1
                     text-xs
-                    text-emerald-400">
+                    text-emerald-700 dark:text-emerald-400">
 
                     Success
 
@@ -195,10 +195,10 @@ document.addEventListener("DOMContentLoaded", () => {
             return `
                 <span class="
                     rounded-full
-                    bg-red-500/10
+                    bg-red-100 dark:bg-red-500/10
                     px-2 py-1
                     text-xs
-                    text-red-400">
+                    text-red-700 dark:text-red-400">
 
                     Fail
                 </span>
@@ -208,10 +208,10 @@ document.addEventListener("DOMContentLoaded", () => {
         return `
             <span class="
                 rounded-full
-                bg-slate-800
+                bg-slate-200 dark:bg-slate-800
                 px-2 py-1
                 text-xs
-                text-slate-400">
+                text-slate-500 dark:text-slate-400">
 
                 Not checked
             </span>

@@ -4,249 +4,242 @@
 // ============================================================
 
 (() => {
-'use strict';
+    'use strict';
 
 
-// ============================================================
-// INIT
-// ============================================================
+    // ============================================================
+    // INIT
+    // ============================================================
 
-document.addEventListener(
-    'DOMContentLoaded',
-    init
-);
-
-
-function init() {
-
-    const menu =
-        document.getElementById(
-            'contextMenu'
-        );
-
-    const tbody =
-        document.getElementById(
-            'repoTableBody'
-        );
-
-
-    if (
-        !menu ||
-        !tbody ||
-        !window.RepoView
-    ) {
-
-        console.error(
-            'Repo View context menu could not initialize.'
-        );
-
-        return;
-
-    }
-
-
-    let targetIds = [];
-
-
-    // ========================================================
-    // RIGHT CLICK ON REPO ROW
-    // ========================================================
-
-    tbody.addEventListener(
-        'contextmenu',
-        event => {
-
-            const row =
-                event.target.closest(
-                    'tr[data-id]'
-                );
-
-
-            if (!row) {
-
-                return;
-
-            }
-
-
-            event.preventDefault();
-
-
-            const id =
-                Number(
-                    row.dataset.id
-                );
-
-
-            const selected =
-                window.RepoView
-                    .getState()
-                    .selected;
-
-
-            /*
-             * If the clicked repo is already part of a
-             * multi-selection, operate on the entire selection.
-             *
-             * Otherwise operate only on the clicked repo.
-             */
-
-            if (
-                selected.has(id) &&
-                selected.size > 1
-            ) {
-
-                targetIds =
-                    [...selected];
-
-            } else {
-
-                targetIds =
-                    [id];
-
-            }
-
-
-            renderMenu();
-
-
-            /*
-             * Make the menu visible before measuring it.
-             */
-
-            menu.classList.remove(
-                'hidden'
-            );
-
-
-            menu.style.display =
-                'block';
-
-
-            menu.style.visibility =
-                'hidden';
-
-
-            positionMenu(
-                event.clientX,
-                event.clientY
-            );
-
-
-            menu.style.visibility =
-                'visible';
-
-        }
+    document.addEventListener(
+        'DOMContentLoaded',
+        init
     );
 
 
-    // ========================================================
-    // BUILD MENU
-    // ========================================================
+    function init() {
 
-    function renderMenu() {
+        const menu =
+            document.getElementById(
+                'contextMenu'
+            );
 
-        const count =
-            targetIds.length;
-
-
-        const isSingle =
-            count === 1;
-
-
-        const isMultiple =
-            count > 1;
+        const tbody =
+            document.getElementById(
+                'repoTableBody'
+            );
 
 
-        menu.innerHTML = `
+        if (
+            !menu ||
+            !tbody ||
+            !window.RepoView
+        ) {
+
+            console.error(
+                'Repo View context menu could not initialize.'
+            );
+
+            return;
+
+        }
+
+
+        let targetIds = [];
+
+
+        // ========================================================
+        // RIGHT CLICK ON REPO ROW
+        // ========================================================
+
+        tbody.addEventListener(
+            'contextmenu',
+            event => {
+
+                const row =
+                    event.target.closest(
+                        'tr[data-id]'
+                    );
+
+
+                if (!row) {
+
+                    return;
+
+                }
+
+
+                event.preventDefault();
+
+
+                const id =
+                    Number(
+                        row.dataset.id
+                    );
+
+
+                const selected =
+                    window.RepoView
+                        .getState()
+                        .selected;
+
+
+                /*
+                 * If the clicked repo is already part of a
+                 * multi-selection, operate on the entire selection.
+                 *
+                 * Otherwise operate only on the clicked repo.
+                 */
+
+                if (
+                    selected.has(id) &&
+                    selected.size > 1
+                ) {
+
+                    targetIds =
+                        [...selected];
+
+                } else {
+
+                    targetIds =
+                        [id];
+
+                }
+
+
+                renderMenu();
+
+
+                /*
+                 * Make the menu visible before measuring it.
+                 */
+
+                menu.classList.remove(
+                    'hidden'
+                );
+
+
+                menu.style.display =
+                    'block';
+
+
+                menu.style.visibility =
+                    'hidden';
+
+
+                positionMenu(
+                    event.clientX,
+                    event.clientY
+                );
+
+
+                menu.style.visibility =
+                    'visible';
+
+            }
+        );
+
+
+        // ========================================================
+        // BUILD MENU
+        // ========================================================
+
+        function renderMenu() {
+
+            const count =
+                targetIds.length;
+
+
+            const isSingle =
+                count === 1;
+
+
+            const isMultiple =
+                count > 1;
+
+
+            menu.innerHTML = `
 
             <!-- ============================================ -->
             <!-- EDIT -->
             <!-- ============================================ -->
 
-            ${
-                isSingle
+            ${isSingle
                     ? menuItem(
                         'edit',
                         iconEdit(),
                         'Edit Repo View'
                     )
                     : ''
-            }
+                }
 
 
             <!-- ============================================ -->
             <!-- ANNOTATION -->
             <!-- ============================================ -->
 
-            ${
-                isSingle
+            ${isSingle
                     ? menuItem(
                         'annotation',
                         iconEdit(),
                         'Edit Annotation'
                     )
                     : ''
-            }
+                }
 
 
             <!-- ============================================ -->
             <!-- DATA TAGS -->
             <!-- ============================================ -->
 
-            ${
-                isSingle
+            ${isSingle
                     ? menuItem(
                         'datatags',
                         iconTags(),
                         'View Data Tags'
                     )
                     : ''
-            }
+                }
 
 
             <!-- ============================================ -->
             <!-- DUPLICATE -->
             <!-- ============================================ -->
 
-            ${
-                isSingle
+            ${isSingle
                     ? menuItem(
                         'duplicate',
                         iconCopy(),
                         'Duplicate'
                     )
                     : ''
-            }
+                }
 
 
-            ${
-                isSingle
-                    ? '<div class="my-1 border-t border-slate-800"></div>'
+            ${isSingle
+                    ? '<div class="my-1 border-t border-slate-200 dark:border-slate-800"></div>'
                     : ''
-            }
+                }
 
 
             <!-- ============================================ -->
             <!-- CREATE -->
             <!-- ============================================ -->
 
-            ${
-                isSingle
+            ${isSingle
                     ? menuItem(
                         'create',
                         iconPlus(),
                         'Create Repo View'
                     )
                     : ''
-            }
+                }
 
 
-            ${
-                isMultiple
-                    ? '<div class="my-1 border-t border-slate-800"></div>'
+            ${isMultiple
+                    ? '<div class="my-1 border-t border-slate-200 dark:border-slate-800"></div>'
                     : ''
-            }
+                }
 
 
             <!-- ============================================ -->
@@ -254,31 +247,31 @@ function init() {
             <!-- ============================================ -->
 
             ${menuItem(
-                'delete',
-                iconTrash(),
-                isMultiple
-                    ? `Delete ${count} Repo Views`
-                    : 'Delete Repo View',
-                'text-rose-400 hover:bg-rose-500/10'
-            )}
+                    'delete',
+                    iconTrash(),
+                    isMultiple
+                        ? `Delete ${count} Repo Views`
+                        : 'Delete Repo View',
+                    'text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10'
+                )}
 
         `;
 
-    }
+        }
 
 
-    // ========================================================
-    // MENU ITEM
-    // ========================================================
+        // ========================================================
+        // MENU ITEM
+        // ========================================================
 
-    function menuItem(
-        action,
-        icon,
-        label,
-        extraClass = ''
-    ) {
+        function menuItem(
+            action,
+            icon,
+            label,
+            extraClass = ''
+        ) {
 
-        return `
+            return `
 
             <button
                 type="button"
@@ -292,10 +285,13 @@ function init() {
                     py-2
                     text-left
                     text-xs
-                    text-slate-300
+                    text-slate-800
+                    dark:text-slate-300
                     transition-colors
-                    hover:bg-slate-800
-                    hover:text-white
+                    hover:bg-slate-100
+                    dark:hover:bg-slate-800
+                    hover:text-slate-950
+                    dark:hover:text-white
                     ${extraClass}
                 "
             >
@@ -310,347 +306,347 @@ function init() {
 
         `;
 
-    }
-
-
-    // ========================================================
-    // MENU ACTIONS
-    // ========================================================
-
-    menu.addEventListener(
-        'click',
-        event => {
-
-            const button =
-                event.target.closest(
-                    '[data-action]'
-                );
-
-
-            if (!button) {
-
-                return;
-
-            }
-
-
-            const action =
-                button.dataset.action;
-
-
-            if (
-                targetIds.length === 0
-            ) {
-
-                closeMenu();
-
-                return;
-
-            }
-
-
-            switch (action) {
-
-
-                // --------------------------------------------
-                // EDIT REPO
-                // --------------------------------------------
-
-                case 'edit':
-
-                    if (
-                        targetIds.length === 1
-                    ) {
-
-                        window.RepoView
-                            .openEditRepoModal(
-                                targetIds[0]
-                            );
-
-                    }
-
-                    break;
-
-
-                // --------------------------------------------
-                // ANNOTATION
-                // --------------------------------------------
-
-                case 'annotation':
-
-                    if (
-                        targetIds.length === 1
-                    ) {
-
-                        window.RepoView
-                            .openAnnotationModal(
-                                targetIds[0]
-                            );
-
-                    }
-
-                    break;
-
-
-                // --------------------------------------------
-                // DATA TAGS
-                // --------------------------------------------
-
-                case 'datatags':
-
-                    if (
-                        targetIds.length === 1
-                    ) {
-
-                        window.RepoView
-                            .openDataTagsModal(
-                                targetIds[0]
-                            );
-
-                    }
-
-                    break;
-
-
-                // --------------------------------------------
-                // DUPLICATE
-                // --------------------------------------------
-
-                case 'duplicate':
-
-                    if (
-                        targetIds.length === 1
-                    ) {
-
-                        window.RepoView
-                            .duplicateRepo(
-                                targetIds[0]
-                            );
-
-                    }
-
-                    break;
-
-
-                // --------------------------------------------
-                // CREATE
-                // --------------------------------------------
-
-                case 'create':
-
-                    window.RepoView
-                        .openCreateModal();
-
-                    break;
-
-
-                // --------------------------------------------
-                // DELETE
-                // --------------------------------------------
-
-                case 'delete':
-
-                    window.RepoView
-                        .openDeleteModal(
-                            targetIds
-                        );
-
-                    break;
-
-            }
-
-
-            closeMenu();
-
         }
-    );
 
 
-    // ========================================================
-    // CLOSE ON NORMAL CLICK
-    // ========================================================
+        // ========================================================
+        // MENU ACTIONS
+        // ========================================================
 
-    document.addEventListener(
-        'click',
-        event => {
+        menu.addEventListener(
+            'click',
+            event => {
 
-            if (
-                !menu.contains(
-                    event.target
-                )
-            ) {
+                const button =
+                    event.target.closest(
+                        '[data-action]'
+                    );
+
+
+                if (!button) {
+
+                    return;
+
+                }
+
+
+                const action =
+                    button.dataset.action;
+
+
+                if (
+                    targetIds.length === 0
+                ) {
+
+                    closeMenu();
+
+                    return;
+
+                }
+
+
+                switch (action) {
+
+
+                    // --------------------------------------------
+                    // EDIT REPO
+                    // --------------------------------------------
+
+                    case 'edit':
+
+                        if (
+                            targetIds.length === 1
+                        ) {
+
+                            window.RepoView
+                                .openEditRepoModal(
+                                    targetIds[0]
+                                );
+
+                        }
+
+                        break;
+
+
+                    // --------------------------------------------
+                    // ANNOTATION
+                    // --------------------------------------------
+
+                    case 'annotation':
+
+                        if (
+                            targetIds.length === 1
+                        ) {
+
+                            window.RepoView
+                                .openAnnotationModal(
+                                    targetIds[0]
+                                );
+
+                        }
+
+                        break;
+
+
+                    // --------------------------------------------
+                    // DATA TAGS
+                    // --------------------------------------------
+
+                    case 'datatags':
+
+                        if (
+                            targetIds.length === 1
+                        ) {
+
+                            window.RepoView
+                                .openDataTagsModal(
+                                    targetIds[0]
+                                );
+
+                        }
+
+                        break;
+
+
+                    // --------------------------------------------
+                    // DUPLICATE
+                    // --------------------------------------------
+
+                    case 'duplicate':
+
+                        if (
+                            targetIds.length === 1
+                        ) {
+
+                            window.RepoView
+                                .duplicateRepo(
+                                    targetIds[0]
+                                );
+
+                        }
+
+                        break;
+
+
+                    // --------------------------------------------
+                    // CREATE
+                    // --------------------------------------------
+
+                    case 'create':
+
+                        window.RepoView
+                            .openCreateModal();
+
+                        break;
+
+
+                    // --------------------------------------------
+                    // DELETE
+                    // --------------------------------------------
+
+                    case 'delete':
+
+                        window.RepoView
+                            .openDeleteModal(
+                                targetIds
+                            );
+
+                        break;
+
+                }
+
 
                 closeMenu();
 
             }
-
-        }
-    );
-
-
-    // ========================================================
-    // CLOSE ON ESCAPE
-    // ========================================================
-
-    document.addEventListener(
-        'keydown',
-        event => {
-
-            if (
-                event.key === 'Escape'
-            ) {
-
-                closeMenu();
-
-            }
-
-        }
-    );
-
-
-    // ========================================================
-    // CLOSE ON RESIZE
-    // ========================================================
-
-    window.addEventListener(
-        'resize',
-        closeMenu
-    );
-
-
-    // ========================================================
-    // CLOSE ON SCROLL
-    // ========================================================
-
-    window.addEventListener(
-        'scroll',
-        closeMenu,
-        true
-    );
-
-
-    // ========================================================
-    // CLOSE MENU
-    // ========================================================
-
-    function closeMenu() {
-
-        menu.classList.add(
-            'hidden'
         );
 
 
-        menu.style.display =
-            'none';
+        // ========================================================
+        // CLOSE ON NORMAL CLICK
+        // ========================================================
+
+        document.addEventListener(
+            'click',
+            event => {
+
+                if (
+                    !menu.contains(
+                        event.target
+                    )
+                ) {
+
+                    closeMenu();
+
+                }
+
+            }
+        );
 
 
-        menu.style.visibility =
-            'hidden';
+        // ========================================================
+        // CLOSE ON ESCAPE
+        // ========================================================
 
-    }
+        document.addEventListener(
+            'keydown',
+            event => {
 
+                if (
+                    event.key === 'Escape'
+                ) {
 
-    // ========================================================
-    // POSITION MENU
-    // ========================================================
+                    closeMenu();
 
-    function positionMenu(
-        x,
-        y
-    ) {
+                }
 
-        /*
-         * The menu must already be display:block here so
-         * offsetWidth / offsetHeight are available.
-         */
-
-        const width =
-            menu.offsetWidth || 224;
+            }
+        );
 
 
-        const height =
-            menu.offsetHeight || 240;
+        // ========================================================
+        // CLOSE ON RESIZE
+        // ========================================================
+
+        window.addEventListener(
+            'resize',
+            closeMenu
+        );
 
 
-        const margin =
-            8;
+        // ========================================================
+        // CLOSE ON SCROLL
+        // ========================================================
+
+        window.addEventListener(
+            'scroll',
+            closeMenu,
+            true
+        );
 
 
-        let left =
-            x;
+        // ========================================================
+        // CLOSE MENU
+        // ========================================================
+
+        function closeMenu() {
+
+            menu.classList.add(
+                'hidden'
+            );
 
 
-        let top =
-            y;
+            menu.style.display =
+                'none';
 
 
-        // --------------------------------------------
-        // Horizontal boundary
-        // --------------------------------------------
+            menu.style.visibility =
+                'hidden';
 
-        if (
-            left + width >
-            window.innerWidth - margin
+        }
+
+
+        // ========================================================
+        // POSITION MENU
+        // ========================================================
+
+        function positionMenu(
+            x,
+            y
         ) {
+
+            /*
+             * The menu must already be display:block here so
+             * offsetWidth / offsetHeight are available.
+             */
+
+            const width =
+                menu.offsetWidth || 224;
+
+
+            const height =
+                menu.offsetHeight || 240;
+
+
+            const margin =
+                8;
+
+
+            let left =
+                x;
+
+
+            let top =
+                y;
+
+
+            // --------------------------------------------
+            // Horizontal boundary
+            // --------------------------------------------
+
+            if (
+                left + width >
+                window.innerWidth - margin
+            ) {
+
+                left =
+                    window.innerWidth -
+                    width -
+                    margin;
+
+            }
+
+
+            // --------------------------------------------
+            // Vertical boundary
+            // --------------------------------------------
+
+            if (
+                top + height >
+                window.innerHeight - margin
+            ) {
+
+                top =
+                    window.innerHeight -
+                    height -
+                    margin;
+
+            }
+
 
             left =
-                window.innerWidth -
-                width -
-                margin;
+                Math.max(
+                    margin,
+                    left
+                );
 
-        }
-
-
-        // --------------------------------------------
-        // Vertical boundary
-        // --------------------------------------------
-
-        if (
-            top + height >
-            window.innerHeight - margin
-        ) {
 
             top =
-                window.innerHeight -
-                height -
-                margin;
+                Math.max(
+                    margin,
+                    top
+                );
+
+
+            menu.style.left =
+                `${left}px`;
+
+
+            menu.style.top =
+                `${top}px`;
 
         }
 
 
-        left =
-            Math.max(
-                margin,
-                left
-            );
+        // ========================================================
+        // ICON BASE
+        // ========================================================
 
+        function iconBase(
+            content
+        ) {
 
-        top =
-            Math.max(
-                margin,
-                top
-            );
-
-
-        menu.style.left =
-            `${left}px`;
-
-
-        menu.style.top =
-            `${top}px`;
-
-    }
-
-
-    // ========================================================
-    // ICON BASE
-    // ========================================================
-
-    function iconBase(
-        content
-    ) {
-
-        return `
+            return `
 
             <svg
                 class="h-4 w-4 shrink-0"
@@ -669,16 +665,16 @@ function init() {
 
         `;
 
-    }
+        }
 
 
-    // ========================================================
-    // EDIT ICON
-    // ========================================================
+        // ========================================================
+        // EDIT ICON
+        // ========================================================
 
-    function iconEdit() {
+        function iconEdit() {
 
-        return iconBase(`
+            return iconBase(`
 
             <path
                 d="M12 20h9"
@@ -690,16 +686,16 @@ function init() {
 
         `);
 
-    }
+        }
 
 
-    // ========================================================
-    // COPY ICON
-    // ========================================================
+        // ========================================================
+        // COPY ICON
+        // ========================================================
 
-    function iconCopy() {
+        function iconCopy() {
 
-        return iconBase(`
+            return iconBase(`
 
             <rect
                 x="9"
@@ -715,16 +711,16 @@ function init() {
 
         `);
 
-    }
+        }
 
 
-    // ========================================================
-    // TAGS ICON
-    // ========================================================
+        // ========================================================
+        // TAGS ICON
+        // ========================================================
 
-    function iconTags() {
+        function iconTags() {
 
-        return iconBase(`
+            return iconBase(`
 
             <path
                 d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3.4 13.4a2 2 0 0 1 0-2.8V5a2 2 0 0 1 2-2h5.6a2 2 0 0 1 1.4.6l8.2 8.2a2 2 0 0 1 0 2.8Z"
@@ -738,16 +734,16 @@ function init() {
 
         `);
 
-    }
+        }
 
 
-    // ========================================================
-    // PLUS ICON
-    // ========================================================
+        // ========================================================
+        // PLUS ICON
+        // ========================================================
 
-    function iconPlus() {
+        function iconPlus() {
 
-        return iconBase(`
+            return iconBase(`
 
             <path
                 d="M12 5v14"
@@ -759,16 +755,16 @@ function init() {
 
         `);
 
-    }
+        }
 
 
-    // ========================================================
-    // TRASH ICON
-    // ========================================================
+        // ========================================================
+        // TRASH ICON
+        // ========================================================
 
-    function iconTrash() {
+        function iconTrash() {
 
-        return iconBase(`
+            return iconBase(`
 
             <path
                 d="M4 7h16"
@@ -792,8 +788,8 @@ function init() {
 
         `);
 
-    }
+        }
 
-}
+    }
 
 })();
