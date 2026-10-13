@@ -1498,36 +1498,26 @@
   }
 
   function renderEndpointPath(path) {
-    const segments = String(path || "")
-      .split("/")
-      .filter(Boolean);
-
-    if (!segments.length) {
+    const rawPath = String(path || "").trim();
+    if (!rawPath) {
       return "—";
     }
 
-    return segments
-      .map((segment, index) => {
-        return `
+    const segments = rawPath.split("/").filter(Boolean);
+    if (!segments.length) {
+      return rawPath.startsWith("/") ? "/" : "—";
+    }
 
-                        <span
-                            class="endpoint-segment
-                                   rounded px-0.5
-                                   transition
-                                   hover:bg-cyan-500/10
-                                   hover:text-cyan-300"
-                            data-segment="${escapeAttr(segment)}"
-                        >
-                            ${
-                              index === 0
-                                ? "/" + escapeHtml(segment)
-                                : "/" + escapeHtml(segment)
-                            }
-                        </span>
+    const trailingSlash = rawPath.endsWith("/") ? "/" : "";
 
-                    `;
-      })
-      .join("");
+    return (
+      segments
+        .map(
+          (segment) =>
+            `<span class="endpoint-segment transition-colors hover:text-cyan-300" data-segment="${escapeAttr(segment)}">/${escapeHtml(segment)}</span>`,
+        )
+        .join("") + trailingSlash
+    );
   }
 
   function methodClass(method) {
