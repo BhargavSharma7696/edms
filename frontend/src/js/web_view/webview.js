@@ -935,32 +935,8 @@
 
     contentRepo.innerHTML = `
             <div>
-                <p class="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Folder Name</p>
-                <p class="text-xs text-slate-200 font-medium break-all">${escapeHtml(web.name)}</p>
-            </div>
-            <div>
-                <p class="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Annotation</p>
-                <p class="text-[11px] text-slate-400 break-words">${escapeHtml(web.annotation || "—")}</p>
-            </div>
-            <div>
                 <p class="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Tags</p>
                 <div class="flex flex-wrap gap-1">${tagsHtml || '<span class="text-xs text-slate-600">—</span>'}</div>
-            </div>
-            <div>
-                <p class="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Date Created</p>
-                <p class="text-xs text-slate-300">${escapeHtml(web.dateCreated || "—")}</p>
-            </div>
-            <div>
-                <p class="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Size</p>
-                <p class="text-xs text-slate-300">${formatSize(web.dataSizeBytes, sizeUnits[web.id])}</p>
-            </div>
-            <div>
-                <p class="text-[10px] text-slate-500 uppercase tracking-wider mb-1">EID Count</p>
-                <p class="text-xs text-slate-300">${web.eidCount ?? 0}</p>
-            </div>
-            <div>
-                <p class="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Segments</p>
-                <p class="text-xs text-slate-300">${getWebSegmentCount(web)}</p>
             </div>
         `;
 
@@ -970,26 +946,8 @@
                 <div class="flex flex-wrap gap-1">${eqpTagsHtml || '<span class="text-xs text-slate-600">—</span>'}</div>
             </div>
             <div>
-                <p class="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Endpoint Segments</p>
+                <p class="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Segments</p>
                 <div class="flex flex-wrap gap-1">${eqpSegmentsHtml || '<span class="text-xs text-slate-600">—</span>'}</div>
-            </div>
-            <div>
-                <p class="text-[10px] text-slate-500 uppercase tracking-wider mb-1">CRUD Methods</p>
-                <div class="flex flex-wrap gap-2">
-                    <div class="flex flex-col items-center"><span class="text-[10px] text-slate-400">GET</span>${crudCountBadge(web.crud?.GET, "text-emerald-400")}</div>
-                    <div class="flex flex-col items-center"><span class="text-[10px] text-slate-400">POST</span>${crudCountBadge(web.crud?.POST, "text-sky-400")}</div>
-                    <div class="flex flex-col items-center"><span class="text-[10px] text-slate-400">PUT</span>${crudCountBadge(web.crud?.PUT, "text-amber-400")}</div>
-                    <div class="flex flex-col items-center"><span class="text-[10px] text-slate-400">PATCH</span>${crudCountBadge(web.crud?.PATCH, "text-violet-400")}</div>
-                    <div class="flex flex-col items-center"><span class="text-[10px] text-slate-400">DEL</span>${crudCountBadge(web.crud?.DELETE, "text-rose-400")}</div>
-                </div>
-            </div>
-            <div>
-                <p class="text-[10px] text-slate-500 uppercase tracking-wider mb-1">QP Count</p>
-                <p class="text-xs text-slate-300">${web.qpCount ?? 0}</p>
-            </div>
-            <div>
-                <p class="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Index Lists</p>
-                <p class="text-xs text-slate-300">${web.indexLists ?? 0}</p>
             </div>
         `;
   }
