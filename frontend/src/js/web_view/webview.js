@@ -274,7 +274,7 @@
     if (items.length === 0) {
       tbody.innerHTML = `
                 <tr>
-                    <td colspan="15" class="px-4 py-16 text-center">
+                    <td colspan="18" class="px-4 py-16 text-center">
                         <p class="text-sm font-medium text-slate-400">No web views found</p>
                         <p class="mt-1 text-xs text-slate-600">Try changing the current search or filters.</p>
                     </td>
@@ -398,6 +398,21 @@
             <!-- Index Lists -->
             <td class="px-2 py-2 text-slate-300">${web.indexLists ?? 0}</td>
 
+            <!-- Preview -->
+            <td class="px-2 py-2 text-center">
+                <button
+                    type="button"
+                    class="web-action-preview-btn inline-flex items-center gap-1.5 rounded-md border border-cyan-500/30 bg-cyan-500/10 px-2 py-1 text-[11px] font-medium text-cyan-400 transition hover:bg-cyan-500/20 hover:text-cyan-300"
+                    title="Preview Webview"
+                >
+                    <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                    </svg>
+                    Preview
+                </button>
+            </td>
+
             <!-- Action -->
             <td class="px-2 py-2 text-center">
                 <button
@@ -454,6 +469,17 @@
       event.stopPropagation();
       openEditWebModal(id);
     });
+
+    // --------------------------------------------------------
+    // Preview -> preview function (stub)
+    // --------------------------------------------------------
+
+    row
+      .querySelector(".web-action-preview-btn")
+      ?.addEventListener("click", (event) => {
+        event.stopPropagation();
+        previewWebView(id);
+      });
 
     // --------------------------------------------------------
     // Action -> edit modal
@@ -1497,6 +1523,71 @@ function getWeb(id) {
   }
 
   // ============================================================
+  // PREVIEW
+  // ============================================================
+
+  function previewWebView(id, options = {}) {
+    if (typeof window.previewWebViewPage === "function") {
+      const localWeb = getWeb(id);
+      const defaultLoadWebView = async (webId) => {
+        const targetWeb = getWeb(webId) || localWeb || {};
+        const inMemoryContent =
+          targetWeb.content ||
+          targetWeb.frontpageContent ||
+          targetWeb.frontPageContent;
+        if (inMemoryContent && typeof inMemoryContent === "object") {
+          return { ...targetWeb, content: inMemoryContent };
+        }
+        try {
+          const endpoint = window.WEBVIEW_FRONT_PAGE_API_URL
+            ? window.WEBVIEW_FRONT_PAGE_API_URL.replace(
+                ":id",
+                encodeURIComponent(String(webId))
+              )
+            : `/api/webviews/${encodeURIComponent(webId)}/frontpage`;
+          const res = await fetch(endpoint, {
+            headers: { Accept: "application/json" },
+          });
+          if (res.ok) {
+            const payload = await res.json();
+            const data = payload && payload.data ? payload.data : payload;
+            const doc =
+              data.content || data.frontpageContent || data.frontPageContent;
+            if (doc && typeof doc === "object") {
+              return {
+                ...targetWeb,
+                ...data,
+                content: doc,
+                name: targetWeb.name || data.name,
+                annotation: targetWeb.annotation || data.annotation,
+              };
+            }
+          }
+        } catch (e) {
+          console.warn("Could not fetch WebView frontpage content:", e);
+        }
+
+        if (targetWeb && targetWeb.name) {
+          return {
+            ...targetWeb,
+            isMock: true,
+            content: window.WEBVIEW_PREVIEW_MOCK_DATA?.content,
+          };
+        }
+        throw new Error("No WebView content returned");
+      };
+
+      return window.previewWebViewPage(id, {
+        loadWebView: options.loadWebView || defaultLoadWebView,
+        ...options,
+      });
+    }
+
+    const web = getWeb(id);
+    return web;
+  }
+
+  // ============================================================
   // PUBLIC API (consumed by rmbrv.js)
   // ============================================================
 
@@ -1514,12 +1605,16 @@ function getWeb(id) {
     openDataTagsModal,
 
     openCreateModal,
+
+    previewWebView,
   };
 
-  // Expose globally for edit-webview-frontpage.js
+  // Expose globally for edit-webview-frontpage.js & preview
   window.getWeb = getWeb;
   window.openModal = openModal;
   window.closeModal = closeModal;
   window.showAlert = showAlert;
+  window.previewWebView = previewWebView;
+  window.openPreviewWebModal = previewWebView;
   window.state = state;
 })();

@@ -246,7 +246,20 @@ export function closeEditWebFrontPageModal() {
   teardownFrontPageEditor();
 }
 
+/** Preview WebView page. Delegates to global previewWebView or previewWebViewPage. */
+export function previewWebView(id, options = {}) {
+  if (typeof window.previewWebView === 'function' && window.previewWebView !== previewWebView) {
+    return window.previewWebView(id, options);
+  }
+  if (typeof window.previewWebViewPage === 'function') {
+    return window.previewWebViewPage(id, options);
+  }
+  const web = typeof window.getWeb === 'function' ? window.getWeb(id) : null;
+  return web;
+}
+
 // Expose a global for existing non-module scripts. Ensure this file is loaded
 // with <script type="module"> for the Tiptap imports to work.
 window.openEditWebFrontPageModal = openEditWebFrontPageModal;
 window.closeEditWebFrontPageModal = closeEditWebFrontPageModal;
+window.previewWebView = window.previewWebView || previewWebView;
