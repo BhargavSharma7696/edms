@@ -1639,15 +1639,36 @@
     // ============================================================
 
     async function createWebview(
-        name
+        payload,
+        sourceCollection,
+        annotation
     ) {
+
+        let body;
+
+        if (typeof payload === 'object' && payload !== null) {
+
+            body = payload;
+
+        } else {
+
+            body = {
+                name: payload,
+                source_collection: sourceCollection
+            };
+
+            if (annotation !== undefined) {
+
+                body.annotation = annotation;
+
+            }
+
+        }
 
         return http(
             'POST',
             '/webview/create',
-            {
-                name
-            }
+            body
         );
 
     }
@@ -1817,38 +1838,38 @@
 
     async function combineWebviews(
         payload,
-        newName
+        newName,
+        options = {}
     ) {
 
         let body;
 
-        if (Array.isArray(payload)) {
+        if (typeof payload === 'object' && !Array.isArray(payload) && payload !== null) {
 
-            body = {
-                names: payload
-            };
+            body = { ...payload };
 
-            if (newName) {
+            if (body.names && !body.sources) {
 
-                body.new_name = newName;
+                body.sources = body.names;
+                delete body.names;
 
             }
 
-        } else if (typeof payload === 'object' && payload !== null) {
+            if (body.new_name && !body.name) {
 
-            body = payload;
+                body.name = body.new_name;
+                delete body.new_name;
+
+            }
 
         } else {
 
+            const sources = Array.isArray(payload) ? payload : [payload];
             body = {
-                names: [payload]
+                name: newName,
+                sources,
+                ...options
             };
-
-            if (newName) {
-
-                body.new_name = newName;
-
-            }
 
         }
 
@@ -1863,16 +1884,35 @@
 
     async function convertWebviewToCollection(
         name,
-        targetCollectionName
+        payload
     ) {
 
-        const body =
-            targetCollectionName
-                ? {
-                    collection_name:
-                        targetCollectionName
-                }
-                : {};
+        let body;
+
+        if (typeof payload === 'object' && payload !== null) {
+
+            body = { ...payload };
+
+            if (body.collection_name && !body.collection) {
+
+                body.collection = body.collection_name;
+                delete body.collection_name;
+
+            }
+
+        } else if (typeof payload === 'string' && payload.trim()) {
+
+            body = {
+                collection: payload.trim()
+            };
+
+        } else {
+
+            body = {
+                collection: name
+            };
+
+        }
 
         return http(
             'POST',
@@ -1888,10 +1928,28 @@
         options = {}
     ) {
 
+        let body;
+
+        if (typeof options === 'object' && options !== null) {
+
+            body = { ...options };
+
+            if (body.action === 'overwrite') {
+
+                body.overwrite = true;
+
+            }
+
+        } else {
+
+            body = {};
+
+        }
+
         return http(
             'POST',
             `/webview/${encodeURIComponent(name)}/takeout`,
-            options
+            body
         );
 
     }
@@ -1976,15 +2034,36 @@
     // ============================================================
 
     async function createRepoview(
-        name
+        payload,
+        sourceCollection,
+        annotation
     ) {
+
+        let body;
+
+        if (typeof payload === 'object' && payload !== null) {
+
+            body = payload;
+
+        } else {
+
+            body = {
+                name: payload,
+                source_collection: sourceCollection
+            };
+
+            if (annotation !== undefined) {
+
+                body.annotation = annotation;
+
+            }
+
+        }
 
         return http(
             'POST',
             '/repoview/create',
-            {
-                name
-            }
+            body
         );
 
     }
@@ -2070,6 +2149,405 @@
             'GET',
             '/repoview/tags/list'
         );
+
+    }
+
+
+    async function duplicateRepoview(
+        name,
+        newName
+    ) {
+
+        return http(
+            'POST',
+            `/repoview/${encodeURIComponent(name)}/duplicate`,
+            {
+                new_name:
+                    newName
+            }
+        );
+
+    }
+
+
+    async function deleteRepoview(
+        name
+    ) {
+
+        return http(
+            'POST',
+            `/repoview/${encodeURIComponent(name)}/delete`
+        );
+
+    }
+
+
+    async function deleteRepoviews(
+        names
+    ) {
+
+        return http(
+            'POST',
+            '/repoview/delete',
+            {
+                names:
+                    Array.isArray(names) ? names : [names]
+            }
+        );
+
+    }
+
+
+    async function renameRepoview(
+        name,
+        newName
+    ) {
+
+        return http(
+            'POST',
+            `/repoview/${encodeURIComponent(name)}/rename`,
+            {
+                new_name:
+                    newName
+            }
+        );
+
+    }
+
+
+    async function setRepoviewAnnotation(
+        name,
+        annotation
+    ) {
+
+        return http(
+            'POST',
+            `/repoview/${encodeURIComponent(name)}/annotation`,
+            {
+                annotation
+            }
+        );
+
+    }
+
+
+    async function combineRepoviews(
+        payload,
+        newName,
+        options = {}
+    ) {
+
+        let body;
+
+        if (typeof payload === 'object' && !Array.isArray(payload) && payload !== null) {
+
+            body = { ...payload };
+
+            if (body.names && !body.sources) {
+
+                body.sources = body.names;
+                delete body.names;
+
+            }
+
+            if (body.new_name && !body.name) {
+
+                body.name = body.new_name;
+                delete body.new_name;
+
+            }
+
+        } else {
+
+            const sources = Array.isArray(payload) ? payload : [payload];
+            body = {
+                name: newName,
+                sources,
+                ...options
+            };
+
+        }
+
+        return http(
+            'POST',
+            '/repoview/combine',
+            body
+        );
+
+    }
+
+
+    async function convertRepoviewToCollection(
+        name,
+        payload
+    ) {
+
+        let body;
+
+        if (typeof payload === 'object' && payload !== null) {
+
+            body = { ...payload };
+
+            if (body.collection_name && !body.collection) {
+
+                body.collection = body.collection_name;
+                delete body.collection_name;
+
+            }
+
+        } else if (typeof payload === 'string' && payload.trim()) {
+
+            body = {
+                collection: payload.trim()
+            };
+
+        } else {
+
+            body = {
+                collection: name
+            };
+
+        }
+
+        return http(
+            'POST',
+            `/repoview/${encodeURIComponent(name)}/convert-to-collection`,
+            body
+        );
+
+    }
+
+
+    async function takeoutRepoview(
+        name,
+        options = {}
+    ) {
+
+        let body;
+
+        if (typeof options === 'object' && options !== null) {
+
+            body = { ...options };
+
+            if (body.action === 'overwrite') {
+
+                body.overwrite = true;
+
+            }
+
+        } else {
+
+            body = {};
+
+        }
+
+        return http(
+            'POST',
+            `/repoview/${encodeURIComponent(name)}/takeout`,
+            body
+        );
+
+    }
+
+
+    async function addRepoviewMembershipTag(
+        repoviewName,
+        tag
+    ) {
+
+        return http(
+            'POST',
+            `/repoview/${encodeURIComponent(repoviewName)}/membership-tags/add`,
+            {
+                tag
+            }
+        );
+
+    }
+
+
+    async function removeRepoviewMembershipTag(
+        repoviewName,
+        tag
+    ) {
+
+        return http(
+            'POST',
+            `/repoview/${encodeURIComponent(repoviewName)}/membership-tags/remove`,
+            {
+                tag
+            }
+        );
+
+    }
+
+
+    async function listRepoviewMembershipTags(
+        repoviewName
+    ) {
+
+        return http(
+            'GET',
+            `/repoview/${encodeURIComponent(repoviewName)}/membership-tags`
+        );
+
+    }
+
+
+    // ============================================================
+    // JOBS / ASYNC OPERATIONS
+    // ============================================================
+
+    async function getJob(
+        jobId
+    ) {
+
+        return http(
+            'GET',
+            `/jobs/${encodeURIComponent(jobId)}`
+        );
+
+    }
+
+
+    function listenForJob(
+        jobId,
+        onComplete,
+        onError
+    ) {
+
+        let ws;
+        let isDone = false;
+        let pollTimer;
+
+        try {
+
+            ws = createWebSocket('/jobs/ws');
+
+            ws.onmessage = (event) => {
+
+                try {
+
+                    const msg = JSON.parse(event.data);
+
+                    const inner = msg.payload || msg.event || {};
+                    const matchesJob = (msg.job_id === jobId || msg.id === jobId || inner.job_id === jobId || inner.id === jobId);
+                    const status = msg.status || inner.status;
+                    const isSuccess = status === 'completed' || status === 'done' || msg.type === 'ViewIoDone' || msg.event === 'ViewIoDone' || inner.type === 'ViewIoDone';
+                    const isFailed = status === 'failed' || status === 'error';
+
+                    if (matchesJob && isSuccess) {
+                        isDone = true;
+                        cleanup();
+
+                        if (typeof onComplete === 'function') {
+                            onComplete(msg);
+                        }
+                    } else if (matchesJob && isFailed) {
+                        isDone = true;
+                        cleanup();
+
+                        if (typeof onError === 'function') {
+                            onError(msg);
+                        }
+                    }
+
+                } catch (e) {
+
+                    console.warn('Error parsing jobs ws message:', e);
+
+                }
+
+            };
+
+            ws.onerror = () => {
+
+                startPolling();
+
+            };
+
+        } catch {
+
+            startPolling();
+
+        }
+
+        function cleanup() {
+
+            if (ws) {
+
+                try { ws.close(); } catch {}
+
+            }
+
+            if (pollTimer) {
+
+                clearInterval(pollTimer);
+
+            }
+
+        }
+
+        function startPolling() {
+
+            if (isDone || pollTimer) return;
+
+            let attempts = 0;
+            const maxAttempts = 30;
+
+            pollTimer = setInterval(async () => {
+
+                attempts++;
+
+                try {
+
+                    const res = await getJob(jobId);
+
+                    if (res && res.ok && res.data) {
+
+                        const status = res.data.status;
+
+                        if (status === 'completed' || status === 'done' || res.data.ok) {
+
+                            isDone = true;
+                            cleanup();
+
+                            if (typeof onComplete === 'function') {
+
+                                onComplete(res.data);
+
+                            }
+
+                        } else if (status === 'failed' || status === 'error') {
+
+                            isDone = true;
+                            cleanup();
+
+                            if (typeof onError === 'function') {
+
+                                onError(res.data);
+
+                            }
+
+                        }
+
+                    }
+
+                } catch {}
+
+                if (attempts >= maxAttempts) {
+
+                    cleanup();
+
+                }
+
+            }, 2000);
+
+        }
+
+        return {
+            cancel: cleanup
+        };
 
     }
 
@@ -2383,10 +2861,43 @@
         createRepoview,
         listRepoviews,
 
+        duplicateRepoview,
+        duplicateRepo: duplicateRepoview,
+
+        deleteRepoview,
+        deleteRepoviews,
+        deleteRepos: deleteRepoviews,
+
+        renameRepoview,
+        renameRepo: renameRepoview,
+
+        setRepoviewAnnotation,
+        annotateRepoview: setRepoviewAnnotation,
+
+        combineRepoviews,
+        combineRepos: combineRepoviews,
+
+        convertRepoviewToCollection,
+        convertToCollectionRepo: convertRepoviewToCollection,
+
+        takeoutRepoview,
+        takeoutRepo: takeoutRepoview,
+
         createRepoviewTag,
         deleteRepoviewTags,
         renameRepoviewTag,
         listRepoviewTags,
+
+        addRepoviewMembershipTag,
+        removeRepoviewMembershipTag,
+        listRepoviewMembershipTags,
+
+        // ----------------------------------------
+        // Jobs
+        // ----------------------------------------
+
+        getJob,
+        listenForJob,
 
 
         // ----------------------------------------

@@ -1146,20 +1146,25 @@
     // CREATE
     // ============================================================
 
-    function openCreateModal() {
+    async function openCreateModal() {
 
         openModal(`
 
             <h2 class="mb-4 text-sm font-semibold text-white">Create Repo View</h2>
 
-            <label class="mb-1 block text-[11px] text-slate-500">Folder Name</label>
-            <input id="createName" class="mb-3 h-9 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500" placeholder="e.g. Production APIs">
+            <label class="mb-1 block text-[11px] text-slate-500">Folder Name <span class="text-rose-400">*</span></label>
+            <input id="createName" class="mb-3 h-9 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500 text-slate-200" placeholder="e.g. Production APIs">
+
+            <label class="mb-1 block text-[11px] text-slate-500">Source Collection <span class="text-rose-400">*</span></label>
+            <select id="createSourceCollection" class="mb-3 h-9 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500 text-slate-200">
+                <option value="" disabled selected>Loading collections...</option>
+            </select>
 
             <label class="mb-1 block text-[11px] text-slate-500">Tags</label>
-            <input id="createTags" class="mb-3 h-9 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500" placeholder="api, production, users">
+            <input id="createTags" class="mb-3 h-9 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500 text-slate-200" placeholder="api, production, users">
 
             <label class="mb-1 block text-[11px] text-slate-500">Annotation</label>
-            <textarea id="createAnnotation" class="mb-4 h-20 w-full resize-none rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-xs outline-none focus:border-cyan-500" placeholder="Repository description..."></textarea>
+            <textarea id="createAnnotation" class="mb-4 h-20 w-full resize-none rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-xs outline-none focus:border-cyan-500 text-slate-200" placeholder="Repository description..."></textarea>
 
             <div class="flex justify-end gap-2">
                 <button type="button" data-modal-close class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">Cancel</button>
@@ -1170,15 +1175,49 @@
 
         document.getElementById('confirmCreate')?.addEventListener('click', createRepo);
 
+        const select = document.getElementById('createSourceCollection');
+        try {
+            let collections = [];
+            if (window.EdmsAPI && typeof window.EdmsAPI.listCollections === 'function') {
+                const res = await window.EdmsAPI.listCollections();
+                if (res && res.ok && res.data) {
+                    if (Array.isArray(res.data.items)) {
+                        collections = res.data.items.map(c => typeof c === 'string' ? c : c.name);
+                    } else if (Array.isArray(res.data)) {
+                        collections = res.data.map(c => typeof c === 'string' ? c : c.name);
+                    }
+                }
+            }
+            if (select) {
+                if (collections.length === 0) {
+                    select.innerHTML = '<option value="" disabled selected>No collections available</option>';
+                } else {
+                    select.innerHTML = '<option value="" disabled selected>Select a collection...</option>' +
+                        collections.map(c => `<option value="${escapeAttr(c)}">${escapeHtml(c)}</option>`).join('');
+                }
+            }
+        } catch (err) {
+            console.warn('Failed to load collections for create repo modal:', err);
+            if (select) {
+                select.innerHTML = '<option value="" disabled selected>Failed to load collections</option>';
+            }
+        }
+
     }
 
 
     async function createRepo() {
 
-        const name = document.getElementById('createName').value.trim();
+        const name = document.getElementById('createName')?.value.trim();
+        const sourceCollection = document.getElementById('createSourceCollection')?.value.trim();
 
         if (!name) {
             showAlert('Folder name is required.');
+            return;
+        }
+
+        if (!sourceCollection) {
+            showAlert('Source collection is required.');
             return;
         }
 
@@ -1188,30 +1227,50 @@
         }
 
         try {
-            const res = await window.EdmsAPI.createRepoview(name);
+            const annotation = document.getElementById('createAnnotation')?.value.trim() || undefined;
+            const res = await window.EdmsAPI.createRepoview({
+                name,
+                source_collection: sourceCollection,
+                annotation
+            });
+
             if (!res.ok) {
-                showAlert('Failed to create Repo View via API');
+                const errMsg = res.data?.error || res.data?.message || `Failed to create Repo View via API (HTTP ${res.status})`;
+                showAlert(errMsg);
                 return;
             }
 
-            const tagsInput = document.getElementById('createTags').value;
+            const tagsInput = document.getElementById('createTags')?.value || '';
             const tags = tagsInput.split(',').map(tag => tag.trim()).filter(Boolean);
 
             for (const t of tags) {
-                await window.EdmsAPI.createRepoviewTag(t);
+                if (window.EdmsAPI && typeof window.EdmsAPI.addRepoviewMembershipTag === 'function') {
+                    try {
+                        await window.EdmsAPI.addRepoviewMembershipTag(name, t);
+                    } catch (e) {
+                        console.warn('Failed to add membership tag on create:', e);
+                    }
+                } else if (window.EdmsAPI && typeof window.EdmsAPI.createRepoviewTag === 'function') {
+                    try {
+                        await window.EdmsAPI.createRepoviewTag(t);
+                    } catch (e) {
+                        console.warn('Failed to create repoview tag:', e);
+                    }
+                }
             }
 
+            showAlert(`Repo View "${name}" created successfully.`);
+            closeModal();
             await loadData();
 
             state.selected.clear();
             state.page = 1;
 
-            closeModal();
             renderSidebar();
             applyFilters();
         } catch (error) {
             console.error(error);
-            showAlert('Error creating repo view');
+            showAlert(`Error creating repo view: ${error.message}`);
         }
 
     }
@@ -1221,7 +1280,7 @@
     // DUPLICATE
     // ============================================================
 
-    function duplicateRepo(id) {
+    async function duplicateRepo(id) {
 
         const source = getRepo(id);
 
@@ -1235,14 +1294,22 @@
             counter++;
         }
 
-        const copy = structuredClone(source);
+        try {
+            if (window.EdmsAPI && typeof window.EdmsAPI.duplicateRepoview === 'function') {
+                const res = await window.EdmsAPI.duplicateRepoview(source.name, copyName);
+                if (res && !res.ok) {
+                    const errMsg = res.data?.error || res.data?.message || `Failed to duplicate repo view (HTTP ${res.status})`;
+                    showAlert(errMsg);
+                    return;
+                }
+            }
+        } catch (err) {
+            showAlert(`Error duplicating repo view: ${err.message}`);
+            return;
+        }
 
-        copy.id = nextId++;
-        copy.name = copyName;
-        copy.dateCreated = new Date().toISOString().slice(0, 10);
-
-        state.repos.unshift(copy);
-        sizeUnits[copy.id] = 'MB';
+        showAlert(`Repo View "${source.name}" duplicated as "${copyName}".`);
+        await loadData();
         state.selected.clear();
         state.page = 1;
 
@@ -1268,7 +1335,7 @@
                 <div class="mt-0.5 text-rose-400">${iconTrash()}</div>
                 <div>
                     <h2 class="text-sm font-semibold text-rose-300">Delete ${repos.length > 1 ? 'Repo Views' : 'Repo View'}</h2>
-                    <p class="mt-1 text-[11px] text-slate-500">This removes the selected repo view(s) from the current prototype session.</p>
+                    <p class="mt-1 text-[11px] text-slate-500">This removes the selected repo view(s) from the system.</p>
                 </div>
             </div>
 
@@ -1287,21 +1354,45 @@
 
         `);
 
-        document.getElementById('confirmDelete')?.addEventListener('click', () => {
-            deleteRepos(ids);
+        document.getElementById('confirmDelete')?.addEventListener('click', async () => {
+            await deleteRepos(ids);
             closeModal();
         });
 
     }
 
 
-    function deleteRepos(ids) {
+    async function deleteRepos(ids) {
 
-        const normalizedIds = ids.map(Number);
+        const normalizedIds = ids.map(String);
+        const reposToDelete = state.repos.filter(repo => normalizedIds.includes(String(repo.id || repo.name)));
+        const names = reposToDelete.map(r => r.name || r.id).filter(Boolean);
 
-        state.repos = state.repos.filter(repo => !normalizedIds.includes(Number(repo.id)));
+        if (names.length === 0) return;
 
-        normalizedIds.forEach(id => state.selected.delete(id));
+        try {
+            if (window.EdmsAPI) {
+                let res;
+                if (names.length === 1 && typeof window.EdmsAPI.deleteRepoview === 'function') {
+                    res = await window.EdmsAPI.deleteRepoview(names[0]);
+                } else if (typeof window.EdmsAPI.deleteRepoviews === 'function') {
+                    res = await window.EdmsAPI.deleteRepoviews(names);
+                }
+                if (res && !res.ok) {
+                    const errMsg = res.data?.error || res.data?.message || `Failed to delete repo view (HTTP ${res.status})`;
+                    showAlert(errMsg);
+                    return;
+                }
+            }
+        } catch (err) {
+            showAlert(`Error deleting repo view: ${err.message}`);
+            return;
+        }
+
+        showAlert(`Deleted ${names.length > 1 ? `${names.length} repo views` : `"${names[0]}"`}.`);
+        await loadData();
+        state.repos = state.repos.filter(repo => !normalizedIds.includes(String(repo.id || repo.name)) && !names.includes(repo.name));
+        normalizedIds.forEach(id => state.selected.delete(Number(id)));
 
         renderSidebar();
         applyFilters();
@@ -1324,10 +1415,10 @@
             <h2 class="mb-4 text-sm font-semibold text-white">Edit Repo View</h2>
 
             <label class="mb-1 block text-[11px] text-slate-500">Folder Name</label>
-            <input id="editRepoName" value="${escapeAttr(repo.name)}" class="mb-3 h-9 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500">
+            <input id="editRepoName" value="${escapeAttr(repo.name)}" class="mb-3 h-9 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500 text-slate-200">
 
             <label class="mb-1 block text-[11px] text-slate-500">Tags</label>
-            <input id="editRepoTags" value="${escapeAttr((repo.tags || []).join(', '))}" class="mb-4 h-9 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500">
+            <input id="editRepoTags" value="${escapeAttr((repo.tags || []).join(', '))}" class="mb-4 h-9 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500 text-slate-200">
 
             <div class="flex justify-end gap-2">
                 <button type="button" data-modal-close class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">Cancel</button>
@@ -1336,9 +1427,9 @@
 
         `);
 
-        document.getElementById('saveRepoEdit')?.addEventListener('click', () => {
+        document.getElementById('saveRepoEdit')?.addEventListener('click', async () => {
 
-            const newName = document.getElementById('editRepoName').value.trim();
+            const newName = document.getElementById('editRepoName')?.value.trim();
 
             if (!newName) {
                 showAlert('Folder name is required.');
@@ -1346,7 +1437,7 @@
             }
 
             const duplicate = state.repos.some(item =>
-                Number(item.id) !== Number(repo.id) &&
+                String(item.id || item.name) !== String(repo.id || repo.name) &&
                 item.name.toLowerCase() === newName.toLowerCase()
             );
 
@@ -1355,12 +1446,57 @@
                 return;
             }
 
+            const oldName = repo.name;
+            if (oldName !== newName) {
+                try {
+                    if (window.EdmsAPI && typeof window.EdmsAPI.renameRepoview === 'function') {
+                        const res = await window.EdmsAPI.renameRepoview(oldName, newName);
+                        if (res && !res.ok) {
+                            const errMsg = res.data?.error || res.data?.message || `Failed to rename repo view (HTTP ${res.status})`;
+                            showAlert(errMsg);
+                            return;
+                        }
+                    }
+                } catch (err) {
+                    showAlert(`Error renaming repo view: ${err.message}`);
+                    return;
+                }
+            }
+
+            const currentTags = Array.isArray(repo.tags) ? repo.tags : [];
+            const newTags = document.getElementById('editRepoTags')?.value
+                .split(',').map(tag => tag.trim()).filter(Boolean) || [];
+
+            const targetRepoName = newName || repo.name;
+
+            if (window.EdmsAPI && typeof window.EdmsAPI.addRepoviewMembershipTag === 'function') {
+                const addedTags = newTags.filter(t => !currentTags.includes(t));
+                const removedTags = currentTags.filter(t => !newTags.includes(t));
+
+                for (const t of addedTags) {
+                    try {
+                        await window.EdmsAPI.addRepoviewMembershipTag(targetRepoName, t);
+                    } catch (e) {
+                        console.warn('Failed to add membership tag:', e);
+                    }
+                }
+                for (const t of removedTags) {
+                    try {
+                        if (typeof window.EdmsAPI.removeRepoviewMembershipTag === 'function') {
+                            await window.EdmsAPI.removeRepoviewMembershipTag(targetRepoName, t);
+                        }
+                    } catch (e) {
+                        console.warn('Failed to remove membership tag:', e);
+                    }
+                }
+            }
+
             repo.name = newName;
+            repo.tags = newTags;
 
-            repo.tags = document.getElementById('editRepoTags').value
-                .split(',').map(tag => tag.trim()).filter(Boolean);
-
+            showAlert(`Repo View updated successfully.`);
             closeModal();
+            await loadData();
             renderSidebar();
             applyFilters();
 
@@ -1394,13 +1530,402 @@
 
         `);
 
-        document.getElementById('saveAnnotation')?.addEventListener('click', () => {
+        document.getElementById('saveAnnotation')?.addEventListener('click', async () => {
 
-            repo.annotation = document.getElementById('annotationEditor').value;
+            const annotationVal = document.getElementById('annotationEditor')?.value;
 
+            try {
+                if (window.EdmsAPI && typeof window.EdmsAPI.setRepoviewAnnotation === 'function') {
+                    const res = await window.EdmsAPI.setRepoviewAnnotation(repo.name, annotationVal);
+                    if (res && !res.ok) {
+                        const errMsg = res.data?.error || res.data?.message || `Failed to set annotation (HTTP ${res.status})`;
+                        showAlert(errMsg);
+                        return;
+                    }
+                }
+            } catch (err) {
+                showAlert(`Error saving annotation: ${err.message}`);
+                return;
+            }
+
+            repo.annotation = annotationVal;
+
+            showAlert(`Annotation updated for "${repo.name}".`);
             closeModal();
             render();
 
+        });
+
+    }
+
+
+    // ============================================================
+    // COMBINE
+    // ============================================================
+
+    function combineRepos(ids) {
+
+        const targetIds = (ids && ids.length) ? ids : [...state.selected];
+        const repos = targetIds.map(getRepo).filter(Boolean);
+
+        if (repos.length < 2) {
+            showAlert('Please select at least 2 Repo Views to combine.');
+            return;
+        }
+
+        const defaultName = `${repos[0].name}_combined`;
+
+        openModal(`
+            <h2 class="mb-4 text-sm font-semibold text-white">Combine Repo Views</h2>
+            <p class="mb-3 text-[11px] text-slate-400">Combine ${repos.length} repo views into a unified repo view:</p>
+            <div class="mb-4 max-h-36 overflow-y-auto rounded-lg border border-slate-800 bg-slate-950/60 p-2 text-xs font-mono text-slate-300">
+                ${repos.map(r => `<div>• ${escapeHtml(r.name)}</div>`).join('')}
+            </div>
+            <label class="mb-1 block text-[11px] text-slate-500">Combined Repo View Name <span class="text-rose-400">*</span></label>
+            <input id="combinedRepoName" value="${escapeAttr(defaultName)}" class="mb-4 h-9 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500 text-slate-200">
+            <div class="flex justify-end gap-2">
+                <button type="button" data-modal-close class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">Cancel</button>
+                <button id="confirmCombineRepo" type="button" class="rounded-md bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-cyan-500">Combine</button>
+            </div>
+        `);
+
+        document.getElementById('confirmCombineRepo')?.addEventListener('click', () => {
+            const newName = document.getElementById('combinedRepoName')?.value.trim();
+            if (!newName) {
+                showAlert('Combined name is required.');
+                return;
+            }
+            executeCombineRepo(repos, newName);
+        });
+
+    }
+
+    async function executeCombineRepo(repos, targetName, onExists, renameVal) {
+
+        const sources = repos.map(r => r.name);
+        if (sources.length < 2) {
+            showAlert('At least two sources are required to combine.');
+            return;
+        }
+
+        const payload = {
+            name: targetName,
+            sources
+        };
+
+        if (onExists) {
+            payload.on_exists = onExists;
+            if (onExists === 'rename' && renameVal) {
+                payload.new_name = renameVal;
+            }
+        }
+
+        try {
+            const res = await window.EdmsAPI.combineRepoviews(payload);
+            if (!res.ok) {
+                if (res.status === 409 && res.data && Array.isArray(res.data.options)) {
+                    showCombineConflictModal(repos, targetName, res.data.options, res.data.error || `A Repo View named "${targetName}" already exists.`);
+                    return;
+                }
+                const errMsg = res.data?.error || res.data?.message || `Failed to combine repo views (HTTP ${res.status})`;
+                showAlert(errMsg);
+                return;
+            }
+
+            const finalName = (onExists === 'rename' && renameVal) ? renameVal : targetName;
+            showAlert(`Repo views combined into "${finalName}".`);
+            closeModal();
+            await loadData();
+            state.selected.clear();
+            renderSidebar();
+            applyFilters();
+        } catch (err) {
+            showAlert(`Error combining repo views: ${err.message}`);
+        }
+
+    }
+
+    function showCombineConflictModal(repos, targetName, options, errorMsg) {
+
+        openModal(`
+            <div class="rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 mb-3">
+                <div class="text-xs font-semibold text-amber-300">Conflict: View Already Exists (409)</div>
+                <div class="text-[11px] text-amber-200/80 mt-1">${escapeHtml(errorMsg)}</div>
+            </div>
+            <p class="mb-3 text-[11px] text-slate-400">Choose how to resolve this conflict:</p>
+            <div class="mb-4 space-y-3">
+                ${options.includes('merge') ? `
+                    <div class="rounded-md border border-slate-800 bg-slate-900/60 p-3">
+                        <div class="text-xs font-medium text-white mb-1">Merge</div>
+                        <p class="text-[11px] text-slate-400 mb-2">Merge sources into the existing "${escapeHtml(targetName)}" Repo View.</p>
+                        <button id="conflictMergeBtn" type="button" class="rounded bg-amber-600 px-2.5 py-1 text-xs text-white hover:bg-amber-500">Merge into "${escapeHtml(targetName)}"</button>
+                    </div>
+                ` : ''}
+                ${options.includes('rename') ? `
+                    <div class="rounded-md border border-slate-800 bg-slate-900/60 p-3">
+                        <div class="text-xs font-medium text-white mb-1">Rename</div>
+                        <p class="text-[11px] text-slate-400 mb-2">Save with a new, non-conflicting name.</p>
+                        <div class="flex gap-2">
+                            <input id="conflictRenameInput" value="${escapeAttr(targetName + '_1')}" class="h-8 flex-1 rounded-md border border-slate-700 bg-slate-950 px-2 text-xs text-slate-200 outline-none focus:border-cyan-500">
+                            <button id="conflictRenameBtn" type="button" class="rounded bg-cyan-600 px-2.5 py-1 text-xs text-white hover:bg-cyan-500">Rename & Combine</button>
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+            <div class="flex justify-end">
+                <button type="button" data-modal-close class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">Cancel</button>
+            </div>
+        `);
+
+        document.getElementById('conflictMergeBtn')?.addEventListener('click', () => {
+            executeCombineRepo(repos, targetName, 'merge');
+        });
+
+        document.getElementById('conflictRenameBtn')?.addEventListener('click', () => {
+            const renVal = document.getElementById('conflictRenameInput')?.value.trim();
+            if (!renVal) {
+                showAlert('New name is required.');
+                return;
+            }
+            executeCombineRepo(repos, targetName, 'rename', renVal);
+        });
+
+    }
+
+
+    // ============================================================
+    // CONVERT TO COLLECTION
+    // ============================================================
+
+    function convertToCollection(id) {
+
+        const repo = getRepo(id);
+        if (!repo) return;
+
+        openModal(`
+            <h2 class="mb-4 text-sm font-semibold text-white">Convert to Collection</h2>
+            <p class="mb-3 text-[11px] text-slate-400">Convert Repo View <strong class="text-white">${escapeHtml(repo.name)}</strong> into a Collection.</p>
+            
+            <label class="mb-1 block text-[11px] text-slate-500">Collection Name <span class="text-rose-400">*</span></label>
+            <input id="convertCollectionName" value="${escapeAttr(repo.name)}" class="mb-4 h-9 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500 text-slate-200">
+
+            <div class="flex justify-end gap-2">
+                <button type="button" data-modal-close class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">Cancel</button>
+                <button id="confirmConvertToCollection" type="button" class="rounded-md bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-cyan-500">Convert</button>
+            </div>
+        `);
+
+        document.getElementById('confirmConvertToCollection')?.addEventListener('click', () => {
+            const colName = document.getElementById('convertCollectionName')?.value.trim();
+            if (!colName) {
+                showAlert('Collection name is required.');
+                return;
+            }
+            executeConvertRepo(repo, colName);
+        });
+
+    }
+
+    async function executeConvertRepo(repo, colName, onExists, renameVal) {
+
+        const payload = { collection: colName };
+        if (onExists) {
+            payload.on_exists = onExists;
+            if (onExists === 'rename' && renameVal) {
+                payload.new_name = renameVal;
+            }
+        }
+
+        try {
+            const res = await window.EdmsAPI.convertRepoviewToCollection(repo.name, payload);
+            if (!res.ok) {
+                if (res.status === 409 && res.data && Array.isArray(res.data.options)) {
+                    showConvertConflictModal(repo, colName, res.data.options, res.data.error || `Collection "${colName}" already exists.`);
+                    return;
+                }
+                const errMsg = res.data?.error || res.data?.message || `Failed to convert to collection (HTTP ${res.status})`;
+                showAlert(errMsg);
+                return;
+            }
+
+            const finalName = (onExists === 'rename' && renameVal) ? renameVal : colName;
+            showAlert(`Repo View "${repo.name}" successfully converted to Collection "${finalName}".`);
+            closeModal();
+            await loadData();
+            state.selected.clear();
+            renderSidebar();
+            applyFilters();
+        } catch (err) {
+            showAlert(`Error converting to collection: ${err.message}`);
+        }
+
+    }
+
+    function showConvertConflictModal(repo, colName, options, errorMsg) {
+
+        openModal(`
+            <div class="rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 mb-3">
+                <div class="text-xs font-semibold text-amber-300">Conflict: Collection Already Exists (409)</div>
+                <div class="text-[11px] text-amber-200/80 mt-1">${escapeHtml(errorMsg)}</div>
+            </div>
+            <p class="mb-3 text-[11px] text-slate-400">Choose how to resolve this conflict:</p>
+            <div class="mb-4 space-y-3">
+                ${options.includes('merge') ? `
+                    <div class="rounded-md border border-slate-800 bg-slate-900/60 p-3">
+                        <div class="text-xs font-medium text-white mb-1">Merge</div>
+                        <p class="text-[11px] text-slate-400 mb-2">Merge into the existing collection "${escapeHtml(colName)}".</p>
+                        <button id="convertConflictMergeBtn" type="button" class="rounded bg-amber-600 px-2.5 py-1 text-xs text-white hover:bg-amber-500">Merge into "${escapeHtml(colName)}"</button>
+                    </div>
+                ` : ''}
+                ${options.includes('rename') ? `
+                    <div class="rounded-md border border-slate-800 bg-slate-900/60 p-3">
+                        <div class="text-xs font-medium text-white mb-1">Rename</div>
+                        <p class="text-[11px] text-slate-400 mb-2">Convert to a collection with a new name.</p>
+                        <div class="flex gap-2">
+                            <input id="convertConflictRenameInput" value="${escapeAttr(colName + '_1')}" class="h-8 flex-1 rounded-md border border-slate-700 bg-slate-950 px-2 text-xs text-slate-200 outline-none focus:border-cyan-500">
+                            <button id="convertConflictRenameBtn" type="button" class="rounded bg-cyan-600 px-2.5 py-1 text-xs text-white hover:bg-cyan-500">Rename & Convert</button>
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+            <div class="flex justify-end">
+                <button type="button" data-modal-close class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">Cancel</button>
+            </div>
+        `);
+
+        document.getElementById('convertConflictMergeBtn')?.addEventListener('click', () => {
+            executeConvertRepo(repo, colName, 'merge');
+        });
+
+        document.getElementById('convertConflictRenameBtn')?.addEventListener('click', () => {
+            const renVal = document.getElementById('convertConflictRenameInput')?.value.trim();
+            if (!renVal) {
+                showAlert('New name is required.');
+                return;
+            }
+            executeConvertRepo(repo, colName, 'rename', renVal);
+        });
+
+    }
+
+
+    // ============================================================
+    // TAKEOUT
+    // ============================================================
+
+    function takeoutRepo(id) {
+
+        const repo = getRepo(id);
+        if (!repo) return;
+
+        openModal(`
+            <h2 class="mb-4 text-sm font-semibold text-white">Takeout Repo View</h2>
+            <p class="mb-3 text-[11px] text-slate-400">Export and takeout Repo View <strong class="text-white">${escapeHtml(repo.name)}</strong>.</p>
+            
+            <label class="mb-1 block text-[11px] text-slate-500">Destination Folder Name (Optional)</label>
+            <input id="takeoutDestName" value="${escapeAttr(repo.name)}" placeholder="${escapeAttr(repo.name)}" class="mb-3 h-9 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500 text-slate-200">
+
+            <label class="mb-4 flex items-center gap-2 cursor-pointer">
+                <input id="takeoutOverwrite" type="checkbox" class="h-4 w-4 rounded border-slate-700 bg-slate-950 text-cyan-600 focus:ring-0 focus:ring-offset-0">
+                <span class="text-xs text-slate-300">Overwrite if destination already exists</span>
+            </label>
+
+            <div class="flex justify-end gap-2">
+                <button type="button" data-modal-close class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">Cancel</button>
+                <button id="confirmRepoTakeout" type="button" class="rounded-md bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-cyan-500">Takeout</button>
+            </div>
+        `);
+
+        document.getElementById('confirmRepoTakeout')?.addEventListener('click', () => {
+            const destName = document.getElementById('takeoutDestName')?.value.trim() || undefined;
+            const overwrite = Boolean(document.getElementById('takeoutOverwrite')?.checked);
+            executeTakeoutRepo(repo, destName, overwrite);
+        });
+
+    }
+
+    async function executeTakeoutRepo(repo, destName, overwrite) {
+
+        const payload = {
+            dest_name: destName || repo.name,
+            overwrite: Boolean(overwrite)
+        };
+
+        try {
+            const res = await window.EdmsAPI.takeoutRepoview(repo.name, payload);
+            if (!res.ok) {
+                if (res.status === 409 && res.data && Array.isArray(res.data.options)) {
+                    showTakeoutConflictModal(repo, payload.dest_name, res.data.options, res.data.error || `Destination "${payload.dest_name}" already exists.`);
+                    return;
+                }
+                const errMsg = res.data?.error || res.data?.message || `Takeout request failed (HTTP ${res.status})`;
+                showAlert(errMsg);
+                return;
+            }
+
+            const jobId = res.data?.job_id || res.data?.id;
+            if (jobId) {
+                showAlert(`Takeout accepted (Job ID: ${jobId}). Processing in background...`);
+                if (window.EdmsAPI && typeof window.EdmsAPI.listenForJob === 'function') {
+                    window.EdmsAPI.listenForJob(jobId, () => {
+                        showAlert(`Takeout complete for Repo View "${repo.name}"!`);
+                    }, (err) => {
+                        showAlert(`Takeout job ${jobId} failed: ${err.message || 'Error'}`);
+                    });
+                }
+            } else {
+                showAlert(`Takeout initiated successfully for Repo View "${repo.name}".`);
+            }
+            closeModal();
+        } catch (err) {
+            showAlert(`Error requesting takeout: ${err.message}`);
+        }
+
+    }
+
+    function showTakeoutConflictModal(repo, destName, options, errorMsg) {
+
+        openModal(`
+            <div class="rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 mb-3">
+                <div class="text-xs font-semibold text-amber-300">Conflict: Destination Already Exists (409)</div>
+                <div class="text-[11px] text-amber-200/80 mt-1">${escapeHtml(errorMsg)}</div>
+            </div>
+            <p class="mb-3 text-[11px] text-slate-400">Choose how to resolve this collision:</p>
+            <div class="mb-4 space-y-3">
+                ${options.includes('overwrite') ? `
+                    <div class="rounded-md border border-slate-800 bg-slate-900/60 p-3">
+                        <div class="text-xs font-medium text-white mb-1">Overwrite</div>
+                        <p class="text-[11px] text-slate-400 mb-2">Overwrite existing files in "${escapeHtml(destName)}".</p>
+                        <button id="takeoutConflictOverwriteBtn" type="button" class="rounded bg-rose-600 px-2.5 py-1 text-xs text-white hover:bg-rose-500">Overwrite Existing</button>
+                    </div>
+                ` : ''}
+                ${options.includes('rename') ? `
+                    <div class="rounded-md border border-slate-800 bg-slate-900/60 p-3">
+                        <div class="text-xs font-medium text-white mb-1">Rename</div>
+                        <p class="text-[11px] text-slate-400 mb-2">Save takeout to a different folder name.</p>
+                        <div class="flex gap-2">
+                            <input id="takeoutConflictRenameInput" value="${escapeAttr(destName + '_1')}" class="h-8 flex-1 rounded-md border border-slate-700 bg-slate-950 px-2 text-xs text-slate-200 outline-none focus:border-cyan-500">
+                            <button id="takeoutConflictRenameBtn" type="button" class="rounded bg-cyan-600 px-2.5 py-1 text-xs text-white hover:bg-cyan-500">Rename & Takeout</button>
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+            <div class="flex justify-end">
+                <button type="button" data-modal-close class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">Cancel</button>
+            </div>
+        `);
+
+        document.getElementById('takeoutConflictOverwriteBtn')?.addEventListener('click', () => {
+            executeTakeoutRepo(repo, destName, true);
+        });
+
+        document.getElementById('takeoutConflictRenameBtn')?.addEventListener('click', () => {
+            const renVal = document.getElementById('takeoutConflictRenameInput')?.value.trim();
+            if (!renVal) {
+                showAlert('Destination folder name is required.');
+                return;
+            }
+            executeTakeoutRepo(repo, renVal, false);
         });
 
     }
@@ -1567,8 +2092,24 @@
 
         openDeleteModal,
 
-        openCreateModal
+        deleteRepos,
+
+        openCreateModal,
+
+        combineRepos,
+
+        convertToCollection,
+
+        takeoutRepo
 
     };
+
+    // Global references for convenience
+    window.duplicateRepo = duplicateRepo;
+    window.deleteRepos = deleteRepos;
+    window.openDeleteModal = openDeleteModal;
+    window.combineRepos = combineRepos;
+    window.convertToCollection = convertToCollection;
+    window.takeoutRepo = takeoutRepo;
 
 })();

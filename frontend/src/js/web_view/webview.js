@@ -1163,37 +1163,77 @@
   // CREATE
   // ============================================================
 
-  function openCreateModal() {
+  async function openCreateModal() {
     openModal(`
+      <h2 class="mb-4 text-sm font-semibold text-white">Create Web View</h2>
 
-            <h2 class="mb-4 text-sm font-semibold text-white">Create Web View</h2>
+      <label class="mb-1 block text-[11px] text-slate-500">Folder Name <span class="text-rose-400">*</span></label>
+      <input id="createName" class="mb-3 h-9 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500 text-slate-200" placeholder="e.g. Production APIs">
 
-            <label class="mb-1 block text-[11px] text-slate-500">Folder Name</label>
-            <input id="createName" class="mb-3 h-9 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500" placeholder="e.g. Production APIs">
+      <label class="mb-1 block text-[11px] text-slate-500">Source Collection <span class="text-rose-400">*</span></label>
+      <select id="createSourceCollection" class="mb-3 h-9 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500 text-slate-200">
+        <option value="" disabled selected>Loading collections...</option>
+      </select>
 
-            <label class="mb-1 block text-[11px] text-slate-500">Tags</label>
-            <input id="createTags" class="mb-3 h-9 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500" placeholder="api, production, users">
+      <label class="mb-1 block text-[11px] text-slate-500">Tags</label>
+      <input id="createTags" class="mb-3 h-9 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500 text-slate-200" placeholder="api, production, users">
 
-            <label class="mb-1 block text-[11px] text-slate-500">Annotation</label>
-            <textarea id="createAnnotation" class="mb-4 h-20 w-full resize-none rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-xs outline-none focus:border-cyan-500" placeholder="Websitory description..."></textarea>
+      <label class="mb-1 block text-[11px] text-slate-500">Annotation</label>
+      <textarea id="createAnnotation" class="mb-4 h-20 w-full resize-none rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-xs outline-none focus:border-cyan-500 text-slate-200" placeholder="Web view description..."></textarea>
 
-            <div class="flex justify-end gap-2">
-                <button type="button" data-modal-close class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">Cancel</button>
-                <button id="confirmCreate" type="button" class="rounded-md bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-cyan-500">Create</button>
-            </div>
-
-        `);
+      <div class="flex justify-end gap-2">
+        <button type="button" data-modal-close class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">Cancel</button>
+        <button id="confirmCreate" type="button" class="rounded-md bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-cyan-500">Create</button>
+      </div>
+    `);
 
     document
       .getElementById("confirmCreate")
       ?.addEventListener("click", createWeb);
+
+    const select = document.getElementById("createSourceCollection");
+    try {
+      let collections = [];
+      if (window.EdmsAPI && typeof window.EdmsAPI.listCollections === "function") {
+        const res = await window.EdmsAPI.listCollections();
+        if (res && res.ok && res.data) {
+          if (Array.isArray(res.data.items)) {
+            collections = res.data.items.map((c) => (typeof c === "string" ? c : c.name));
+          } else if (Array.isArray(res.data)) {
+            collections = res.data.map((c) => (typeof c === "string" ? c : c.name));
+          }
+        }
+      }
+      if (select) {
+        if (collections.length === 0) {
+          select.innerHTML = '<option value="" disabled selected>No collections available</option>';
+        } else {
+          select.innerHTML =
+            '<option value="" disabled selected>Select a collection...</option>' +
+            collections
+              .map((c) => `<option value="${escapeAttr(c)}">${escapeHtml(c)}</option>`)
+              .join("");
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to load collections for create modal:", err);
+      if (select) {
+        select.innerHTML = '<option value="" disabled selected>Failed to load collections</option>';
+      }
+    }
   }
 
   async function createWeb() {
-    const name = document.getElementById("createName").value.trim();
+    const name = document.getElementById("createName")?.value.trim();
+    const sourceCollection = document.getElementById("createSourceCollection")?.value.trim();
 
     if (!name) {
       showAlert("Folder name is required.");
+      return;
+    }
+
+    if (!sourceCollection) {
+      showAlert("Source collection is required.");
       return;
     }
 
@@ -1205,13 +1245,20 @@
     }
 
     try {
-      const res = await window.EdmsAPI.createWebview(name);
+      const annotation = document.getElementById("createAnnotation")?.value.trim() || undefined;
+      const res = await window.EdmsAPI.createWebview({
+        name,
+        source_collection: sourceCollection,
+        annotation
+      });
+
       if (!res.ok) {
-        showAlert("Failed to create Web View via API");
+        const errMsg = res.data?.error || res.data?.message || `Failed to create Web View via API (HTTP ${res.status})`;
+        showAlert(errMsg);
         return;
       }
 
-      const tagsInput = document.getElementById("createTags").value;
+      const tagsInput = document.getElementById("createTags")?.value || "";
       const tags = tagsInput
         .split(",")
         .map((tag) => tag.trim())
@@ -1227,26 +1274,18 @@
         }
       }
 
-      const annotation = document.getElementById("createAnnotation")?.value.trim();
-      if (annotation && window.EdmsAPI && typeof window.EdmsAPI.setWebviewAnnotation === "function") {
-        try {
-          await window.EdmsAPI.setWebviewAnnotation(name, annotation);
-        } catch (e) {
-          console.warn("Failed to set annotation on create:", e);
-        }
-      }
-
+      showAlert(`Web View "${name}" created successfully.`);
+      closeModal();
       await loadData();
 
       state.selected.clear();
       state.page = 1;
 
-      closeModal();
       renderSidebar();
       applyFilters();
     } catch (error) {
       console.error(error);
-      showAlert("Error creating web view");
+      showAlert(`Error creating web view: ${error.message}`);
     }
   }
 
@@ -1275,11 +1314,14 @@
       if (window.EdmsAPI && typeof window.EdmsAPI.duplicateWebview === "function") {
         const res = await window.EdmsAPI.duplicateWebview(source.name, copyName);
         if (res && !res.ok) {
-          console.warn("Backend duplicateWebview returned error:", res.status);
+          const errMsg = res.data?.error || res.data?.message || `Failed to duplicate web view (HTTP ${res.status})`;
+          showAlert(errMsg);
+          return;
         }
       }
     } catch (err) {
-      console.warn("Failed duplicateWebview API call:", err);
+      showAlert(`Error duplicating web view: ${err.message}`);
+      return;
     }
 
     // Refresh from backend or keep in local memory if endpoint is pending backend implementation
@@ -1354,16 +1396,21 @@
 
     try {
       if (window.EdmsAPI) {
+        let res;
         if (names.length === 1 && typeof window.EdmsAPI.deleteWebview === "function") {
-          const res = await window.EdmsAPI.deleteWebview(names[0]);
-          if (res && !res.ok) console.warn("deleteWebview returned:", res.status);
+          res = await window.EdmsAPI.deleteWebview(names[0]);
         } else if (typeof window.EdmsAPI.deleteWebviews === "function") {
-          const res = await window.EdmsAPI.deleteWebviews(names);
-          if (res && !res.ok) console.warn("deleteWebviews returned:", res.status);
+          res = await window.EdmsAPI.deleteWebviews(names);
+        }
+        if (res && !res.ok) {
+          const errMsg = res.data?.error || res.data?.message || `Failed to delete web view (HTTP ${res.status})`;
+          showAlert(errMsg);
+          return;
         }
       }
     } catch (err) {
-      console.warn("Failed deleteWeb API call:", err);
+      showAlert(`Error deleting web view: ${err.message}`);
+      return;
     }
 
     // Refresh from backend, plus clean up local state
@@ -1427,10 +1474,15 @@
         try {
           if (window.EdmsAPI && typeof window.EdmsAPI.renameWebview === "function") {
             const res = await window.EdmsAPI.renameWebview(oldName, newName);
-            if (res && !res.ok) console.warn("renameWebview returned:", res.status);
+            if (res && !res.ok) {
+              const errMsg = res.data?.error || res.data?.message || `Failed to rename web view (HTTP ${res.status})`;
+              showAlert(errMsg);
+              return;
+            }
           }
         } catch (err) {
-          console.warn("Failed renameWebview API call:", err);
+          showAlert(`Error renaming web view: ${err.message}`);
+          return;
         }
       }
 
@@ -1505,10 +1557,15 @@
       try {
         if (window.EdmsAPI && typeof window.EdmsAPI.setWebviewAnnotation === "function") {
           const res = await window.EdmsAPI.setWebviewAnnotation(web.name, annotationVal);
-          if (res && !res.ok) console.warn("setWebviewAnnotation returned:", res.status);
+          if (res && !res.ok) {
+            const errMsg = res.data?.error || res.data?.message || `Failed to set annotation (HTTP ${res.status})`;
+            showAlert(errMsg);
+            return;
+          }
         }
       } catch (err) {
-        console.warn("Failed setWebviewAnnotation API call:", err);
+        showAlert(`Error saving annotation: ${err.message}`);
+        return;
       }
 
       web.annotation = annotationVal;
@@ -1539,7 +1596,7 @@
       <div class="mb-4 max-h-36 overflow-y-auto rounded-lg border border-slate-800 bg-slate-950/60 p-2 text-xs font-mono text-slate-300">
         ${webs.map((w) => `<div>• ${escapeHtml(w.name)}</div>`).join("")}
       </div>
-      <label class="mb-1 block text-[11px] text-slate-500">Combined Web View Name</label>
+      <label class="mb-1 block text-[11px] text-slate-500">Combined Web View Name <span class="text-rose-400">*</span></label>
       <input id="combinedWebName" value="${escapeAttr(defaultName)}" class="mb-4 h-9 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500 text-slate-200">
       <div class="flex justify-end gap-2">
         <button type="button" data-modal-close class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">Cancel</button>
@@ -1547,27 +1604,101 @@
       </div>
     `);
 
-    document.getElementById("confirmCombineWeb")?.addEventListener("click", async () => {
-      const newName = document.getElementById("combinedWebName").value.trim();
+    document.getElementById("confirmCombineWeb")?.addEventListener("click", () => {
+      const newName = document.getElementById("combinedWebName")?.value.trim();
       if (!newName) {
         showAlert("Combined name is required.");
         return;
       }
-      const names = webs.map((w) => w.name);
-      try {
-        if (window.EdmsAPI && typeof window.EdmsAPI.combineWebviews === "function") {
-          const res = await window.EdmsAPI.combineWebviews({ names, new_name: newName });
-          if (res && !res.ok) console.warn("combineWebviews returned:", res.status);
-        }
-      } catch (err) {
-        console.warn("Failed combineWebviews API call:", err);
+      executeCombine(webs, newName);
+    });
+  }
+
+  async function executeCombine(webs, targetName, onExists, renameVal) {
+    const sources = webs.map((w) => w.name);
+    if (sources.length < 2) {
+      showAlert("At least two sources are required to combine.");
+      return;
+    }
+
+    const payload = {
+      name: targetName,
+      sources
+    };
+
+    if (onExists) {
+      payload.on_exists = onExists;
+      if (onExists === "rename" && renameVal) {
+        payload.new_name = renameVal;
       }
-      showAlert(`Web views combined into "${newName}".`);
+    }
+
+    try {
+      const res = await window.EdmsAPI.combineWebviews(payload);
+      if (!res.ok) {
+        if (res.status === 409 && res.data && Array.isArray(res.data.options)) {
+          showCombineConflictModal(webs, targetName, res.data.options, res.data.error || `A Web View named "${targetName}" already exists.`);
+          return;
+        }
+        const errMsg = res.data?.error || res.data?.message || `Failed to combine web views (HTTP ${res.status})`;
+        showAlert(errMsg);
+        return;
+      }
+
+      const finalName = (onExists === "rename" && renameVal) ? renameVal : targetName;
+      showAlert(`Web views combined into "${finalName}".`);
       closeModal();
       await loadData();
       state.selected.clear();
       renderSidebar();
       applyFilters();
+    } catch (err) {
+      showAlert(`Error combining web views: ${err.message}`);
+    }
+  }
+
+  function showCombineConflictModal(webs, targetName, options, errorMsg) {
+    openModal(`
+      <div class="rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 mb-3">
+        <div class="text-xs font-semibold text-amber-300">Conflict: View Already Exists (409)</div>
+        <div class="text-[11px] text-amber-200/80 mt-1">${escapeHtml(errorMsg)}</div>
+      </div>
+      <p class="mb-3 text-[11px] text-slate-400">Choose how to resolve this conflict:</p>
+      <div class="mb-4 space-y-3">
+        ${options.includes("merge") ? `
+          <div class="rounded-md border border-slate-800 bg-slate-900/60 p-3">
+            <div class="text-xs font-medium text-white mb-1">Merge</div>
+            <p class="text-[11px] text-slate-400 mb-2">Merge sources into the existing "${escapeHtml(targetName)}" Web View.</p>
+            <button id="conflictMergeBtn" type="button" class="rounded bg-amber-600 px-2.5 py-1 text-xs text-white hover:bg-amber-500">Merge into "${escapeHtml(targetName)}"</button>
+          </div>
+        ` : ""}
+        ${options.includes("rename") ? `
+          <div class="rounded-md border border-slate-800 bg-slate-900/60 p-3">
+            <div class="text-xs font-medium text-white mb-1">Rename</div>
+            <p class="text-[11px] text-slate-400 mb-2">Save with a new, non-conflicting name.</p>
+            <div class="flex gap-2">
+              <input id="conflictRenameInput" value="${escapeAttr(targetName + "_1")}" class="h-8 flex-1 rounded-md border border-slate-700 bg-slate-950 px-2 text-xs text-slate-200 outline-none focus:border-cyan-500">
+              <button id="conflictRenameBtn" type="button" class="rounded bg-cyan-600 px-2.5 py-1 text-xs text-white hover:bg-cyan-500">Rename & Combine</button>
+            </div>
+          </div>
+        ` : ""}
+      </div>
+      <div class="flex justify-end">
+        <button type="button" data-modal-close class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">Cancel</button>
+      </div>
+    `);
+
+    document.getElementById("conflictMergeBtn")?.addEventListener("click", () => {
+      executeCombine(webs, targetName, "merge");
+    });
+
+    document.getElementById("conflictRenameBtn")?.addEventListener("click", () => {
+      const renVal = document.getElementById("conflictRenameInput")?.value.trim();
+      if (!renVal) {
+        showAlert("New name is required.");
+        return;
+      }
+      executeCombine(webs, targetName, "rename", renVal);
     });
   }
 
@@ -1582,24 +1713,101 @@
     openModal(`
       <h2 class="mb-4 text-sm font-semibold text-white">Convert to Collection</h2>
       <p class="mb-3 text-[11px] text-slate-400">Convert Web View <strong class="text-white">${escapeHtml(web.name)}</strong> into a Collection.</p>
+      
+      <label class="mb-1 block text-[11px] text-slate-500">Collection Name <span class="text-rose-400">*</span></label>
+      <input id="convertCollectionName" value="${escapeAttr(web.name)}" class="mb-4 h-9 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500 text-slate-200">
+
       <div class="flex justify-end gap-2">
         <button type="button" data-modal-close class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">Cancel</button>
         <button id="confirmConvertToCollection" type="button" class="rounded-md bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-cyan-500">Convert</button>
       </div>
     `);
 
-    document.getElementById("confirmConvertToCollection")?.addEventListener("click", async () => {
-      try {
-        if (window.EdmsAPI && typeof window.EdmsAPI.convertWebviewToCollection === "function") {
-          const res = await window.EdmsAPI.convertWebviewToCollection(web.name);
-          if (res && !res.ok) console.warn("convertWebviewToCollection returned:", res.status);
-        }
-        showAlert(`Web View "${web.name}" converted to Collection.`);
-      } catch (err) {
-        console.warn("Failed convertWebviewToCollection API call:", err);
-        showAlert(`Error converting to collection: ${err.message}`);
+    document.getElementById("confirmConvertToCollection")?.addEventListener("click", () => {
+      const colName = document.getElementById("convertCollectionName")?.value.trim();
+      if (!colName) {
+        showAlert("Collection name is required.");
+        return;
       }
+      executeConvert(web, colName);
+    });
+  }
+
+  async function executeConvert(web, colName, onExists, renameVal) {
+    const payload = { collection: colName };
+    if (onExists) {
+      payload.on_exists = onExists;
+      if (onExists === "rename" && renameVal) {
+        payload.new_name = renameVal;
+      }
+    }
+
+    try {
+      const res = await window.EdmsAPI.convertWebviewToCollection(web.name, payload);
+      if (!res.ok) {
+        if (res.status === 409 && res.data && Array.isArray(res.data.options)) {
+          showConvertConflictModal(web, colName, res.data.options, res.data.error || `Collection "${colName}" already exists.`);
+          return;
+        }
+        const errMsg = res.data?.error || res.data?.message || `Failed to convert to collection (HTTP ${res.status})`;
+        showAlert(errMsg);
+        return;
+      }
+
+      const finalName = (onExists === "rename" && renameVal) ? renameVal : colName;
+      showAlert(`Web View "${web.name}" successfully converted to Collection "${finalName}".`);
       closeModal();
+      await loadData();
+      state.selected.clear();
+      renderSidebar();
+      applyFilters();
+    } catch (err) {
+      showAlert(`Error converting to collection: ${err.message}`);
+    }
+  }
+
+  function showConvertConflictModal(web, colName, options, errorMsg) {
+    openModal(`
+      <div class="rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 mb-3">
+        <div class="text-xs font-semibold text-amber-300">Conflict: Collection Already Exists (409)</div>
+        <div class="text-[11px] text-amber-200/80 mt-1">${escapeHtml(errorMsg)}</div>
+      </div>
+      <p class="mb-3 text-[11px] text-slate-400">Choose how to resolve this conflict:</p>
+      <div class="mb-4 space-y-3">
+        ${options.includes("merge") ? `
+          <div class="rounded-md border border-slate-800 bg-slate-900/60 p-3">
+            <div class="text-xs font-medium text-white mb-1">Merge</div>
+            <p class="text-[11px] text-slate-400 mb-2">Merge into the existing collection "${escapeHtml(colName)}".</p>
+            <button id="convertConflictMergeBtn" type="button" class="rounded bg-amber-600 px-2.5 py-1 text-xs text-white hover:bg-amber-500">Merge into "${escapeHtml(colName)}"</button>
+          </div>
+        ` : ""}
+        ${options.includes("rename") ? `
+          <div class="rounded-md border border-slate-800 bg-slate-900/60 p-3">
+            <div class="text-xs font-medium text-white mb-1">Rename</div>
+            <p class="text-[11px] text-slate-400 mb-2">Convert to a collection with a new name.</p>
+            <div class="flex gap-2">
+              <input id="convertConflictRenameInput" value="${escapeAttr(colName + "_1")}" class="h-8 flex-1 rounded-md border border-slate-700 bg-slate-950 px-2 text-xs text-slate-200 outline-none focus:border-cyan-500">
+              <button id="convertConflictRenameBtn" type="button" class="rounded bg-cyan-600 px-2.5 py-1 text-xs text-white hover:bg-cyan-500">Rename & Convert</button>
+            </div>
+          </div>
+        ` : ""}
+      </div>
+      <div class="flex justify-end">
+        <button type="button" data-modal-close class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">Cancel</button>
+      </div>
+    `);
+
+    document.getElementById("convertConflictMergeBtn")?.addEventListener("click", () => {
+      executeConvert(web, colName, "merge");
+    });
+
+    document.getElementById("convertConflictRenameBtn")?.addEventListener("click", () => {
+      const renVal = document.getElementById("convertConflictRenameInput")?.value.trim();
+      if (!renVal) {
+        showAlert("New name is required.");
+        return;
+      }
+      executeConvert(web, colName, "rename", renVal);
     });
   }
 
@@ -1614,38 +1822,107 @@
     openModal(`
       <h2 class="mb-4 text-sm font-semibold text-white">Takeout Web View</h2>
       <p class="mb-3 text-[11px] text-slate-400">Export and takeout Web View <strong class="text-white">${escapeHtml(web.name)}</strong>.</p>
-      <div class="mb-4">
-        <label class="mb-1 block text-[11px] text-slate-500">Action</label>
-        <div class="flex flex-col gap-2 text-xs text-slate-300">
-          <label class="flex items-center gap-2">
-            <input type="radio" name="webTakeoutAction" value="rename" checked class="accent-cyan-400">
-            <span>Rename and download</span>
-          </label>
-          <label class="flex items-center gap-2">
-            <input type="radio" name="webTakeoutAction" value="archive" class="accent-cyan-400">
-            <span>Archive to storage</span>
-          </label>
-        </div>
-      </div>
+      
+      <label class="mb-1 block text-[11px] text-slate-500">Destination Folder Name (Optional)</label>
+      <input id="takeoutDestName" value="${escapeAttr(web.name)}" placeholder="${escapeAttr(web.name)}" class="mb-3 h-9 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500 text-slate-200">
+
+      <label class="mb-4 flex items-center gap-2 cursor-pointer">
+        <input id="takeoutOverwrite" type="checkbox" class="h-4 w-4 rounded border-slate-700 bg-slate-950 text-cyan-600 focus:ring-0 focus:ring-offset-0">
+        <span class="text-xs text-slate-300">Overwrite if destination already exists</span>
+      </label>
+
       <div class="flex justify-end gap-2">
         <button type="button" data-modal-close class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">Cancel</button>
         <button id="confirmWebTakeout" type="button" class="rounded-md bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-cyan-500">Takeout</button>
       </div>
     `);
 
-    document.getElementById("confirmWebTakeout")?.addEventListener("click", async () => {
-      const action = document.querySelector('input[name="webTakeoutAction"]:checked')?.value || "rename";
-      try {
-        if (window.EdmsAPI && typeof window.EdmsAPI.takeoutWebview === "function") {
-          const res = await window.EdmsAPI.takeoutWebview(web.name, { action });
-          if (res && !res.ok) console.warn("takeoutWebview returned:", res.status);
+    document.getElementById("confirmWebTakeout")?.addEventListener("click", () => {
+      const destName = document.getElementById("takeoutDestName")?.value.trim() || undefined;
+      const overwrite = Boolean(document.getElementById("takeoutOverwrite")?.checked);
+      executeTakeout(web, destName, overwrite);
+    });
+  }
+
+  async function executeTakeout(web, destName, overwrite) {
+    const payload = {
+      dest_name: destName || web.name,
+      overwrite: Boolean(overwrite)
+    };
+
+    try {
+      const res = await window.EdmsAPI.takeoutWebview(web.name, payload);
+      if (!res.ok) {
+        if (res.status === 409 && res.data && Array.isArray(res.data.options)) {
+          showTakeoutConflictModal(web, payload.dest_name, res.data.options, res.data.error || `Destination "${payload.dest_name}" already exists.`);
+          return;
         }
-        showAlert(`Takeout initiated for Web View "${web.name}" with action "${action}".`);
-      } catch (err) {
-        console.warn("Failed takeoutWebview API call:", err);
-        showAlert(`Error requesting takeout: ${err.message}`);
+        const errMsg = res.data?.error || res.data?.message || `Takeout request failed (HTTP ${res.status})`;
+        showAlert(errMsg);
+        return;
+      }
+
+      const jobId = res.data?.job_id || res.data?.id;
+      if (jobId) {
+        showAlert(`Takeout accepted (Job ID: ${jobId}). Processing in background...`);
+        if (window.EdmsAPI && typeof window.EdmsAPI.listenForJob === "function") {
+          window.EdmsAPI.listenForJob(jobId, () => {
+            showAlert(`Takeout complete for Web View "${web.name}"!`);
+          }, (err) => {
+            showAlert(`Takeout job ${jobId} failed: ${err.message || "Error"}`);
+          });
+        }
+      } else {
+        showAlert(`Takeout initiated successfully for Web View "${web.name}".`);
       }
       closeModal();
+    } catch (err) {
+      showAlert(`Error requesting takeout: ${err.message}`);
+    }
+  }
+
+  function showTakeoutConflictModal(web, destName, options, errorMsg) {
+    openModal(`
+      <div class="rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 mb-3">
+        <div class="text-xs font-semibold text-amber-300">Conflict: Destination Already Exists (409)</div>
+        <div class="text-[11px] text-amber-200/80 mt-1">${escapeHtml(errorMsg)}</div>
+      </div>
+      <p class="mb-3 text-[11px] text-slate-400">Choose how to resolve this collision:</p>
+      <div class="mb-4 space-y-3">
+        ${options.includes("overwrite") ? `
+          <div class="rounded-md border border-slate-800 bg-slate-900/60 p-3">
+            <div class="text-xs font-medium text-white mb-1">Overwrite</div>
+            <p class="text-[11px] text-slate-400 mb-2">Overwrite existing files in "${escapeHtml(destName)}".</p>
+            <button id="takeoutConflictOverwriteBtn" type="button" class="rounded bg-rose-600 px-2.5 py-1 text-xs text-white hover:bg-rose-500">Overwrite Existing</button>
+          </div>
+        ` : ""}
+        ${options.includes("rename") ? `
+          <div class="rounded-md border border-slate-800 bg-slate-900/60 p-3">
+            <div class="text-xs font-medium text-white mb-1">Rename</div>
+            <p class="text-[11px] text-slate-400 mb-2">Save takeout to a different folder name.</p>
+            <div class="flex gap-2">
+              <input id="takeoutConflictRenameInput" value="${escapeAttr(destName + "_1")}" class="h-8 flex-1 rounded-md border border-slate-700 bg-slate-950 px-2 text-xs text-slate-200 outline-none focus:border-cyan-500">
+              <button id="takeoutConflictRenameBtn" type="button" class="rounded bg-cyan-600 px-2.5 py-1 text-xs text-white hover:bg-cyan-500">Rename & Takeout</button>
+            </div>
+          </div>
+        ` : ""}
+      </div>
+      <div class="flex justify-end">
+        <button type="button" data-modal-close class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">Cancel</button>
+      </div>
+    `);
+
+    document.getElementById("takeoutConflictOverwriteBtn")?.addEventListener("click", () => {
+      executeTakeout(web, destName, true);
+    });
+
+    document.getElementById("takeoutConflictRenameBtn")?.addEventListener("click", () => {
+      const renVal = document.getElementById("takeoutConflictRenameInput")?.value.trim();
+      if (!renVal) {
+        showAlert("Destination folder name is required.");
+        return;
+      }
+      executeTakeout(web, renVal, false);
     });
   }
 
