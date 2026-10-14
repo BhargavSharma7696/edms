@@ -180,30 +180,25 @@
   }
 
   async function fetchWebViewFromBackend(id, options = {}) {
-    let endpoint = options.endpoint || (window.WEBVIEW_FRONT_PAGE_API_URL
-      ? window.WEBVIEW_FRONT_PAGE_API_URL.replace(':id', encodeURIComponent(String(id)))
-      : `/webview/${encodeURIComponent(id)}/frontpage`);
-    let response = await fetch(endpoint, {
+    const name = options.name || id;
+    const endpoint = options.endpoint || (window.WEBVIEW_FRONT_PAGE_API_URL
+      ? window.WEBVIEW_FRONT_PAGE_API_URL.replace(':name', encodeURIComponent(String(name))).replace(':id', encodeURIComponent(String(name)))
+      : `/api/webview/${encodeURIComponent(String(name))}/front-page`);
+    const response = await fetch(endpoint, {
       method: "GET",
       headers: { Accept: "application/json" },
       signal: options.signal
     });
-    if (!response.ok && response.status === 404 && !options.endpoint && !window.WEBVIEW_FRONT_PAGE_API_URL) {
-      const fallback = `/api/webviews/${encodeURIComponent(id)}/frontpage`;
-      const fallbackRes = await fetch(fallback, {
-        method: "GET",
-        headers: { Accept: "application/json" },
-        signal: options.signal
-      });
-      if (fallbackRes.ok) response = fallbackRes;
-    }
     if (!response.ok) throw new Error(`WebView API returned HTTP ${response.status}`);
     const data = await response.json();
     // Accept either a direct WebView object or { data: WebView } API responses.
     const web = data && data.data ? data.data : data;
-    if (!web || !web.content || typeof web.content !== "object") {
-      throw new Error("API response did not contain a Tiptap JSON 'content' document");
+    const frontPage = web ? (web.front_page || web.content || web.frontpageContent || web.frontPageContent) : null;
+    if (!web || !frontPage || typeof frontPage !== "object") {
+      throw new Error("API response did not contain a Tiptap JSON 'front_page' document");
     }
+    web.front_page = frontPage;
+    web.content = frontPage;
     return web;
   }
 
@@ -217,16 +212,19 @@
       } else {
         web = await fetchWebViewFromBackend(id, options);
       }
-      if (!web || !web.content || typeof web.content !== "object") {
-        throw new Error("No WebView content returned");
+      const frontPage = web ? (web.front_page || web.content || web.frontpageContent || web.frontPageContent) : null;
+      if (!web || !frontPage || typeof frontPage !== "object") {
+        throw new Error("No WebView front_page returned");
       }
+      web.front_page = frontPage;
+      web.content = frontPage;
     } catch (error) {
       console.warn("WebView preview is using mock data because the API is unavailable:", error);
       web = { ...MOCK_WEBVIEW };
       usingMock = true;
     }
 
-    const html = renderNode(web.content);
+    const html = renderNode(web.front_page || web.content);
     const page = buildPage({ ...web, isMock: usingMock || web.isMock }, html);
     const previewWindow = window.open("", "_blank");
 

@@ -1769,19 +1769,24 @@ function getWeb(id) {
       const defaultLoadWebView = async (webId) => {
         const targetWeb = getWeb(webId) || localWeb || {};
         const inMemoryContent =
+          targetWeb.front_page ||
           targetWeb.content ||
           targetWeb.frontpageContent ||
           targetWeb.frontPageContent;
         if (inMemoryContent && typeof inMemoryContent === "object") {
-          return { ...targetWeb, content: inMemoryContent };
+          return { ...targetWeb, front_page: inMemoryContent, content: inMemoryContent };
         }
         try {
+          const webName = targetWeb.name || webId;
           const endpoint = window.WEBVIEW_FRONT_PAGE_API_URL
             ? window.WEBVIEW_FRONT_PAGE_API_URL.replace(
+                ":name",
+                encodeURIComponent(String(webName))
+              ).replace(
                 ":id",
-                encodeURIComponent(String(webId))
+                encodeURIComponent(String(webName))
               )
-            : `/api/webviews/${encodeURIComponent(webId)}/frontpage`;
+            : `/api/webview/${encodeURIComponent(String(webName))}/front-page`;
           const res = await fetch(endpoint, {
             headers: { Accept: "application/json" },
           });
@@ -1789,11 +1794,12 @@ function getWeb(id) {
             const payload = await res.json();
             const data = payload && payload.data ? payload.data : payload;
             const doc =
-              data.content || data.frontpageContent || data.frontPageContent;
+              data.front_page || data.content || data.frontpageContent || data.frontPageContent;
             if (doc && typeof doc === "object") {
               return {
                 ...targetWeb,
                 ...data,
+                front_page: doc,
                 content: doc,
                 name: targetWeb.name || data.name,
                 annotation: targetWeb.annotation || data.annotation,

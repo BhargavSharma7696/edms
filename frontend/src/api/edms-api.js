@@ -1941,6 +1941,34 @@
     }
 
 
+    async function getWebviewFrontPage(
+        name
+    ) {
+
+        return http(
+            'GET',
+            `/api/webview/${encodeURIComponent(name)}/front-page`
+        );
+
+    }
+
+
+    async function saveWebviewFrontPage(
+        name,
+        frontPage
+    ) {
+
+        return http(
+            'POST',
+            `/api/webview/${encodeURIComponent(name)}/front-page`,
+            {
+                front_page: frontPage
+            }
+        );
+
+    }
+
+
 
 
     // ============================================================
@@ -2343,6 +2371,9 @@
         addWebviewMembershipTag,
         removeWebviewMembershipTag,
         listWebviewMembershipTags,
+
+        getWebviewFrontPage,
+        saveWebviewFrontPage,
 
 
         // ----------------------------------------
