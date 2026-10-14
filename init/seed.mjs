@@ -1,32 +1,45 @@
 // init/seed.mjs — first-boot demo data for the EDMS stack.
 //
-// Builds a realistic dataset through the public HTTP/WS API only:
-//   1. 30 endpoints across 11 public test APIs. Each is created by actually
-//      being RUN (the backend makes the call), so it carries real request /
-//      response / headers data and a genuine history entry - "an endpoint
-//      exists because it was tested".
-//   2. 4 themed Collections holding them.
-//   3. A RepoView per Collection (annotations, row tags, Index Tables), plus
-//      one combined RepoView built with Combine-by-tag.
-//   4. 3 WebViews with front pages in the rich-text editor's JSON format.
+// Loads a RECORDED dataset: nothing here calls a live URL. The runs were
+// captured once (see capture-demo-data.mjs) and committed as
+// demo-data/demo-bundle/ - a takeout holding 30 endpoints with their
+// request / response / headers files, status codes, timings and tags.
+//
+// On first boot this script:
+//   1. copies that bundle into the backend's imports folder and imports it
+//      with the product's own import (fresh EIDs, QPs, tags, EQP files);
+//   2. adds a history row per recorded run;
+//   3. builds 4 Collections, a RepoView per Collection plus one combined by
+//      tag, and 3 WebViews with front pages in the editor's JSON format;
+//   4. removes the temporary import helper (the endpoints stay).
+// Everything is ordinary user data afterwards: delete whatever you like.
 //
 // Safe by default: if the backend already has endpoints it does nothing, so
-// a real database is never polluted. Set SEED_FORCE=1 to seed into a
-// database that already has data (existing endpoints with the same URL +
-// method are reused, not duplicated). Every step also checks whether its
-// object already exists, so re-running only fills in what is missing.
+// a real database is never touched. SEED_FORCE=1 seeds anyway; endpoints
+// that already exist for the same URL + method are reused (never
+// duplicated) and objects that already exist by name are skipped.
 //
-// Runs automatically as the `seed` service in docker-compose.yml on
-// `docker compose up`, then exits. Also runnable by hand:
-//   EDMS_BASE=http://localhost:3000 node init/seed.mjs
+// Runs automatically as the `seed` service in docker-compose.yml, then
+// exits. Also runnable by hand (EDMS_STORAGE = the backend's storage root):
+//   EDMS_BASE=http://localhost:3000 EDMS_STORAGE=/path/to/root node init/seed.mjs
 //
-// Requires Node 22+ (built-in fetch + WebSocket) and outbound internet from
-// the backend container (it is the backend that makes the test calls).
-// Offline: endpoints are still created, just without run data.
+// Needs Node 22+ (fetch + WebSocket) and write access to the storage root
+// (it only writes the temporary copy under storage/imports/). No internet.
+
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const BASE = process.env.EDMS_BASE || "http://localhost:3000";
 const WS_BASE = BASE.replace(/^http/, "ws");
+const STORAGE = process.env.EDMS_STORAGE || "/app/edms_root";
+const HERE = dirname(fileURLToPath(import.meta.url));
+const BUNDLE = process.env.DEMO_BUNDLE || resolve(HERE, "demo-data", "demo-bundle");
 const FORCE = ["1", "true", "yes"].includes(String(process.env.SEED_FORCE || "").toLowerCase());
+
+// The temporary RepoView / imports folder used to bring the bundle in. A
+// distinctive name so it can never collide with something a user made.
+const HELPER = "edms-demo-bundle";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -75,68 +88,64 @@ function wsOnce(path, send, waitType, timeoutMs = 15000) {
   });
 }
 
-// ── data ────────────────────────────────────────────────────────────
-// Real, reachable URLs (each probed before it went in: status, latency).
-// `runs` is how many times to test it (>1 gives an endpoint several
-// request/response sets). `col` is the Collection it belongs to.
+// ── what goes where ─────────────────────────────────────────────────
+// The bundle holds the recorded endpoints; this says which Collection each
+// belongs to. Keyed by "METHOD url" exactly as recorded.
 
 const JP = "https://jsonplaceholder.typicode.com";
 const HB = "https://httpbin.org";
 const PE = "https://postman-echo.com";
 
-const ENDPOINTS = [
-  // placeholder-posts — a fake blog REST API
-  { col: "placeholder-posts", method: "GET",    url: `${JP}/posts`,            note: "List all posts.", runs: 2 },
-  { col: "placeholder-posts", method: "GET",    url: `${JP}/posts/1`,          note: "Fetch one post by ID.", runs: 1 },
-  { col: "placeholder-posts", method: "GET",    url: `${JP}/posts/1/comments`, note: "Comments on a post.", runs: 1 },
-  { col: "placeholder-posts", method: "GET",    url: `${JP}/users/1`,          note: "Fetch the author's profile.", runs: 1 },
-  { col: "placeholder-posts", method: "POST",   url: `${JP}/posts`,            note: "Create a post (simulated - nothing is persisted).", runs: 1 },
-  { col: "placeholder-posts", method: "PUT",    url: `${JP}/posts/1`,          note: "Replace a post.", runs: 1 },
-  { col: "placeholder-posts", method: "DELETE", url: `${JP}/posts/1`,          note: "Delete a post.", runs: 1 },
-  { col: "placeholder-posts", method: "GET",    url: `${JP}/posts/9999`,       note: "A post that does not exist: expect 404.", runs: 1, errorCase: true },
+const LAYOUT = [
+  ["placeholder-posts", "GET",    `${JP}/posts`],
+  ["placeholder-posts", "GET",    `${JP}/posts/1`],
+  ["placeholder-posts", "GET",    `${JP}/posts/1/comments`],
+  ["placeholder-posts", "GET",    `${JP}/users/1`],
+  ["placeholder-posts", "POST",   `${JP}/posts`],
+  ["placeholder-posts", "PUT",    `${JP}/posts/1`],
+  ["placeholder-posts", "DELETE", `${JP}/posts/1`],
+  ["placeholder-posts", "GET",    `${JP}/posts/9999`],
 
-  // http-echo-tests — services that echo the request back
-  { col: "http-echo-tests", method: "GET",    url: `${HB}/get`,              note: "Echo a GET request.", runs: 2 },
-  { col: "http-echo-tests", method: "POST",   url: `${HB}/post`,             note: "Echo a POST body.", runs: 1 },
-  { col: "http-echo-tests", method: "PUT",    url: `${HB}/put`,              note: "Echo a PUT body.", runs: 1 },
-  { col: "http-echo-tests", method: "PATCH",  url: `${HB}/patch`,            note: "Echo a PATCH body.", runs: 1 },
-  { col: "http-echo-tests", method: "DELETE", url: `${HB}/delete`,           note: "Echo a DELETE request.", runs: 1 },
-  { col: "http-echo-tests", method: "GET",    url: `${HB}/status/404`,       note: "Always answers 404 Not Found.", runs: 1, errorCase: true },
-  { col: "http-echo-tests", method: "GET",    url: `${HB}/status/401`,       note: "Always answers 401 Unauthorized.", runs: 1, errorCase: true },
-  { col: "http-echo-tests", method: "GET",    url: `${HB}/uuid`,             note: "Return a fresh random UUID.", runs: 1 },
-  { col: "http-echo-tests", method: "GET",    url: `${PE}/get?foo=bar`,      note: "Echo a GET with a query string.", runs: 1 },
-  { col: "http-echo-tests", method: "POST",   url: `${PE}/post`,             note: "Echo a POST body.", runs: 1 },
-  { col: "http-echo-tests", method: "GET",    url: `${PE}/status/201`,       note: "Always answers 201 Created.", runs: 1 },
+  ["http-echo-tests", "GET",    `${HB}/get`],
+  ["http-echo-tests", "POST",   `${HB}/post`],
+  ["http-echo-tests", "PUT",    `${HB}/put`],
+  ["http-echo-tests", "PATCH",  `${HB}/patch`],
+  ["http-echo-tests", "DELETE", `${HB}/delete`],
+  ["http-echo-tests", "GET",    `${HB}/status/404`],
+  ["http-echo-tests", "GET",    `${HB}/status/401`],
+  ["http-echo-tests", "GET",    `${HB}/uuid`],
+  ["http-echo-tests", "GET",    `${PE}/get?foo=bar`],
+  ["http-echo-tests", "POST",   `${PE}/post`],
+  ["http-echo-tests", "GET",    `${PE}/status/201`],
 
-  // open-data — public reference data
-  { col: "open-data", method: "GET", url: "https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&current_weather=true", note: "Current weather for Berlin.", runs: 1 },
-  { col: "open-data", method: "GET", url: "https://restcountries.com/v3.1/name/france",              note: "Country details by name.", runs: 1 },
-  { col: "open-data", method: "GET", url: "https://openlibrary.org/search.json?q=the+hobbit&limit=3", note: "Book search.", runs: 1 },
-  { col: "open-data", method: "GET", url: "https://api.agify.io/?name=michael",                       note: "Predict an age from a first name.", runs: 1 },
-  { col: "open-data", method: "GET", url: "https://fakestoreapi.com/products?limit=3",                note: "Sample store products.", runs: 1 },
+  ["open-data", "GET", "https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&current_weather=true"],
+  ["open-data", "GET", "https://restcountries.com/v3.1/name/france"],
+  ["open-data", "GET", "https://openlibrary.org/search.json?q=the+hobbit&limit=3"],
+  ["open-data", "GET", "https://api.agify.io/?name=michael"],
+  ["open-data", "GET", "https://dummyjson.com/products?limit=3"],
 
-  // fun-apis — small, friendly APIs
-  { col: "fun-apis", method: "GET", url: "https://pokeapi.co/api/v2/pokemon/ditto",   note: "One Pokemon, with its full detail (a large response).", runs: 1 },
-  { col: "fun-apis", method: "GET", url: "https://pokeapi.co/api/v2/pokemon?limit=5", note: "A page of Pokemon names.", runs: 1 },
-  { col: "fun-apis", method: "GET", url: "https://catfact.ninja/fact",                note: "A random cat fact.", runs: 1 },
-  { col: "fun-apis", method: "GET", url: "https://catfact.ninja/breeds?limit=3",      note: "Cat breeds, paginated.", runs: 1 },
-  { col: "fun-apis", method: "GET", url: "https://dog.ceo/api/breeds/image/random",   note: "A random dog picture.", runs: 1 },
-  { col: "fun-apis", method: "GET", url: "https://official-joke-api.appspot.com/random_joke", note: "A random joke.", runs: 1 },
+  ["fun-apis", "GET", "https://pokeapi.co/api/v2/pokemon/ditto"],
+  ["fun-apis", "GET", "https://pokeapi.co/api/v2/pokemon?limit=5"],
+  ["fun-apis", "GET", "https://catfact.ninja/fact"],
+  ["fun-apis", "GET", "https://catfact.ninja/breeds?limit=3"],
+  ["fun-apis", "GET", "https://dog.ceo/api/breeds/image/random"],
+  ["fun-apis", "GET", "https://official-joke-api.appspot.com/random_joke"],
 ];
 
+// `tags` are each Collection's own editable tags (the Tags column).
 const COLLECTIONS = [
-  { name: "placeholder-posts", annotation: "CRUD against a fake blog API (JSONPlaceholder)." },
-  { name: "http-echo-tests",   annotation: "Echo services for testing methods, status codes and bodies." },
-  { name: "open-data",         annotation: "Public reference data: weather, countries, books, names, products." },
-  { name: "fun-apis",          annotation: "Small friendly APIs: Pokemon, cats, dogs and jokes." },
+  { name: "placeholder-posts", tags: ["demo", "crud"],        annotation: "CRUD against a fake blog API (JSONPlaceholder)." },
+  { name: "http-echo-tests",   tags: ["demo", "http-basics"], annotation: "Echo services for testing methods, status codes and bodies." },
+  { name: "open-data",         tags: ["demo", "public"],      annotation: "Public reference data: weather, countries, books, names, products." },
+  { name: "fun-apis",          tags: ["demo", "fun"],         annotation: "Small friendly APIs: Pokemon, cats, dogs and jokes." },
 ];
 
 // RepoViews: one per Collection. `tags` are the view's own editable tags.
 const REPOVIEWS = [
-  { name: "blog-api",      col: "placeholder-posts", tags: ["stable", "crud"],         approach: "endpoint_segments", annotation: "The blog REST API, every CRUD method." },
-  { name: "echo-suite",    col: "http-echo-tests",   tags: ["stable", "http-basics"],  approach: "sorted_tags",       annotation: "Methods and status codes, including the deliberate 401/404 cases." },
-  { name: "reference-data", col: "open-data",        tags: ["public", "stable"],       approach: "endpoint_segments", annotation: "Read-only public data sources." },
-  { name: "playground",    col: "fun-apis",          tags: ["experimental"],           approach: "sorted_tags",       annotation: "Fun APIs; some responses change on every call." },
+  { name: "blog-api",       col: "placeholder-posts", tags: ["stable", "crud"],        approach: "endpoint_segments", annotation: "The blog REST API, every CRUD method." },
+  { name: "echo-suite",     col: "http-echo-tests",   tags: ["stable", "http-basics"], approach: "sorted_tags",       annotation: "Methods and status codes, including the deliberate 401/404 cases." },
+  { name: "reference-data", col: "open-data",         tags: ["public", "stable"],      approach: "endpoint_segments", annotation: "Read-only public data sources." },
+  { name: "playground",     col: "fun-apis",          tags: ["experimental"],          approach: "sorted_tags",       annotation: "Fun APIs; some responses change on every call." },
 ];
 const COMBINED = { name: "all-stable", tags: ["stable"], annotation: "Everything tagged stable, combined." };
 
@@ -159,7 +168,7 @@ const WEBVIEWS = [
       para("These endpoints echo what they receive, so you can check ", text("methods", [{ type: "bold" }]), ", bodies and status codes."),
       heading(2, "What is in here"),
       bullets(["GET, POST, PUT, PATCH and DELETE against httpbin.org", "Fixed status codes: 201, 401 and 404", "A UUID endpoint whose answer changes on every call"]),
-      para("Run any of them from Test View, then open its request, response and headers."),
+      para("Open any of them in Test View to see its request, response and headers."),
     ),
   },
   {
@@ -168,7 +177,7 @@ const WEBVIEWS = [
     page: doc(
       heading(1, "Public data sources"),
       para("Read-only APIs that need no key."),
-      bullets(["Open-Meteo: current weather", "REST Countries: country details", "Open Library: book search", "Agify: age from a first name", "Fake Store API: sample products"]),
+      bullets(["Open-Meteo: current weather", "REST Countries: country details", "Open Library: book search", "Agify: age from a first name", "DummyJSON: sample store products"]),
     ),
   },
   {
@@ -183,17 +192,15 @@ const WEBVIEWS = [
   },
 ];
 
-const EXTRA_HISTORY = [
-  "200 OK in 41ms", "200 OK in 63ms", "201 Created in 88ms",
-  "204 No Content in 33ms", "400 Bad Request in 22ms",
-  "401 Unauthorized in 18ms", "404 Not Found in 19ms",
-  "429 Too Many Requests in 12ms", "500 Server Error in 120ms",
-];
+const STATUS_TEXT = {
+  200: "OK", 201: "Created", 204: "No Content", 400: "Bad Request", 401: "Unauthorized",
+  403: "Forbidden", 404: "Not Found", 429: "Too Many Requests", 500: "Server Error",
+};
 
 // ── steps ───────────────────────────────────────────────────────────
 
 async function waitForServer() {
-  for (let i = 0; i < 60; i++) {
+  for (let i = 0; i < 90; i++) {
     try {
       const r = await fetch(BASE + "/home");
       if (r.ok) return;
@@ -209,50 +216,66 @@ async function hasEndpoints() {
 }
 
 // The EID of an endpoint that already exists for this exact URL + method.
-async function lookupEid(e) {
-  const q = `endpoint_str=${encodeURIComponent(e.url)}&method=${encodeURIComponent(e.method)}`;
+async function lookupEid(url, method) {
+  const q = `endpoint_str=${encodeURIComponent(url)}&method=${encodeURIComponent(method)}`;
   const r = await get(`/endpoints/lookup?${q}`);
   return r.ok ? r.json?.endpoint?.endpoint_id ?? null : null;
 }
 
-async function runOnce(e, eid) {
-  const payload = { endpoint_str: e.url, method: e.method, body: {}, timeout_ms: 8000, tick_interval_ms: 300 };
-  if (eid) payload.endpoint_id = eid;
-  else payload.annotation = e.note;
-  return wsOnce("/test-view/run", { type: "run_test", payload }, "TestFinished", 18000);
-}
-
-// Create-by-running: the first run (no endpoint_id) creates + tests the
-// endpoint; extra runs reuse the allocated id. Returns the EID, or null if
-// the run never reported back (e.g. offline). One retry for a flaky host.
-async function seedEndpoint(e) {
-  for (let attempt = 0; attempt < 2; attempt++) {
-    const first = await runOnce(e, null);
-    const eid = first?.event?.payload?.endpoint_id;
-    if (eid) {
-      for (let k = 1; k < (e.runs || 1); k++) await runOnce(e, eid);
-      return eid;
-    }
-    await sleep(1500);
+async function waitJob(id, timeoutMs = 180000) {
+  const end = Date.now() + timeoutMs;
+  while (Date.now() < end) {
+    const r = await get(`/jobs/${id}`);
+    if (r.ok && r.json.status !== "running") return r.json;
+    await sleep(300);
   }
-  return null;
+  throw new Error(`job ${id} did not finish in time`);
 }
 
-// Endpoint tags by what the endpoint does, so Tags and the lists have
-// something real to show.
-function tagsFor(e) {
-  const tags = [e.method === "GET" ? "read-only" : "write"];
-  if (e.errorCase) tags.push("error-case");
-  if (/httpbin|postman-echo/.test(e.url)) tags.push("echo");
-  if (e.col === "open-data") tags.push("public-data");
-  return tags;
+// Brings the recorded bundle in through the product's own import. Returns
+// the new EIDs keyed "METHOD url", or throws.
+async function importBundle(manifest) {
+  const dest = join(STORAGE, "storage", "imports", "uncompressed", "repo", HELPER);
+  mkdirSync(dirname(dest), { recursive: true });
+  rmSync(dest, { recursive: true, force: true });
+  cpSync(BUNDLE, dest, { recursive: true });
+  try {
+    // A helper view left by an interrupted run would make the name taken.
+    if ((await get(`/repoview/${HELPER}`)).ok) await post(`/repoview/${HELPER}/delete`);
+
+    const started = await post("/repoview/import", { folder: HELPER, name: HELPER });
+    if (started.status !== 202) {
+      throw new Error(`import was not accepted (${started.status}): ${JSON.stringify(started.json)}`);
+    }
+    const job = await waitJob(started.json.job_id);
+    if (job.status !== "done") throw new Error(`import ${job.status}: ${job.error || JSON.stringify(job.result)}`);
+    const result = job.result || {};
+    for (const s of result.skipped || []) console.log(`[seed]   skipped ${s.eid}: ${s.reason}`);
+
+    const byOld = new Map(manifest.endpoints.map((e) => [e.eid, e]));
+    const eids = new Map();
+    for (const m of result.mapping || []) {
+      const e = byOld.get(m.old_eid);
+      if (e) eids.set(`${(e.method || "GET").toUpperCase()} ${e.endpoint_str}`, m.new_eid);
+    }
+    return eids;
+  } finally {
+    // The helper view only existed to carry the import; the endpoints stay.
+    await post(`/repoview/${HELPER}/delete`);
+    rmSync(dest, { recursive: true, force: true });
+  }
 }
 
 async function ensureCollection(c, eidsByCol) {
   const exists = (await get(`/collections/${encodeURIComponent(c.name)}`)).ok;
   if (!exists) await post("/collections/create", { name: c.name, annotation: c.annotation });
+  if (!exists) {
+    for (const t of c.tags || []) {
+      await post(`/collections/${encodeURIComponent(c.name)}/membership-tags/add`, { tag: t });
+    }
+  }
   const members = (await get(`/collections/${encodeURIComponent(c.name)}/endpoints`)).json;
-  const have = new Set((members?.endpoints || members?.items || []).map((m) => m.endpoint_id || m));
+  const have = new Set((members?.endpoints || []).map((m) => m.endpoint_id));
   let added = 0;
   for (const eid of eidsByCol[c.name] || []) {
     if (have.has(eid)) continue;
@@ -289,65 +312,73 @@ async function ensureWebview(w) {
 
 async function main() {
   console.log(`[seed] target ${BASE}`);
+  if (!existsSync(join(BUNDLE, "repoview-manifest.json"))) {
+    throw new Error(`demo bundle not found at ${BUNDLE}`);
+  }
+  const manifest = JSON.parse(readFileSync(join(BUNDLE, "repoview-manifest.json"), "utf8"));
+
   await waitForServer();
 
-  const populated = await hasEndpoints();
-  if (populated && !FORCE) {
+  if ((await hasEndpoints()) && !FORCE) {
     console.log("[seed] backend already has endpoints — nothing to do (SEED_FORCE=1 to seed anyway).");
     return;
   }
 
-  // 1. endpoints: reuse one that already exists, otherwise create-by-running.
-  console.log(`[seed] creating + running ${ENDPOINTS.length} endpoints …`);
-  let ran = 0;
-  let reused = 0;
+  // 1. endpoints: reuse any that already exist; import the bundle only when
+  //    none of them do (importing again would duplicate the ones that do).
+  const key = (e) => `${(e.method || "GET").toUpperCase()} ${e.endpoint_str}`;
   const eidFor = new Map();
-  const freshKeys = new Set(); // created by this run (history is added only for these)
-  for (const e of ENDPOINTS) {
-    const key = `${e.method} ${e.url}`;
-    let eid = await lookupEid(e);
-    if (eid) {
-      reused++;
-    } else {
-      eid = await seedEndpoint(e);
-      if (eid) {
-        ran++;
-        freshKeys.add(key);
+  for (const e of manifest.endpoints) {
+    const eid = await lookupEid(e.endpoint_str, e.method || "GET");
+    if (eid) eidFor.set(key(e), eid);
+  }
+  let imported = false;
+  if (eidFor.size === 0) {
+    console.log(`[seed] importing the recorded bundle (${manifest.endpoints.length} endpoints) …`);
+    for (const [k, v] of await importBundle(manifest)) eidFor.set(k, v);
+    imported = true;
+  } else {
+    console.log(`[seed] ${eidFor.size}/${manifest.endpoints.length} bundle endpoints already exist — reusing them, not importing again.`);
+  }
+  if (eidFor.size === 0) throw new Error("no endpoints were imported");
+
+  // 2. one history row per recorded run (an import brings the runs, not the
+  //    history list), only for endpoints brought in by this run.
+  if (imported) {
+    console.log("[seed] history …");
+    for (const e of manifest.endpoints) {
+      const eid = eidFor.get(key(e));
+      if (!eid) continue;
+      for (const q of e.qps || []) {
+        const code = q.status_code;
+        const label = code ? `${code} ${STATUS_TEXT[code] || ""}`.trim() : "no response";
+        await post("/test-view/save/history", {
+          endpoint_id: eid,
+          action: "test",
+          details: `${label} in ${q.response_time_ms ?? 0}ms`,
+        });
       }
     }
-    if (eid) eidFor.set(key, eid);
-  }
-  console.log(`[seed] ${eidFor.size}/${ENDPOINTS.length} endpoints ready (${ran} run now, ${reused} already existed)`);
-  if (eidFor.size === 0) throw new Error("no endpoints were created — is the backend reachable and online?");
-
-  // 2. tags + a little extra history on the endpoints made this run.
-  console.log("[seed] tagging …");
-  const tagged = ENDPOINTS.filter((e) => eidFor.has(`${e.method} ${e.url}`));
-  for (const e of tagged) {
-    for (const t of tagsFor(e)) await post(`/tags/${eidFor.get(`${e.method} ${e.url}`)}/add`, { tag: t });
-  }
-  console.log("[seed] extra history …");
-  const fresh = tagged.filter((e) => freshKeys.has(`${e.method} ${e.url}`));
-  for (const [i, e] of fresh.slice(0, 12).entries()) {
-    await post("/test-view/save/history", {
-      endpoint_id: eidFor.get(`${e.method} ${e.url}`),
-      action: "test",
-      details: EXTRA_HISTORY[i % EXTRA_HISTORY.length],
-    });
   }
 
   // 3. collections
   console.log("[seed] collections …");
   const eidsByCol = {};
-  for (const e of tagged) (eidsByCol[e.col] ||= []).push(eidFor.get(`${e.method} ${e.url}`));
+  for (const [col, method, url] of LAYOUT) {
+    const eid = eidFor.get(`${method} ${url}`);
+    if (eid) (eidsByCol[col] ||= []).push(eid);
+  }
   for (const c of COLLECTIONS) {
     const r = await ensureCollection(c, eidsByCol);
     console.log(`[seed]   ${c.name}: ${r.created ? "created" : "exists"}, ${r.added} added`);
   }
   // Leave fun-apis with two bookmarks that are NOT saved into it, so
   // Bookmark View shows both states.
-  const spare = [...eidFor.values()].filter((id) => !(eidsByCol["fun-apis"] || []).includes(id)).slice(0, 2);
-  for (const id of spare) await post("/test-view/save/bookmark", { collection: "fun-apis", endpoint_id: id, notes: "" });
+  if (imported) {
+    const funEids = new Set(eidsByCol["fun-apis"] || []);
+    const spare = [...eidFor.values()].filter((id) => !funEids.has(id)).slice(0, 2);
+    for (const id of spare) await post("/test-view/save/bookmark", { collection: "fun-apis", endpoint_id: id, notes: "" });
+  }
 
   // 4. RepoViews, then one combined by tag
   console.log("[seed] repoviews …");
@@ -376,6 +407,6 @@ async function main() {
 main()
   .then(() => process.exit(0))
   .catch((e) => {
-    console.error("[seed] FAILED:", e);
+    console.error("[seed] FAILED:", e.message || e);
     process.exit(1);
   });
