@@ -2005,7 +2005,7 @@
 
         return http(
             'GET',
-            `/api/webview/${encodeURIComponent(name)}/front-page`
+            `/webview/${encodeURIComponent(name)}/front-page`
         );
 
     }
@@ -2018,10 +2018,39 @@
 
         return http(
             'POST',
-            `/api/webview/${encodeURIComponent(name)}/front-page`,
+            `/webview/${encodeURIComponent(name)}/front-page`,
             {
                 front_page: frontPage
             }
+        );
+
+    }
+
+
+    async function getWebviewByTag(
+        tagName
+    ) {
+
+        return http(
+            'GET',
+            `/webview/by-tag/${encodeURIComponent(tagName)}`
+        );
+
+    }
+
+
+    // ============================================================
+    // WEBVIEW — IMPORT
+    // ============================================================
+
+    async function importWebview(
+        payload
+    ) {
+
+        return http(
+            'POST',
+            '/webview/import',
+            payload
         );
 
     }
@@ -2394,6 +2423,78 @@
     }
 
 
+    async function getRepoviewByTag(
+        tagName
+    ) {
+
+        return http(
+            'GET',
+            `/repoview/by-tag/${encodeURIComponent(tagName)}`
+        );
+
+    }
+
+
+    // ============================================================
+    // REPOVIEW — TABLES
+    // ============================================================
+
+    async function generateRepoviewTables(
+        name,
+        options = {}
+    ) {
+
+        return http(
+            'POST',
+            `/repoview/${encodeURIComponent(name)}/tables/generate`,
+            options
+        );
+
+    }
+
+
+    async function getRepoviewTables(
+        name
+    ) {
+
+        return http(
+            'GET',
+            `/repoview/${encodeURIComponent(name)}/tables`
+        );
+
+    }
+
+
+    async function getRepoviewTableFile(
+        name,
+        file
+    ) {
+
+        return http(
+            'GET',
+            `/repoview/${encodeURIComponent(name)}/tables/${encodeURIComponent(file)}`
+        );
+
+    }
+
+
+    // ============================================================
+    // REPOVIEW — IMPORT
+    // ============================================================
+
+    async function importRepoview(
+        payload
+    ) {
+
+        return http(
+            'POST',
+            '/repoview/import',
+            payload
+        );
+
+    }
+
+
     // ============================================================
     // JOBS / ASYNC OPERATIONS
     // ============================================================
@@ -2553,6 +2654,130 @@
 
 
     // ============================================================
+    // QP (REQUEST/RESPONSE PAIRS)
+    // ============================================================
+
+    async function listQPs(
+        endpointId
+    ) {
+
+        return http(
+            'GET',
+            `/test-view/${encodeURIComponent(endpointId)}/qps`
+        );
+
+    }
+
+
+    async function createQP(
+        endpointId,
+        method,
+        requestBody,
+        responseBody
+    ) {
+
+        return http(
+            'POST',
+            `/test-view/${encodeURIComponent(endpointId)}/qps/create`,
+            {
+                method,
+                request_body: requestBody,
+                response_body: responseBody
+            }
+        );
+
+    }
+
+
+    async function updateQP(
+        endpointId,
+        requestNumber,
+        requestBody,
+        responseBody
+    ) {
+
+        return http(
+            'POST',
+            `/test-view/${encodeURIComponent(endpointId)}/qps/${encodeURIComponent(requestNumber)}/update`,
+            {
+                request_body: requestBody,
+                response_body: responseBody
+            }
+        );
+
+    }
+
+
+    async function deleteQP(
+        endpointId,
+        requestNumber
+    ) {
+
+        return http(
+            'POST',
+            `/test-view/${encodeURIComponent(endpointId)}/qps/${encodeURIComponent(requestNumber)}/delete`
+        );
+
+    }
+
+
+    // ============================================================
+    // IMPORT/EXPORT TABLE
+    // ============================================================
+
+    async function getImportExportTable() {
+
+        return http(
+            'GET',
+            '/import-export/table'
+        );
+
+    }
+
+
+    async function runFormatCheck(
+        section,
+        path
+    ) {
+
+        return http(
+            'POST',
+            '/import-export/check',
+            {
+                section,
+                path
+            }
+        );
+
+    }
+
+
+    // ============================================================
+    // ENDPOINTS LOOKUP
+    // ============================================================
+
+    async function lookupEndpoint(
+        endpointStr,
+        method
+    ) {
+
+        const params = new URLSearchParams({
+            endpoint_str: endpointStr
+        });
+
+        if (method !== undefined) {
+            params.set('method', method);
+        }
+
+        return http(
+            'GET',
+            `/endpoints/lookup?${params.toString()}`
+        );
+
+    }
+
+
+    // ============================================================
     // REPO EXPORT
     // ============================================================
 
@@ -2685,6 +2910,45 @@
         return http(
             'GET',
             `/dashboard/compare?${params.toString()}`
+        );
+
+    }
+
+
+    // ============================================================
+    // COLLECTIONS — TAGS IMPORT
+    // ============================================================
+
+    async function importCollectionTags(
+        collectionName,
+        tags,
+        exportExistingTags
+    ) {
+
+        const body = {
+            tags
+        };
+
+        if (exportExistingTags !== undefined) {
+            body.export_existing_tags = exportExistingTags;
+        }
+
+        return http(
+            'POST',
+            `/collections/${encodeURIComponent(collectionName)}/tags/import`,
+            body
+        );
+
+    }
+
+
+    async function listCollectionTagEndpoints(
+        collectionName
+    ) {
+
+        return http(
+            'GET',
+            `/collections/${encodeURIComponent(collectionName)}/tags/endpoints`
         );
 
     }
@@ -2853,6 +3117,9 @@
         getWebviewFrontPage,
         saveWebviewFrontPage,
 
+        getWebviewByTag,
+        importWebview,
+
 
         // ----------------------------------------
         // Repo View
@@ -2891,6 +3158,48 @@
         addRepoviewMembershipTag,
         removeRepoviewMembershipTag,
         listRepoviewMembershipTags,
+
+        getRepoviewByTag,
+
+        generateRepoviewTables,
+        getRepoviewTables,
+        getRepoviewTableFile,
+
+        importRepoview,
+
+
+        // ----------------------------------------
+        // QPs (Request/Response Pairs)
+        // ----------------------------------------
+
+        listQPs,
+        createQP,
+        updateQP,
+        deleteQP,
+
+
+        // ----------------------------------------
+        // Import / Export Table
+        // ----------------------------------------
+
+        getImportExportTable,
+        runFormatCheck,
+
+
+        // ----------------------------------------
+        // Endpoints Lookup
+        // ----------------------------------------
+
+        lookupEndpoint,
+
+
+        // ----------------------------------------
+        // Collections Extended
+        // ----------------------------------------
+
+        importCollectionTags,
+        listCollectionTagEndpoints,
+
 
         // ----------------------------------------
         // Jobs

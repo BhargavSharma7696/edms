@@ -351,24 +351,18 @@ async function fetchEndpointTags(endpointId) {
 
     }
 
-    const response =
-        await fetch(
-            `${API_BASE}/tags/${encodeURIComponent(endpointId)}`
-        );
+    const res = await EdmsAPI.listEndpointTags(endpointId);
 
-    if (!response.ok) {
+    if (!res.ok) {
 
         throw new Error(
-            `Failed to load endpoint tags: ${response.status}`
+            `Failed to load endpoint tags: ${res.status}`
         );
 
     }
 
-    const data =
-        await response.json();
-
-    return Array.isArray(data?.tags)
-        ? data.tags
+    return Array.isArray(res.data?.tags)
+        ? res.data.tags
         : [];
 
 }
@@ -388,27 +382,21 @@ async function fetchEndpointQPs(endpointId) {
 
     }
 
-    const response =
-        await fetch(
-            `${API_BASE}/test-view/${encodeURIComponent(endpointId)}/qps`
-        );
+    const res = await EdmsAPI.listQPs(endpointId);
 
-    if (!response.ok) {
+    if (!res.ok) {
 
         throw new Error(
-            `Failed to load endpoint QPs: ${response.status}`
+            `Failed to load endpoint QPs: ${res.status}`
         );
 
     }
 
-    const data =
-        await response.json();
-
-    if (!data.ok || !Array.isArray(data.qps)) {
+    if (!res.data?.ok || !Array.isArray(res.data?.qps)) {
         return [];
     }
 
-    return data.qps.map(qp => ({
+    return res.data.qps.map(qp => ({
         id: qp.request_number,
         name: String(qp.request_number),
         method: qp.method,
@@ -434,40 +422,19 @@ async function addEndpointTag(endpointId, tag) {
 
     }
 
-    const response =
-        await fetch(
-            `${API_BASE}/tags/${encodeURIComponent(endpointId)}/add`,
-            {
-                method: "POST",
+    const res = await EdmsAPI.addEndpointTag(endpointId, tag);
 
-                headers: {
-                    "Content-Type":
-                        "application/json"
-                },
-
-                body:
-                    JSON.stringify({
-                        tag
-                    })
-            }
-        );
-
-    const data =
-        await parseTagResponse(
-            response
-        );
-
-    if (!response.ok) {
+    if (!res.ok) {
 
         throw new Error(
-            data?.message ||
-            data?.error ||
-            `Failed to add tag: ${response.status}`
+            res.data?.message ||
+            res.data?.error ||
+            `Failed to add tag: ${res.status}`
         );
 
     }
 
-    return data;
+    return res.data;
 
 }
 
@@ -484,63 +451,36 @@ async function removeEndpointTag(endpointId, tag) {
 
     }
 
-    const response =
-        await fetch(
-            `${API_BASE}/tags/${encodeURIComponent(endpointId)}/remove`,
-            {
-                method: "POST",
+    const res = await EdmsAPI.removeEndpointTag(endpointId, tag);
 
-                headers: {
-                    "Content-Type":
-                        "application/json"
-                },
-
-                body:
-                    JSON.stringify({
-                        tag
-                    })
-            }
-        );
-
-    const data =
-        await parseTagResponse(
-            response
-        );
-
-    if (!response.ok) {
+    if (!res.ok) {
 
         throw new Error(
-            data?.message ||
-            data?.error ||
-            `Failed to remove tag: ${response.status}`
+            res.data?.message ||
+            res.data?.error ||
+            `Failed to remove tag: ${res.status}`
         );
 
     }
 
-    return data;
+    return res.data;
 
 }
 
 async function loadPopularEndpointTags() {
 
-    const response =
-        await fetch(
-            `${API_BASE}/tags/popular`
-        );
+    const res = await EdmsAPI.listPopularTags();
 
-    if (!response.ok) {
+    if (!res.ok) {
 
         throw new Error(
-            `Failed to load popular tags: ${response.status}`
+            `Failed to load popular tags: ${res.status}`
         );
 
     }
 
-    const data =
-        await response.json();
-
-    return Array.isArray(data)
-        ? data
+    return Array.isArray(res.data)
+        ? res.data
         : [];
 
 }
@@ -2986,10 +2926,7 @@ async function doDeleteSelectedQP() {
         for (const qpId of selectedQPIds) {
             if (String(qpId) !== "default") {
                 deletePromises.push(
-                    fetch(
-                        `${API_BASE}/test-view/${encodeURIComponent(endpointId)}/qps/${encodeURIComponent(qpId)}/delete`,
-                        { method: "POST" }
-                    ).catch(error => {
+                    EdmsAPI.deleteQP(endpointId, qpId).catch(error => {
                         console.error(`Error deleting QP ${qpId}:`, error);
                     })
                 );
@@ -3072,37 +3009,32 @@ async function selectTestQP(
 
     if (qp.id !== "default" && selectedTestEndpoint?.id && !qp.isFullDataLoaded) {
         try {
-            const endpointId = encodeURIComponent(selectedTestEndpoint.id);
-            const qpId = encodeURIComponent(qp.id);
+            const endpointId = selectedTestEndpoint.id;
+            const qpId = qp.id;
 
             const [reqRes, resRes, headRes] = await Promise.all([
-                fetch(`${API_BASE}/test-view/${endpointId}/request/${qpId}`).catch(() => null),
-                fetch(`${API_BASE}/test-view/${endpointId}/response/${qpId}`).catch(() => null),
-                fetch(`${API_BASE}/test-view/${endpointId}/headers/${qpId}`).catch(() => null)
+                EdmsAPI.fetchRequest(endpointId, qpId).catch(() => null),
+                EdmsAPI.fetchResponse(endpointId, qpId).catch(() => null),
+                EdmsAPI.fetchHeaders(endpointId, qpId).catch(() => null)
             ]);
 
             qp.request = qp.request || {};
             qp.response = qp.response || {};
 
             if (reqRes && reqRes.ok) {
-                const text = await reqRes.text();
-                try { qp.request.body = JSON.parse(text); } 
-                catch { qp.request.body = text; }
+                qp.request.body = reqRes.data;
             }
 
             if (resRes && resRes.ok) {
-                const text = await resRes.text();
-                try { qp.response.body = JSON.parse(text); } 
-                catch { qp.response.body = text; }
+                qp.response.body = resRes.data;
             }
 
             if (headRes && headRes.ok) {
-                const text = await headRes.text();
-                try {
-                    const headersData = JSON.parse(text);
+                const headersData = headRes.data;
+                if (headersData && typeof headersData === 'object') {
                     qp.request.headers = headersData.request_headers || {};
                     qp.response.headers = headersData.response_headers || {};
-                } catch {}
+                }
             }
 
             qp.isFullDataLoaded = true;
@@ -3696,14 +3628,12 @@ function setupRunner() {
             if (!endpoint || !selectedTestQP) return;
             
             try {
-                const res = await fetch(`http://localhost:3000/test-view/${encodeURIComponent(endpoint.id)}/qps/${encodeURIComponent(selectedTestQP.id)}/update`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        request_body: requestContent.value,
-                        response_body: responseContent.value
-                    })
-                });
+                const res = await EdmsAPI.updateQP(
+                    endpoint.id,
+                    selectedTestQP.id,
+                    requestContent.value,
+                    responseContent.value
+                );
                 if (res.ok) {
                     console.log("QP updated on backend successfully");
                     const qp = endpoint.qps?.find(q => String(q.id) === String(selectedTestQP.id));
@@ -3734,18 +3664,15 @@ function setupRunner() {
             if (!endpoint) return;
             
             try {
-                const res = await fetch(`http://localhost:3000/test-view/${encodeURIComponent(endpoint.id)}/qps/create`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        method: endpoint.method || "GET",
-                        request_body: requestContent.value,
-                        response_body: responseContent.value
-                    })
-                });
+                const res = await EdmsAPI.createQP(
+                    endpoint.id,
+                    endpoint.method || "GET",
+                    requestContent.value,
+                    responseContent.value
+                );
                 
                 if (res.ok) {
-                    const data = await res.json();
+                    const data = res.data;
                     if (!Array.isArray(endpoint.qps)) endpoint.qps = [];
                     
                     const newQp = {

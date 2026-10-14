@@ -588,12 +588,11 @@
     state.selectedEndpoint = endpoint;
 
     const eid = getEndpointId(endpoint);
-    const API_BASE = "http://localhost:3000";
     let qps = [];
     try {
-        const res = await fetch(`${API_BASE}/test-view/${encodeURIComponent(eid)}/qps`);
+        const res = await EdmsAPI.listQPs(eid);
         if (res.ok) {
-            const data = await res.json();
+            const data = res.data;
             if (data && Array.isArray(data.qps)) {
                 qps = data.qps.map(qp => ({
                     id: qp.request_number,
@@ -677,17 +676,16 @@
     const delBtn = document.getElementById("deleteQP");
     if (delBtn) delBtn.disabled = false;
 
-    const API_BASE = "http://localhost:3000";
     try {
         const [reqRes, resRes, hdrRes] = await Promise.all([
-            fetch(`${API_BASE}/test-view/${encodeURIComponent(endpointId)}/request/${qpId}`).catch(() => null),
-            fetch(`${API_BASE}/test-view/${encodeURIComponent(endpointId)}/response/${qpId}`).catch(() => null),
-            fetch(`${API_BASE}/test-view/${encodeURIComponent(endpointId)}/headers/${qpId}`).catch(() => null)
+            EdmsAPI.fetchRequest(endpointId, qpId).catch(() => null),
+            EdmsAPI.fetchResponse(endpointId, qpId).catch(() => null),
+            EdmsAPI.fetchHeaders(endpointId, qpId).catch(() => null)
         ]);
 
-        const reqData = reqRes?.ok ? await reqRes.json() : null;
-        const resData = resRes?.ok ? await resRes.json() : null;
-        const hdrData = hdrRes?.ok ? await hdrRes.json() : null;
+        const reqData = reqRes?.ok ? reqRes.data : null;
+        const resData = resRes?.ok ? resRes.data : null;
+        const hdrData = hdrRes?.ok ? hdrRes.data : null;
 
         const request = { 
             body: reqData?.body || null,
@@ -1313,10 +1311,9 @@
       if (qpsToDelete.length === 0) return;
 
       const eid = getEndpointId(state.selectedEndpoint);
-      const API_BASE = "http://localhost:3000";
       try {
         await Promise.all(qpsToDelete.map(id => 
-            fetch(`${API_BASE}/test-view/${encodeURIComponent(eid)}/qps/${id}/delete`, { method: "POST" })
+            EdmsAPI.deleteQP(eid, id)
         ));
         selectedQPId = null;
         document.getElementById("deleteQP").disabled = true;
