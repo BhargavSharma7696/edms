@@ -36,10 +36,6 @@ function init() {
         !window.RepoView
     ) {
 
-        console.error(
-            'Repo View context menu could not initialize.'
-        );
-
         return;
 
     }

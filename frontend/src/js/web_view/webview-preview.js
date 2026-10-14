@@ -180,12 +180,23 @@
   }
 
   async function fetchWebViewFromBackend(id, options = {}) {
-    const endpoint = options.endpoint || `/api/webviews/${encodeURIComponent(id)}/frontpage`;
-    const response = await fetch(endpoint, {
+    let endpoint = options.endpoint || (window.WEBVIEW_FRONT_PAGE_API_URL
+      ? window.WEBVIEW_FRONT_PAGE_API_URL.replace(':id', encodeURIComponent(String(id)))
+      : `/webview/${encodeURIComponent(id)}/frontpage`);
+    let response = await fetch(endpoint, {
       method: "GET",
       headers: { Accept: "application/json" },
       signal: options.signal
     });
+    if (!response.ok && response.status === 404 && !options.endpoint && !window.WEBVIEW_FRONT_PAGE_API_URL) {
+      const fallback = `/api/webviews/${encodeURIComponent(id)}/frontpage`;
+      const fallbackRes = await fetch(fallback, {
+        method: "GET",
+        headers: { Accept: "application/json" },
+        signal: options.signal
+      });
+      if (fallbackRes.ok) response = fallbackRes;
+    }
     if (!response.ok) throw new Error(`WebView API returned HTTP ${response.status}`);
     const data = await response.json();
     // Accept either a direct WebView object or { data: WebView } API responses.

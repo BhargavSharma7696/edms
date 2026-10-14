@@ -1737,6 +1737,212 @@
     }
 
 
+    async function duplicateWebview(
+        name,
+        newName
+    ) {
+
+        return http(
+            'POST',
+            `/webview/${encodeURIComponent(name)}/duplicate`,
+            {
+                new_name:
+                    newName
+            }
+        );
+
+    }
+
+
+    async function deleteWebview(
+        name
+    ) {
+
+        return http(
+            'POST',
+            `/webview/${encodeURIComponent(name)}/delete`
+        );
+
+    }
+
+
+    async function deleteWebviews(
+        names
+    ) {
+
+        return http(
+            'POST',
+            '/webview/delete',
+            {
+                names:
+                    Array.isArray(names) ? names : [names]
+            }
+        );
+
+    }
+
+
+    async function renameWebview(
+        name,
+        newName
+    ) {
+
+        return http(
+            'POST',
+            `/webview/${encodeURIComponent(name)}/rename`,
+            {
+                new_name:
+                    newName
+            }
+        );
+
+    }
+
+
+    async function setWebviewAnnotation(
+        name,
+        annotation
+    ) {
+
+        return http(
+            'POST',
+            `/webview/${encodeURIComponent(name)}/annotation`,
+            {
+                annotation
+            }
+        );
+
+    }
+
+
+    async function combineWebviews(
+        payload,
+        newName
+    ) {
+
+        let body;
+
+        if (Array.isArray(payload)) {
+
+            body = {
+                names: payload
+            };
+
+            if (newName) {
+
+                body.new_name = newName;
+
+            }
+
+        } else if (typeof payload === 'object' && payload !== null) {
+
+            body = payload;
+
+        } else {
+
+            body = {
+                names: [payload]
+            };
+
+            if (newName) {
+
+                body.new_name = newName;
+
+            }
+
+        }
+
+        return http(
+            'POST',
+            '/webview/combine',
+            body
+        );
+
+    }
+
+
+    async function convertWebviewToCollection(
+        name,
+        targetCollectionName
+    ) {
+
+        const body =
+            targetCollectionName
+                ? {
+                    collection_name:
+                        targetCollectionName
+                }
+                : {};
+
+        return http(
+            'POST',
+            `/webview/${encodeURIComponent(name)}/convert-to-collection`,
+            body
+        );
+
+    }
+
+
+    async function takeoutWebview(
+        name,
+        options = {}
+    ) {
+
+        return http(
+            'POST',
+            `/webview/${encodeURIComponent(name)}/takeout`,
+            options
+        );
+
+    }
+
+
+    async function addWebviewMembershipTag(
+        webviewName,
+        tag
+    ) {
+
+        return http(
+            'POST',
+            `/webview/${encodeURIComponent(webviewName)}/membership-tags/add`,
+            {
+                tag
+            }
+        );
+
+    }
+
+
+    async function removeWebviewMembershipTag(
+        webviewName,
+        tag
+    ) {
+
+        return http(
+            'POST',
+            `/webview/${encodeURIComponent(webviewName)}/membership-tags/remove`,
+            {
+                tag
+            }
+        );
+
+    }
+
+
+    async function listWebviewMembershipTags(
+        webviewName
+    ) {
+
+        return http(
+            'GET',
+            `/webview/${encodeURIComponent(webviewName)}/membership-tags`
+        );
+
+    }
+
+
+
+
     // ============================================================
     // REPO VIEW
     // ============================================================
@@ -2107,10 +2313,36 @@
         createWebview,
         listWebviews,
 
+        duplicateWebview,
+        duplicateWeb: duplicateWebview,
+
+        deleteWebview,
+        deleteWebviews,
+        deleteWebs: deleteWebviews,
+
+        renameWebview,
+        renameWeb: renameWebview,
+
+        setWebviewAnnotation,
+        annotateWebview: setWebviewAnnotation,
+
+        combineWebviews,
+        combineWebs: combineWebviews,
+
+        convertWebviewToCollection,
+        convertToCollection: convertWebviewToCollection,
+
+        takeoutWebview,
+        takeoutWeb: takeoutWebview,
+
         createWebviewTag,
         deleteWebviewTags,
         renameWebviewTag,
         listWebviewTags,
+
+        addWebviewMembershipTag,
+        removeWebviewMembershipTag,
+        listWebviewMembershipTags,
 
 
         // ----------------------------------------

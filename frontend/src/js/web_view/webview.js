@@ -11,8 +11,6 @@
 
   const CRUD_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"];
 
-  let nextId = 10000;
-
   // ============================================================
   // STATE
   // ============================================================
@@ -91,31 +89,48 @@
       }
 
       // Map the backend items to the structure expected by the frontend table
-      state.webs = list.map((item, index) => {
+      state.webs = list.map((item) => {
+        const id = item.id || item.name;
+        const name = item.name || item.id || "";
+        const segments = Array.isArray(item.segments) ? item.segments : [];
+        const segmentCount =
+          typeof item.segmentCount === "number"
+            ? item.segmentCount
+            : Array.isArray(item.segments)
+              ? item.segments.length
+              : typeof item.segments === "number"
+                ? item.segments
+                : 0;
+
         return {
-          id: nextId + index, // Generate temporary ID since backend doesn't provide one
-          name: item.name,
+          id: id,
+          name: name,
           annotation: item.annotation || "",
-          dateCreated: item.created_at ? item.created_at.split(" ")[0] : "",
-          dataSizeBytes: 0,
-          eidCount: item.endpoint_count || 0,
-          segments: 0,
-          dataTags: [],
-          tags: [], // Tags aren't attached to the list view in the backend yet
-          qpCount: 0,
-          indexLists: 0,
+          source: item.source || "",
+          tags: Array.isArray(item.tags) ? item.tags : (item.tags ? [item.tags] : []),
+          dataTags: Array.isArray(item.dataTags) ? item.dataTags : (item.dataTags ? [item.dataTags] : []),
+          crud: item.crud || { GET: 0, POST: 0, PUT: 0, PATCH: 0, DELETE: 0 },
+          segments: segments,
+          segmentCount: segmentCount,
+          segmentFrequency: item.segmentFrequency || {},
+          eidCount: item.eidCount ?? item.endpoint_count ?? 0,
+          qpCount: item.qpCount ?? 0,
+          indexLists: item.indexLists ?? 0,
+          dataSizeBytes: item.dataSizeBytes ?? 0,
+          dateCreated: item.dateCreated || (item.created_at ? item.created_at.split(" ")[0] : ""),
         };
       });
 
       if (state.webs.length === 0) {
         state.webs.push({
-          id: nextId++,
+          id: "demo webview",
           name: "demo webview",
           annotation: "just for referencing (dummy entry)",
           dateCreated: new Date().toISOString().split("T")[0],
           dataSizeBytes: 15 * 1024 * 1024,
           eidCount: 5,
-          segments: 2,
+          segments: ["api", "v1"],
+          segmentCount: 2,
           dataTags: ["eqp-demo"],
           tags: ["demo"],
           qpCount: 2,
@@ -124,10 +139,10 @@
         });
       }
 
-      nextId += state.webs.length;
-
       state.webs.forEach((item) => {
-        sizeUnits[item.id] = "MB";
+        if (!sizeUnits[item.id]) {
+          sizeUnits[item.id] = "MB";
+        }
       });
     } catch (error) {
       console.error("Failed to load Web View data:", error);
@@ -229,11 +244,13 @@
   }
 
   function getWebSegmentCount(web) {
+    if (typeof web.segmentCount === "number") return web.segmentCount;
+
     const segments = getWebSegments(web);
 
     if (segments.length) return segments.length;
 
-    if (typeof web.segmentCount === "number") return web.segmentCount;
+    if (typeof web.segments === "number") return web.segments;
 
     return 0;
   }
@@ -296,12 +313,12 @@
   function createWebRow(web) {
     const row = document.createElement("tr");
 
-    const id = Number(web.id);
+    const id = String(web.id || web.name);
 
     const isSelected = state.selected.has(id);
     const isActive = state.activeRowId === id;
 
-    row.dataset.id = String(id);
+    row.dataset.id = id;
 
     row.className = [
       "web-row",
@@ -985,11 +1002,24 @@
       ?.addEventListener("click", clearSelection);
 
     document
+      .getElementById("combineWebSelection")
+      ?.addEventListener("click", () => {
+        combineWebs([...state.selected]);
+      });
+
+    document
+      .getElementById("deleteWebSelection")
+      ?.addEventListener("click", () => {
+        openDeleteModal([...state.selected]);
+      });
+
+    document
       .getElementById("selectAllWebs")
       ?.addEventListener("change", (event) => {
         currentPageItems().forEach((web) => {
-          if (event.target.checked) state.selected.add(Number(web.id));
-          else state.selected.delete(Number(web.id));
+          const id = String(web.id || web.name);
+          if (event.target.checked) state.selected.add(id);
+          else state.selected.delete(id);
         });
 
         render();
@@ -1030,6 +1060,24 @@
         )
         .join("");
     }
+
+    const combineBtn = document.getElementById("combineWebSelection");
+    if (combineBtn) {
+      if (selected.length >= 2) {
+        combineBtn.classList.remove("hidden");
+      } else {
+        combineBtn.classList.add("hidden");
+      }
+    }
+
+    const deleteBtn = document.getElementById("deleteWebSelection");
+    if (deleteBtn) {
+      if (selected.length >= 1) {
+        deleteBtn.classList.remove("hidden");
+      } else {
+        deleteBtn.classList.add("hidden");
+      }
+    }
   }
 
   function updateSelectAllState() {
@@ -1040,7 +1088,7 @@
     const items = currentPageItems();
 
     const selectedCount = items.filter((web) =>
-      state.selected.has(Number(web.id)),
+      state.selected.has(String(web.id || web.name)),
     ).length;
 
     selectAll.checked = items.length > 0 && selectedCount === items.length;
@@ -1049,7 +1097,7 @@
   }
 
   function getSelectedWebs() {
-    return state.webs.filter((web) => state.selected.has(Number(web.id)));
+    return state.webs.filter((web) => state.selected.has(String(web.id || web.name)));
   }
 
   // ============================================================
@@ -1170,7 +1218,22 @@
         .filter(Boolean);
 
       for (const t of tags) {
-        await window.EdmsAPI.createWebviewTag(t);
+        if (window.EdmsAPI && typeof window.EdmsAPI.addWebviewMembershipTag === "function") {
+          try {
+            await window.EdmsAPI.addWebviewMembershipTag(name, t);
+          } catch (e) {
+            console.warn("Failed to add membership tag on create:", e);
+          }
+        }
+      }
+
+      const annotation = document.getElementById("createAnnotation")?.value.trim();
+      if (annotation && window.EdmsAPI && typeof window.EdmsAPI.setWebviewAnnotation === "function") {
+        try {
+          await window.EdmsAPI.setWebviewAnnotation(name, annotation);
+        } catch (e) {
+          console.warn("Failed to set annotation on create:", e);
+        }
       }
 
       await loadData();
@@ -1191,7 +1254,7 @@
   // DUPLICATE
   // ============================================================
 
-  function duplicateWeb(id) {
+  async function duplicateWeb(id) {
     const source = getWeb(id);
 
     if (!source) return;
@@ -1208,14 +1271,29 @@
       counter++;
     }
 
-    const copy = structuredClone(source);
+    try {
+      if (window.EdmsAPI && typeof window.EdmsAPI.duplicateWebview === "function") {
+        const res = await window.EdmsAPI.duplicateWebview(source.name, copyName);
+        if (res && !res.ok) {
+          console.warn("Backend duplicateWebview returned error:", res.status);
+        }
+      }
+    } catch (err) {
+      console.warn("Failed duplicateWebview API call:", err);
+    }
 
-    copy.id = nextId++;
-    copy.name = copyName;
-    copy.dateCreated = new Date().toISOString().slice(0, 10);
+    // Refresh from backend or keep in local memory if endpoint is pending backend implementation
+    const prevCount = state.webs.length;
+    await loadData();
+    if (state.webs.length === prevCount) {
+      const copy = structuredClone(source);
+      copy.id = copyName;
+      copy.name = copyName;
+      copy.dateCreated = new Date().toISOString().slice(0, 10);
+      state.webs.unshift(copy);
+      sizeUnits[copy.id] = "MB";
+    }
 
-    state.webs.unshift(copy);
-    sizeUnits[copy.id] = "MB";
     state.selected.clear();
     state.page = 1;
 
@@ -1238,7 +1316,7 @@
                 <div class="mt-0.5 text-rose-400">${iconTrash()}</div>
                 <div>
                     <h2 class="text-sm font-semibold text-rose-300">Delete ${webs.length > 1 ? "Web Views" : "Web View"}</h2>
-                    <p class="mt-1 text-[11px] text-slate-500">This removes the selected web view(s) from the current prototype session.</p>
+                    <p class="mt-1 text-[11px] text-slate-500">This removes the selected web view(s) from the system.</p>
                 </div>
             </div>
 
@@ -1261,19 +1339,38 @@
 
         `);
 
-    document.getElementById("confirmDelete")?.addEventListener("click", () => {
-      deleteWebs(ids);
+    document.getElementById("confirmDelete")?.addEventListener("click", async () => {
+      await deleteWebs(ids);
       closeModal();
     });
   }
 
-  function deleteWebs(ids) {
-    const normalizedIds = ids.map(Number);
+  async function deleteWebs(ids) {
+    const normalizedIds = ids.map(String);
+    const websToDelete = state.webs.filter((web) => normalizedIds.includes(String(web.id || web.name)));
+    const names = websToDelete.map((w) => w.name || w.id).filter(Boolean);
 
+    if (names.length === 0) return;
+
+    try {
+      if (window.EdmsAPI) {
+        if (names.length === 1 && typeof window.EdmsAPI.deleteWebview === "function") {
+          const res = await window.EdmsAPI.deleteWebview(names[0]);
+          if (res && !res.ok) console.warn("deleteWebview returned:", res.status);
+        } else if (typeof window.EdmsAPI.deleteWebviews === "function") {
+          const res = await window.EdmsAPI.deleteWebviews(names);
+          if (res && !res.ok) console.warn("deleteWebviews returned:", res.status);
+        }
+      }
+    } catch (err) {
+      console.warn("Failed deleteWeb API call:", err);
+    }
+
+    // Refresh from backend, plus clean up local state
+    await loadData();
     state.webs = state.webs.filter(
-      (web) => !normalizedIds.includes(Number(web.id)),
+      (web) => !normalizedIds.includes(String(web.id || web.name)) && !names.includes(web.name),
     );
-
     normalizedIds.forEach((id) => state.selected.delete(id));
 
     renderSidebar();
@@ -1306,7 +1403,7 @@
 
         `);
 
-    document.getElementById("saveWebEdit")?.addEventListener("click", () => {
+    document.getElementById("saveWebEdit")?.addEventListener("click", async () => {
       const newName = document.getElementById("editWebName").value.trim();
 
       if (!newName) {
@@ -1316,7 +1413,7 @@
 
       const duplicate = state.webs.some(
         (item) =>
-          Number(item.id) !== Number(web.id) &&
+          String(item.id || item.name) !== String(web.id || web.name) &&
           item.name.toLowerCase() === newName.toLowerCase(),
       );
 
@@ -1325,13 +1422,52 @@
         return;
       }
 
-      web.name = newName;
+      const oldName = web.name;
+      if (oldName !== newName) {
+        try {
+          if (window.EdmsAPI && typeof window.EdmsAPI.renameWebview === "function") {
+            const res = await window.EdmsAPI.renameWebview(oldName, newName);
+            if (res && !res.ok) console.warn("renameWebview returned:", res.status);
+          }
+        } catch (err) {
+          console.warn("Failed renameWebview API call:", err);
+        }
+      }
 
-      web.tags = document
+      const currentTags = Array.isArray(web.tags) ? web.tags : [];
+      const newTags = document
         .getElementById("editWebTags")
         .value.split(",")
         .map((tag) => tag.trim())
         .filter(Boolean);
+
+      const targetWebName = newName || web.name;
+
+      if (window.EdmsAPI && typeof window.EdmsAPI.addWebviewMembershipTag === "function") {
+        const addedTags = newTags.filter((t) => !currentTags.includes(t));
+        const removedTags = currentTags.filter((t) => !newTags.includes(t));
+
+        for (const t of addedTags) {
+          try {
+            await window.EdmsAPI.addWebviewMembershipTag(targetWebName, t);
+          } catch (e) {
+            console.warn("Failed to add membership tag:", e);
+          }
+        }
+        for (const t of removedTags) {
+          try {
+            if (typeof window.EdmsAPI.removeWebviewMembershipTag === "function") {
+              await window.EdmsAPI.removeWebviewMembershipTag(targetWebName, t);
+            }
+          } catch (e) {
+            console.warn("Failed to remove membership tag:", e);
+          }
+        }
+      }
+
+      web.name = newName;
+      web.id = newName;
+      web.tags = newTags;
 
       closeModal();
       renderSidebar();
@@ -1363,11 +1499,153 @@
 
         `);
 
-    document.getElementById("saveAnnotation")?.addEventListener("click", () => {
-      web.annotation = document.getElementById("annotationEditor").value;
+    document.getElementById("saveAnnotation")?.addEventListener("click", async () => {
+      const annotationVal = document.getElementById("annotationEditor").value;
+
+      try {
+        if (window.EdmsAPI && typeof window.EdmsAPI.setWebviewAnnotation === "function") {
+          const res = await window.EdmsAPI.setWebviewAnnotation(web.name, annotationVal);
+          if (res && !res.ok) console.warn("setWebviewAnnotation returned:", res.status);
+        }
+      } catch (err) {
+        console.warn("Failed setWebviewAnnotation API call:", err);
+      }
+
+      web.annotation = annotationVal;
 
       closeModal();
       render();
+    });
+  }
+
+  // ============================================================
+  // COMBINE
+  // ============================================================
+
+  function combineWebs(ids) {
+    const targetIds = (ids && ids.length) ? ids : [...state.selected];
+    const webs = targetIds.map(getWeb).filter(Boolean);
+
+    if (webs.length < 2) {
+      showAlert("Please select at least 2 Web Views to combine.");
+      return;
+    }
+
+    const defaultName = `${webs[0].name}_combined`;
+
+    openModal(`
+      <h2 class="mb-4 text-sm font-semibold text-white">Combine Web Views</h2>
+      <p class="mb-3 text-[11px] text-slate-400">Combine ${webs.length} web views into a unified web view:</p>
+      <div class="mb-4 max-h-36 overflow-y-auto rounded-lg border border-slate-800 bg-slate-950/60 p-2 text-xs font-mono text-slate-300">
+        ${webs.map((w) => `<div>• ${escapeHtml(w.name)}</div>`).join("")}
+      </div>
+      <label class="mb-1 block text-[11px] text-slate-500">Combined Web View Name</label>
+      <input id="combinedWebName" value="${escapeAttr(defaultName)}" class="mb-4 h-9 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500 text-slate-200">
+      <div class="flex justify-end gap-2">
+        <button type="button" data-modal-close class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">Cancel</button>
+        <button id="confirmCombineWeb" type="button" class="rounded-md bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-cyan-500">Combine</button>
+      </div>
+    `);
+
+    document.getElementById("confirmCombineWeb")?.addEventListener("click", async () => {
+      const newName = document.getElementById("combinedWebName").value.trim();
+      if (!newName) {
+        showAlert("Combined name is required.");
+        return;
+      }
+      const names = webs.map((w) => w.name);
+      try {
+        if (window.EdmsAPI && typeof window.EdmsAPI.combineWebviews === "function") {
+          const res = await window.EdmsAPI.combineWebviews({ names, new_name: newName });
+          if (res && !res.ok) console.warn("combineWebviews returned:", res.status);
+        }
+      } catch (err) {
+        console.warn("Failed combineWebviews API call:", err);
+      }
+      showAlert(`Web views combined into "${newName}".`);
+      closeModal();
+      await loadData();
+      state.selected.clear();
+      renderSidebar();
+      applyFilters();
+    });
+  }
+
+  // ============================================================
+  // CONVERT TO COLLECTION
+  // ============================================================
+
+  function convertToCollection(id) {
+    const web = getWeb(id);
+    if (!web) return;
+
+    openModal(`
+      <h2 class="mb-4 text-sm font-semibold text-white">Convert to Collection</h2>
+      <p class="mb-3 text-[11px] text-slate-400">Convert Web View <strong class="text-white">${escapeHtml(web.name)}</strong> into a Collection.</p>
+      <div class="flex justify-end gap-2">
+        <button type="button" data-modal-close class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">Cancel</button>
+        <button id="confirmConvertToCollection" type="button" class="rounded-md bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-cyan-500">Convert</button>
+      </div>
+    `);
+
+    document.getElementById("confirmConvertToCollection")?.addEventListener("click", async () => {
+      try {
+        if (window.EdmsAPI && typeof window.EdmsAPI.convertWebviewToCollection === "function") {
+          const res = await window.EdmsAPI.convertWebviewToCollection(web.name);
+          if (res && !res.ok) console.warn("convertWebviewToCollection returned:", res.status);
+        }
+        showAlert(`Web View "${web.name}" converted to Collection.`);
+      } catch (err) {
+        console.warn("Failed convertWebviewToCollection API call:", err);
+        showAlert(`Error converting to collection: ${err.message}`);
+      }
+      closeModal();
+    });
+  }
+
+  // ============================================================
+  // TAKEOUT
+  // ============================================================
+
+  function takeoutWeb(id) {
+    const web = getWeb(id);
+    if (!web) return;
+
+    openModal(`
+      <h2 class="mb-4 text-sm font-semibold text-white">Takeout Web View</h2>
+      <p class="mb-3 text-[11px] text-slate-400">Export and takeout Web View <strong class="text-white">${escapeHtml(web.name)}</strong>.</p>
+      <div class="mb-4">
+        <label class="mb-1 block text-[11px] text-slate-500">Action</label>
+        <div class="flex flex-col gap-2 text-xs text-slate-300">
+          <label class="flex items-center gap-2">
+            <input type="radio" name="webTakeoutAction" value="rename" checked class="accent-cyan-400">
+            <span>Rename and download</span>
+          </label>
+          <label class="flex items-center gap-2">
+            <input type="radio" name="webTakeoutAction" value="archive" class="accent-cyan-400">
+            <span>Archive to storage</span>
+          </label>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2">
+        <button type="button" data-modal-close class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">Cancel</button>
+        <button id="confirmWebTakeout" type="button" class="rounded-md bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-cyan-500">Takeout</button>
+      </div>
+    `);
+
+    document.getElementById("confirmWebTakeout")?.addEventListener("click", async () => {
+      const action = document.querySelector('input[name="webTakeoutAction"]:checked')?.value || "rename";
+      try {
+        if (window.EdmsAPI && typeof window.EdmsAPI.takeoutWebview === "function") {
+          const res = await window.EdmsAPI.takeoutWebview(web.name, { action });
+          if (res && !res.ok) console.warn("takeoutWebview returned:", res.status);
+        }
+        showAlert(`Takeout initiated for Web View "${web.name}" with action "${action}".`);
+      } catch (err) {
+        console.warn("Failed takeoutWebview API call:", err);
+        showAlert(`Error requesting takeout: ${err.message}`);
+      }
+      closeModal();
     });
   }
 
@@ -1452,7 +1730,8 @@
   // ============================================================
 
 function getWeb(id) {
-    return state.webs.find((web) => Number(web.id) === Number(id));
+    if (id === null || id === undefined) return null;
+    return state.webs.find((web) => String(web.id) === String(id) || web.name === String(id));
   }
 
   function escapeHtml(value) {
@@ -1546,7 +1825,7 @@ function getWeb(id) {
   }
 
   // ============================================================
-  // PUBLIC API (consumed by rmbrv.js)
+  // PUBLIC API
   // ============================================================
 
   window.WebView = {
@@ -1562,17 +1841,33 @@ function getWeb(id) {
 
     openDataTagsModal,
 
+    openDeleteModal,
+
+    deleteWebs,
+
     openCreateModal,
+
+    combineWebs,
+
+    convertToCollection,
+
+    takeoutWeb,
 
     previewWebView,
   };
 
-  // Expose globally for edit-webview-frontpage.js & preview
+  // Expose globally for edit-webview-frontpage.js, rmbwv.js & preview
   window.getWeb = getWeb;
   window.openModal = openModal;
   window.closeModal = closeModal;
   window.showAlert = showAlert;
   window.previewWebView = previewWebView;
   window.openPreviewWebModal = previewWebView;
+  window.duplicateWeb = duplicateWeb;
+  window.deleteWebs = deleteWebs;
+  window.openDeleteModal = openDeleteModal;
+  window.combineWebs = combineWebs;
+  window.convertToCollection = convertToCollection;
+  window.takeoutWeb = takeoutWeb;
   window.state = state;
 })();

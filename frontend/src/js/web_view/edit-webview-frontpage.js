@@ -13,23 +13,32 @@ const escapeHtml = (value = '') => String(value).replace(/[&<>"']/g, char => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
 }[char]));
 
-function getFrontPageEndpoint(id) {
-  const template = window.WEBVIEW_FRONT_PAGE_API_URL || '/api/webviews/:id/frontpage';
-  return template.replace(':id', encodeURIComponent(String(id)));
+function getFrontPageEndpoint(name) {
+  const template = window.WEBVIEW_FRONT_PAGE_API_URL || '/api/webview/:name/front-page';
+  return template
+    .replace(':name', encodeURIComponent(String(name)))
+    .replace(':id', encodeURIComponent(String(name)));
 }
 
 async function loadFrontPage(web) {
   // Prefer a configured backend. If this WebView object already contains the
   // document, it can be opened without a separate GET request.
+  if (web.front_page && typeof web.front_page === 'object') {
+    return web.front_page;
+  }
   if (web.frontpageContent && typeof web.frontpageContent === 'object') {
     return web.frontpageContent;
   }
   if (web.frontPageContent && typeof web.frontPageContent === 'object') {
     return web.frontPageContent;
   }
+  if (web.content && typeof web.content === 'object') {
+    return web.content;
+  }
 
   try {
-    const response = await fetch(getFrontPageEndpoint(web.id), {
+    const webName = web.name || web.id;
+    const response = await fetch(getFrontPageEndpoint(webName), {
       method: 'GET',
       headers: { Accept: 'application/json' }
     });
@@ -38,7 +47,7 @@ async function loadFrontPage(web) {
       return EMPTY_DOC;
     }
     const payload = await response.json();
-    return payload.content || payload.frontpageContent || payload.frontPageContent || EMPTY_DOC;
+    return payload.front_page || payload.content || payload.frontpageContent || payload.frontPageContent || EMPTY_DOC;
   } catch (error) {
     console.warn("Could not load from backend, using hardcoded default data.", error);
     return EMPTY_DOC;
@@ -47,16 +56,17 @@ async function loadFrontPage(web) {
 
 async function persistFrontPage(web, content) {
   try {
-    const response = await fetch(getFrontPageEndpoint(web.id), {
-      method: 'PUT',
+    const webName = web.name || web.id;
+    const response = await fetch(getFrontPageEndpoint(webName), {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ content })
+      body: JSON.stringify({ front_page: content })
     });
     if (!response.ok) {
       console.warn(`Could not save front-page content to backend (${response.status}). Using local state only.`);
     } else {
       const result = await response.json().catch(() => ({}));
-      content = result.content || content;
+      content = result.front_page || result.content || content;
     }
   } catch (error) {
     console.warn("Backend save failed, using local state only.", error);
@@ -64,11 +74,17 @@ async function persistFrontPage(web, content) {
 
   // Keep the current client-side state in sync if this app uses state.webs.
   if (Array.isArray(window.state?.webs)) {
-    const current = window.state.webs.find(item => String(item.id) === String(web.id));
-    if (current) current.frontpageContent = content;
+    const current = window.state.webs.find(item => String(item.id) === String(web.id) || item.name === web.name);
+    if (current) {
+      current.front_page = content;
+      current.frontpageContent = content;
+      current.content = content;
+    }
   }
+  web.front_page = content;
   web.frontpageContent = content;
-  return { content };
+  web.content = content;
+  return { front_page: content };
 }
 
 function editorMarkup(web) {
