@@ -64,23 +64,16 @@ async function persistFrontPage(web, content) {
     });
     if (!response.ok) {
       console.warn(`Could not save front-page content to backend (${response.status}). Using local state only.`);
+      throw new Error("Backend save failed", response.error);
     } else {
       const result = await response.json().catch(() => ({}));
-      content = result.front_page || result.content || content;
+      content = result.front_page || result.content;
     }
   } catch (error) {
     console.warn("Backend save failed, using local state only.", error);
+    throw new Error("Backend save failed", error);
   }
 
-  // Keep the current client-side state in sync if this app uses state.webs.
-  if (Array.isArray(window.state?.webs)) {
-    const current = window.state.webs.find(item => String(item.id) === String(web.id) || item.name === web.name);
-    if (current) {
-      current.front_page = content;
-      current.frontpageContent = content;
-      current.content = content;
-    }
-  }
   web.front_page = content;
   web.frontpageContent = content;
   web.content = content;
@@ -216,6 +209,7 @@ export async function openEditWebFrontPageModal(id) {
       if (typeof window.closeModal === 'function') window.closeModal();
       teardownFrontPageEditor();
     } catch (error) {
+      console.log(error);
       setStatus(error.message || 'Save failed.', true);
       (window.showAlert || window.alert)(error.message || 'Could not save front-page content.');
     } finally {
