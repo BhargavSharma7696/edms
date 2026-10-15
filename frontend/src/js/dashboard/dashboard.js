@@ -76,61 +76,13 @@ async function loadTags() {
 
     try {
 
-        const response =
-            await fetch("../data/collections.json");
+        const res = await EdmsAPI.listPopularTags();
 
-        const data =
-            await response.json();
+        if (!res.ok) {
+            throw new Error(`Failed to load tags: ${res.status}`);
+        }
 
-        const tagCounts = {};
-
-        // Count tags from collections
-        data.folders.forEach(folder => {
-
-            if (Array.isArray(folder.tags)) {
-
-                folder.tags.forEach(tag => {
-
-                    tagCounts[tag] =
-                        (tagCounts[tag] || 0) + 1;
-
-                });
-
-            }
-
-            // Count tags from endpoints
-            if (Array.isArray(folder.endpoints)) {
-
-                folder.endpoints.forEach(endpoint => {
-
-                    if (Array.isArray(endpoint.tags)) {
-
-                        endpoint.tags.forEach(tag => {
-
-                            tagCounts[tag] =
-                                (tagCounts[tag] || 0) + 1;
-
-                        });
-
-                    }
-
-                });
-
-            }
-
-        });
-
-
-        // Convert to array and sort
-        const tags =
-            Object.entries(tagCounts)
-                .map(([name, count]) => ({
-                    name,
-                    count
-                }))
-                .sort((a, b) => b.count - a.count);
-
-
+        const tags = Array.isArray(res.data) ? res.data : [];
 
         tags.slice(0, 13).forEach(tag => {
 
@@ -146,7 +98,7 @@ async function loadTags() {
                 <span class="rounded border border-slate-600
                              bg-slate-700 px-2 py-0.5
                              text-xs text-slate-200">
-                    ${tag.name}
+                    ${tag.tag || tag.name}
                 </span>
 
                 <span class="text-xs text-slate-400">
@@ -160,7 +112,7 @@ async function loadTags() {
 
 
         // More tags indicator
-        if (tags.length > 6) {
+        if (tags.length > 13) {
 
             const more =
                 document.createElement("span");
@@ -169,7 +121,7 @@ async function loadTags() {
                 "px-2 py-1 text-xs text-slate-400";
 
             more.textContent =
-                `... more (+${tags.length - 6})`;
+                `... more (+${tags.length - 13})`;
 
             tagsContainer.appendChild(more);
 

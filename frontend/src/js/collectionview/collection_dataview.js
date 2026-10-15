@@ -581,17 +581,18 @@
   // ENDPOINT SELECTION
   // ============================================================
 
+  // Track currently selected QP number for the delete button
+  let selectedQPId = null;
+
   async function selectEndpoint(endpoint) {
     state.selectedEndpoint = endpoint;
-    openWindow("requestWindow");
-    
+
     const eid = getEndpointId(endpoint);
-    const API_BASE = "http://localhost:3000";
     let qps = [];
     try {
-        const res = await fetch(`${API_BASE}/test-view/${encodeURIComponent(eid)}/qps`);
+        const res = await EdmsAPI.listQPs(eid);
         if (res.ok) {
-            const data = await res.json();
+            const data = res.data;
             if (data && Array.isArray(data.qps)) {
                 qps = data.qps.map(qp => ({
                     id: qp.request_number,
@@ -603,94 +604,158 @@
         console.error("Failed to fetch QPs", e);
     }
 
-    const qpContainer = document.getElementById("qpSelectorContainer");
-    if (qpContainer) {
-        qpContainer.innerHTML = "";
+    // Populate QP sidebar
+    const qpPanel = document.getElementById("qpPanel");
+    if (qpPanel) {
+        qpPanel.innerHTML = "";
+        
+        const selectAllCb = document.getElementById("selectAllQPs");
+        if (selectAllCb) selectAllCb.checked = false;
+
         if (qps.length > 0) {
             qps.forEach((qp, index) => {
+                const wrapper = document.createElement("div");
+                wrapper.className = "flex items-center gap-1 w-full";
+
+                const cb = document.createElement("input");
+                cb.type = "checkbox";
+                cb.value = qp.id;
+                cb.className = "qp-checkbox h-3 w-3 rounded border-slate-700 bg-slate-800 accent-rose-500 shrink-0 cursor-pointer";
+                cb.onchange = () => {
+                    const allCbs = document.querySelectorAll(".qp-checkbox");
+                    const checkedCbs = document.querySelectorAll(".qp-checkbox:checked");
+                    if (selectAllCb) selectAllCb.checked = allCbs.length === checkedCbs.length;
+                };
+
                 const btn = document.createElement("button");
-                btn.className = "px-2 py-1 text-xs rounded border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors";
-                btn.textContent = `QP${qp.name}`;
+                btn.type = "button";
+                btn.title = `QP ${qp.name}`;
+                btn.className = [
+                    "flex h-8 flex-1 items-center justify-center",
+                    "rounded-md border border-slate-700",
+                    "bg-slate-800 text-[10px] font-semibold text-slate-400",
+                    "transition hover:border-cyan-500/50 hover:text-cyan-300"
+                ].join(" ");
+                btn.textContent = qp.name;
                 btn.onclick = () => loadQPDetails(eid, qp.id, btn);
-                qpContainer.appendChild(btn);
+                
+                wrapper.appendChild(cb);
+                wrapper.appendChild(btn);
+                qpPanel.appendChild(wrapper);
+
                 if (index === 0) {
+                    // auto-load first QP
                     btn.click();
                 }
             });
         } else {
-            qpContainer.innerHTML = `<span class="text-xs text-slate-500">No QPs</span>`;
-            renderEndpointDetails(endpoint, null);
+            qpPanel.innerHTML = `<div class="py-5 text-center text-[10px] text-slate-600">No QPs</div>`;
+            selectedQPId = null;
+            // Still open the panel showing empty state
+            openDetailsPanel(endpoint, null);
         }
-    } else {
-        renderEndpointDetails(endpoint, null);
     }
 
     renderTable();
   }
 
   async function loadQPDetails(endpointId, qpId, activeBtn) {
-    const qpContainer = document.getElementById("qpSelectorContainer");
-    if (qpContainer) {
-        qpContainer.querySelectorAll("button").forEach(b => {
-            b.classList.remove("border-sky-500", "text-sky-400");
-            b.classList.add("border-slate-700", "text-slate-300");
+    // Highlight active QP button in sidebar
+    const qpPanel = document.getElementById("qpPanel");
+    if (qpPanel) {
+        qpPanel.querySelectorAll("button").forEach(b => {
+            b.classList.remove("border-cyan-500", "text-cyan-300", "bg-cyan-500/10");
+            b.classList.add("border-slate-700", "text-slate-400", "bg-slate-800");
         });
-        activeBtn.classList.remove("border-slate-700", "text-slate-300");
-        activeBtn.classList.add("border-sky-500", "text-sky-400");
+        activeBtn.classList.remove("border-slate-700", "text-slate-400", "bg-slate-800");
+        activeBtn.classList.add("border-cyan-500", "text-cyan-300", "bg-cyan-500/10");
     }
 
-    const API_BASE = "http://localhost:3000";
+    selectedQPId = qpId;
+    // Enable the delete button
+    const delBtn = document.getElementById("deleteQP");
+    if (delBtn) delBtn.disabled = false;
+
     try {
         const [reqRes, resRes, hdrRes] = await Promise.all([
-            fetch(`${API_BASE}/test-view/${encodeURIComponent(endpointId)}/request/${qpId}`).catch(() => null),
-            fetch(`${API_BASE}/test-view/${encodeURIComponent(endpointId)}/response/${qpId}`).catch(() => null),
-            fetch(`${API_BASE}/test-view/${encodeURIComponent(endpointId)}/headers/${qpId}`).catch(() => null)
+            EdmsAPI.fetchRequest(endpointId, qpId).catch(() => null),
+            EdmsAPI.fetchResponse(endpointId, qpId).catch(() => null),
+            EdmsAPI.fetchHeaders(endpointId, qpId).catch(() => null)
         ]);
 
-        const reqData = reqRes?.ok ? await reqRes.json() : null;
-        const resData = resRes?.ok ? await resRes.json() : null;
-        const hdrData = hdrRes?.ok ? await hdrRes.json() : null;
+        const reqData = reqRes?.ok ? reqRes.data : null;
+        const resData = resRes?.ok ? resRes.data : null;
+        const hdrData = hdrRes?.ok ? hdrRes.data : null;
 
-        const request = {
-            headers: hdrData || {},
-            query: reqData?.query || {},
-            body: reqData?.body || null
+        const request = { 
+            body: reqData?.body || null,
+            headers: hdrData || {}
         };
-        const response = {
-            status: resData?.status || null,
-            body: resData?.body || resData || null
+        const response = { 
+            status: resData?.status || null, 
+            body: resData?.body || resData || null,
+            headers: resData?.headers || {} 
         };
-        renderEndpointDetails(state.selectedEndpoint, { request, response });
+        openDetailsPanel(state.selectedEndpoint, { request, response });
     } catch (e) {
         console.error("Failed to load QP details", e);
-        renderEndpointDetails(state.selectedEndpoint, null);
+        openDetailsPanel(state.selectedEndpoint, null);
     }
   }
 
-  function renderEndpointDetails(endpoint, qpData) {
-    const request = qpData?.request || endpoint.request || {};
-
-    const response = qpData?.response || endpoint.response || {};
-
-    const reqBodyEl = document.getElementById("requestBody");
-    if (reqBodyEl) {
-      reqBodyEl.textContent = formatData(
-        request.body ?? "Not available",
-      );
+  function openDetailsPanel(endpoint, qpData) {
+    const overlay = document.getElementById("detailsOverlay");
+    if (overlay) {
+        overlay.classList.remove("hidden");
     }
 
-    document.getElementById("responseStatus").textContent = response.status
-      ? String(response.status)
-      : "Prototype";
+    const request = qpData?.request || endpoint.request || {};
+    const response = qpData?.response || endpoint.response || {};
 
-    document.getElementById("responseBody").textContent = formatData(
-      response.body ??
-        response ?? {
-          endpoint: endpoint.endpoint,
+    // Request endpoint label
+    const epLabel = document.getElementById("requestEndpoint");
+    if (epLabel) epLabel.textContent = endpoint.endpoint || endpoint.url || "—";
 
-          message: "No response payload defined.",
-        },
-    );
+    // Request body
+    const reqBodyEl = document.getElementById("requestBody");
+    if (reqBodyEl) {
+        reqBodyEl.textContent = formatData(request.body ?? "Not available");
+    }
+
+    // Request headers
+    const reqHeadersEl = document.getElementById("requestHeaders");
+    if (reqHeadersEl) {
+        reqHeadersEl.textContent = formatData(request.headers ?? "Not available");
+    }
+
+    // Response status
+    const resStatus = document.getElementById("responseStatus");
+    if (resStatus) {
+        resStatus.textContent = response.status ? String(response.status) : "Prototype";
+        resStatus.className = `mt-0.5 text-[11px] font-semibold ${
+            response.status >= 200 && response.status < 300 ? "text-emerald-400" :
+            response.status >= 400 ? "text-rose-400" : "text-slate-400"
+        }`;
+    }
+
+    // Response body
+    const resBodyEl = document.getElementById("responseBody");
+    if (resBodyEl) {
+        resBodyEl.textContent = formatData(
+            response.body ?? response ?? { endpoint: endpoint.endpoint, message: "No response payload defined." }
+        );
+    }
+
+    // Response headers
+    const resHeadersEl = document.getElementById("responseHeaders");
+    if (resHeadersEl) {
+        resHeadersEl.textContent = formatData(response.headers ?? "Not available");
+    }
+  }
+
+  // Keep renderEndpointDetails as alias for legacy call-sites
+  function renderEndpointDetails(endpoint, qpData) {
+    openDetailsPanel(endpoint, qpData);
   }
 
   // ============================================================
@@ -767,7 +832,7 @@
       sidebarCollapsed = !sidebarCollapsed;
 
       if (sidebarCollapsed) {
-        sidebar.classList.remove("w-48");
+        sidebar.classList.remove("w-64");
         sidebar.classList.add("w-10");
         content?.classList.add("hidden");
         title?.classList.add("hidden");
@@ -776,7 +841,7 @@
         }
       } else {
         sidebar.classList.remove("w-10");
-        sidebar.classList.add("w-48");
+        sidebar.classList.add("w-64");
         content?.classList.remove("hidden");
         title?.classList.remove("hidden");
         if (icon) {
@@ -1165,17 +1230,158 @@
   }
 
   // ============================================================
-  // REQUEST / RESPONSE WINDOWS
+  // ============================================================
+  // REQUEST / RESPONSE PANEL
   // ============================================================
 
   function wireWindows() {
-    document.querySelectorAll("[data-window-close]").forEach((button) => {
-      button.addEventListener("click", () => {
-        const type = button.dataset.windowClose;
-
-        closeWindow(type === "request" ? "requestWindow" : "responseWindow");
-      });
+    // Close button on the details panel
+    document.getElementById("detailsClose")?.addEventListener("click", () => {
+      document.getElementById("detailsOverlay")?.classList.add("hidden");
     });
+
+    // Make details panel draggable
+    const detailsPanel = document.getElementById("detailsPanel");
+    const dragHandle = document.getElementById("detailsDragHandle");
+    if (detailsPanel && dragHandle) {
+      let isDragging = false;
+      let startX, startY, initialLeft, initialTop;
+
+      dragHandle.addEventListener("mousedown", (e) => {
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+
+        const rect = detailsPanel.getBoundingClientRect();
+        
+        // Remove classes that interfere with free positioning
+        detailsPanel.classList.remove("absolute", "bottom-4", "right-4");
+        detailsPanel.classList.add("fixed");
+        
+        detailsPanel.style.left = rect.left + "px";
+        detailsPanel.style.top = rect.top + "px";
+        detailsPanel.style.bottom = "auto";
+        detailsPanel.style.right = "auto";
+        detailsPanel.style.margin = "0";
+        
+        initialLeft = rect.left;
+        initialTop = rect.top;
+
+        document.body.style.userSelect = "none";
+      });
+
+      document.addEventListener("mousemove", (e) => {
+        if (!isDragging) return;
+        
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        
+        detailsPanel.style.left = (initialLeft + dx) + "px";
+        detailsPanel.style.top = (initialTop + dy) + "px";
+      });
+
+      document.addEventListener("mouseup", () => {
+        if (isDragging) {
+          isDragging = false;
+          document.body.style.userSelect = "";
+        }
+      });
+    }
+
+    // Select All QPs checkbox
+    document.getElementById("selectAllQPs")?.addEventListener("change", (e) => {
+        document.querySelectorAll(".qp-checkbox").forEach(cb => {
+            cb.checked = e.target.checked;
+        });
+    });
+
+    // Delete QP button
+    document.getElementById("deleteQP")?.addEventListener("click", async () => {
+      if (!state.selectedEndpoint) return;
+      
+      const checkedBoxes = document.querySelectorAll(".qp-checkbox:checked");
+      let qpsToDelete = [];
+      
+      if (checkedBoxes.length > 0) {
+          qpsToDelete = Array.from(checkedBoxes).map(cb => cb.value);
+      } else if (selectedQPId !== null) {
+          qpsToDelete = [selectedQPId];
+      }
+      
+      if (qpsToDelete.length === 0) return;
+
+      const eid = getEndpointId(state.selectedEndpoint);
+      try {
+        await Promise.all(qpsToDelete.map(id => 
+            EdmsAPI.deleteQP(eid, id)
+        ));
+        selectedQPId = null;
+        document.getElementById("deleteQP").disabled = true;
+        document.getElementById("detailsOverlay")?.classList.add("hidden");
+        // Re-select endpoint to refresh QP sidebar
+        selectEndpoint(state.selectedEndpoint);
+      } catch (e) {
+        console.error("Failed to delete QP(s)", e);
+      }
+    });
+
+    // Request tabs
+    const reqBodyTab = document.getElementById("requestBodyTab");
+    const reqHeadersTab = document.getElementById("requestHeadersTab");
+    const reqBodySec = document.getElementById("requestBodySection");
+    const reqHeadersSec = document.getElementById("requestHeadersSection");
+
+    if (reqBodyTab && reqHeadersTab && reqBodySec && reqHeadersSec) {
+        const activeTabClass = ["bg-cyan-500", "text-slate-950", "font-semibold"];
+        const inactiveTabClass = ["text-slate-400", "font-medium", "hover:text-slate-200"];
+
+        reqBodyTab.addEventListener("click", () => {
+            reqBodySec.classList.remove("hidden");
+            reqHeadersSec.classList.add("hidden");
+            reqBodyTab.classList.add(...activeTabClass);
+            reqBodyTab.classList.remove(...inactiveTabClass);
+            reqHeadersTab.classList.add(...inactiveTabClass);
+            reqHeadersTab.classList.remove(...activeTabClass);
+        });
+
+        reqHeadersTab.addEventListener("click", () => {
+            reqHeadersSec.classList.remove("hidden");
+            reqBodySec.classList.add("hidden");
+            reqHeadersTab.classList.add(...activeTabClass);
+            reqHeadersTab.classList.remove(...inactiveTabClass);
+            reqBodyTab.classList.add(...inactiveTabClass);
+            reqBodyTab.classList.remove(...activeTabClass);
+        });
+    }
+
+    // Response tabs
+    const resBodyTab = document.getElementById("responseBodyTab");
+    const resHeadersTab = document.getElementById("responseHeadersTab");
+    const resBodySec = document.getElementById("responseBodySection");
+    const resHeadersSec = document.getElementById("responseHeadersSection");
+
+    if (resBodyTab && resHeadersTab && resBodySec && resHeadersSec) {
+        const activeTabClass = ["bg-cyan-500", "text-slate-950", "font-semibold"];
+        const inactiveTabClass = ["text-slate-400", "font-medium", "hover:text-slate-200"];
+
+        resBodyTab.addEventListener("click", () => {
+            resBodySec.classList.remove("hidden");
+            resHeadersSec.classList.add("hidden");
+            resBodyTab.classList.add(...activeTabClass);
+            resBodyTab.classList.remove(...inactiveTabClass);
+            resHeadersTab.classList.add(...inactiveTabClass);
+            resHeadersTab.classList.remove(...activeTabClass);
+        });
+
+        resHeadersTab.addEventListener("click", () => {
+            resHeadersSec.classList.remove("hidden");
+            resBodySec.classList.add("hidden");
+            resHeadersTab.classList.add(...activeTabClass);
+            resHeadersTab.classList.remove(...inactiveTabClass);
+            resBodyTab.classList.add(...inactiveTabClass);
+            resBodyTab.classList.remove(...activeTabClass);
+        });
+    }
   }
 
   function openWindow(id) {
@@ -1289,36 +1495,26 @@
   }
 
   function renderEndpointPath(path) {
-    const segments = String(path || "")
-      .split("/")
-      .filter(Boolean);
-
-    if (!segments.length) {
+    const rawPath = String(path || "").trim();
+    if (!rawPath) {
       return "—";
     }
 
-    return segments
-      .map((segment, index) => {
-        return `
+    const segments = rawPath.split("/").filter(Boolean);
+    if (!segments.length) {
+      return rawPath.startsWith("/") ? "/" : "—";
+    }
 
-                        <span
-                            class="endpoint-segment
-                                   rounded px-0.5
-                                   transition
-                                   hover:bg-cyan-500/10
-                                   hover:text-cyan-300"
-                            data-segment="${escapeAttr(segment)}"
-                        >
-                            ${
-                              index === 0
-                                ? "/" + escapeHtml(segment)
-                                : "/" + escapeHtml(segment)
-                            }
-                        </span>
+    const trailingSlash = rawPath.endsWith("/") ? "/" : "";
 
-                    `;
-      })
-      .join("");
+    return (
+      segments
+        .map(
+          (segment) =>
+            `<span class="endpoint-segment transition-colors hover:text-cyan-300" data-segment="${escapeAttr(segment)}">/${escapeHtml(segment)}</span>`,
+        )
+        .join("") + trailingSlash
+    );
   }
 
   function methodClass(method) {

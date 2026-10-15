@@ -36,10 +36,6 @@ function init() {
         !window.RepoView
     ) {
 
-        console.error(
-            'Repo View context menu could not initialize.'
-        );
-
         return;
 
     }
@@ -215,6 +211,51 @@ function init() {
                         'duplicate',
                         iconCopy(),
                         'Duplicate'
+                    )
+                    : ''
+            }
+
+
+            <!-- ============================================ -->
+            <!-- CONVERT TO COLLECTION -->
+            <!-- ============================================ -->
+
+            ${
+                isSingle
+                    ? menuItem(
+                        'convert',
+                        iconFolderSwitch(),
+                        'Convert to Collection'
+                    )
+                    : ''
+            }
+
+
+            <!-- ============================================ -->
+            <!-- TAKEOUT -->
+            <!-- ============================================ -->
+
+            ${
+                isSingle
+                    ? menuItem(
+                        'takeout',
+                        iconDownload(),
+                        'Takeout'
+                    )
+                    : ''
+            }
+
+
+            <!-- ============================================ -->
+            <!-- COMBINE -->
+            <!-- ============================================ -->
+
+            ${
+                isMultiple
+                    ? menuItem(
+                        'combine',
+                        iconMerge(),
+                        `Combine Selected (${count})`
                     )
                     : ''
             }
@@ -425,6 +466,69 @@ function init() {
                         window.RepoView
                             .duplicateRepo(
                                 targetIds[0]
+                            );
+
+                    }
+
+                    break;
+
+
+                // --------------------------------------------
+                // CONVERT TO COLLECTION
+                // --------------------------------------------
+
+                case 'convert':
+
+                    if (
+                        targetIds.length === 1 &&
+                        typeof window.RepoView.convertToCollection === 'function'
+                    ) {
+
+                        window.RepoView
+                            .convertToCollection(
+                                targetIds[0]
+                            );
+
+                    }
+
+                    break;
+
+
+                // --------------------------------------------
+                // TAKEOUT
+                // --------------------------------------------
+
+                case 'takeout':
+
+                    if (
+                        targetIds.length === 1 &&
+                        typeof window.RepoView.takeoutRepo === 'function'
+                    ) {
+
+                        window.RepoView
+                            .takeoutRepo(
+                                targetIds[0]
+                            );
+
+                    }
+
+                    break;
+
+
+                // --------------------------------------------
+                // COMBINE
+                // --------------------------------------------
+
+                case 'combine':
+
+                    if (
+                        targetIds.length >= 2 &&
+                        typeof window.RepoView.combineRepos === 'function'
+                    ) {
+
+                        window.RepoView
+                            .combineRepos(
+                                targetIds
                             );
 
                     }
@@ -738,6 +842,33 @@ function init() {
 
         `);
 
+    }
+
+
+    function iconFolderSwitch() {
+        return iconBase(`
+            <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/>
+            <path d="m11 10 3 3-3 3"/>
+            <path d="M8 13h6"/>
+        `);
+    }
+
+    function iconDownload() {
+        return iconBase(`
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+        `);
+    }
+
+    function iconMerge() {
+        return iconBase(`
+            <path d="M6 4v5"/>
+            <path d="M18 4v5"/>
+            <path d="M6 9c0 4 3 6 6 6"/>
+            <path d="M18 9c0 4-3 6-6 6"/>
+            <path d="M12 15v5"/>
+        `);
     }
 
 

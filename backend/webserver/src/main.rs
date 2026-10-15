@@ -6,12 +6,14 @@ mod events;
 mod handlers;
 mod ipc;
 mod logging;
+mod jobs;
 mod state;
 mod timer;
 
 use axum::{
+    extract::DefaultBodyLimit,
     routing::{get, post},
-    Router,
+    Extension, Router,
 };
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
 use tracing::info;
@@ -43,11 +45,14 @@ use handlers::{
     },
     view::{home, list_view, test_view, trigger_view_refresh},
     view_catalog::{
-        annotate_collection_entry, create_collection_entry, create_repoview_entry,
-        create_webview_entry, delete_collection_entry, get_collection_entry,
+        annotate_collection_entry, annotate_repoview_entry, create_collection_entry,
+        create_repoview_entry, delete_collection_entry,
+        delete_repoview_entry, delete_repoviews_bulk, duplicate_repoview_entry,
+        get_collection_entry,
         import_tags_into_collection, list_collection_endpoint_tags, list_collection_endpoints,
-        list_collections, list_repoviews, list_webviews, remove_endpoint_from_collection,
-        rename_collection_entry,
+        list_collections,
+        remove_endpoint_from_collection, rename_collection_entry,
+        rename_repoview_entry,
     },
     view_tags::{
         create_collections_tag, create_repoview_tag, create_webview_tag, delete_collections_tags,
@@ -57,7 +62,60 @@ use handlers::{
     collection_tag_memberships::{
         add_collection_tag, collections_by_tag, list_collection_tags, remove_collection_tag,
     },
+    repoview_tag_memberships::{
+        add_repoview_tag, list_repoview_tags_for_name, remove_repoview_tag, repoviews_by_tag,
+    },
+    import_export::{import_export_check, import_export_table},
+    jobs::{get_job, list_jobs, ws_jobs},
+    repoview_combine::combine_repoviews,
+    view_flavor::Flavor,
+    webview_front_page::{get_front_page, save_front_page, MAX_FRONT_PAGE_BYTES},
+    repoview_ie::{import_repoview, takeout_repoview},
+    repoview_index::{convert_repoview_to_collection, get_repoview_entry, list_repoviews},
+    repoview_tables::{generate_repoview_tables, get_repoview_table_file, list_repoview_tables},
 };
+
+/// The routes RepoView and WebView share (v1.0: same model, same UI), added
+/// once per flavor under `/repoview/...` and `/webview/...`. The flavor
+/// reaches the handlers as an `Extension`. Only the central tag-count routes
+/// (`/{view}/tags/...`) are registered separately, above.
+fn list_view_routes(flavor: Flavor) -> Router<state::AppState> {
+    let p = flavor.route();
+    let mut router = Router::new()
+        .route(&format!("/{p}/create"), post(create_repoview_entry))
+        .route(&format!("/{p}/delete"), post(delete_repoviews_bulk))
+        .route(&format!("/{p}/list"), get(list_repoviews))
+        .route(&format!("/{p}/import"), post(import_repoview))
+        .route(&format!("/{p}/combine"), post(combine_repoviews))
+        .route(&format!("/{p}/by-tag/:tagname"), get(repoviews_by_tag))
+        .route(&format!("/{p}/:name"), get(get_repoview_entry))
+        .route(&format!("/{p}/:name/rename"), post(rename_repoview_entry))
+        .route(&format!("/{p}/:name/annotation"), post(annotate_repoview_entry))
+        .route(&format!("/{p}/:name/delete"), post(delete_repoview_entry))
+        .route(&format!("/{p}/:name/duplicate"), post(duplicate_repoview_entry))
+        .route(&format!("/{p}/:name/membership-tags/add"), post(add_repoview_tag))
+        .route(&format!("/{p}/:name/membership-tags/remove"), post(remove_repoview_tag))
+        .route(&format!("/{p}/:name/membership-tags"), get(list_repoview_tags_for_name))
+        .route(&format!("/{p}/:name/convert-to-collection"), post(convert_repoview_to_collection))
+        .route(&format!("/{p}/:name/takeout"), post(takeout_repoview));
+    router = match flavor {
+        // A RepoView's folder holds generated Tables-*.md...
+        Flavor::Repo => router
+            .route("/repoview/:name/tables/generate", post(generate_repoview_tables))
+            .route("/repoview/:name/tables", get(list_repoview_tables))
+            .route("/repoview/:name/tables/:file", get(get_repoview_table_file)),
+        // ...a WebView's holds front-page.json ("Modify Frontpage").
+        // axum caps a request body at 2 MB unless told otherwise; a front page
+        // may be up to MAX_FRONT_PAGE_BYTES (plus the JSON wrapper around it).
+        Flavor::Web => router.route(
+            "/webview/:name/front-page",
+            get(get_front_page)
+                .post(save_front_page)
+                .layer(DefaultBodyLimit::max(MAX_FRONT_PAGE_BYTES + 1024)),
+        ),
+    };
+    router.layer(Extension(flavor))
+}
 
 /// Resolves the EDMS storage root, per Ravi (2026-09-14): one single point
 /// of configuration, a relative path, and the app never creates the
@@ -299,18 +357,16 @@ async fn main() -> anyhow::Result<()> {
         .route("/collections/tags/delete", post(delete_collections_tags))
         .route("/collections/tags/rename", post(rename_collections_tag))
         .route("/collections/tags/list", get(list_collections_tags))
-        .route("/webview/create", post(create_webview_entry))
-        .route("/webview/list", get(list_webviews))
         .route("/webview/tags/create", post(create_webview_tag))
         .route("/webview/tags/delete", post(delete_webview_tags))
         .route("/webview/tags/rename", post(rename_webview_tag))
         .route("/webview/tags/list", get(list_webview_tags))
-        .route("/repoview/create", post(create_repoview_entry))
-        .route("/repoview/list", get(list_repoviews))
         .route("/repoview/tags/create", post(create_repoview_tag))
         .route("/repoview/tags/delete", post(delete_repoview_tags))
         .route("/repoview/tags/rename", post(rename_repoview_tag))
         .route("/repoview/tags/list", get(list_repoview_tags))
+        .merge(list_view_routes(Flavor::Repo))
+        .merge(list_view_routes(Flavor::Web))
         .route("/tags/popular", get(popular_tags))
         .route("/tags/:endpoint_id", get(list_tags_for_endpoint))
         .route("/tags/:endpoint_id/add", post(add_tag))
@@ -322,6 +378,11 @@ async fn main() -> anyhow::Result<()> {
         .route("/repo/:collection/:filename/export", get(export_collection))
         .route("/repo/:collection/:filename/import", post(import_collection))
         .route("/reports/:endpoint_id/export", post(export_eqp_report))
+        .route("/import-export/table", get(import_export_table))
+        .route("/import-export/check", post(import_export_check))
+        .route("/jobs", get(list_jobs))
+        .route("/jobs/ws", get(ws_jobs))
+        .route("/jobs/:id", get(get_job))
         .route("/internal/callback", post(ipc_callback))
         .route("/logs", get(get_logs))
         .layer(CorsLayer::permissive())
