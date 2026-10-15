@@ -734,6 +734,18 @@ document.addEventListener("DOMContentLoaded", () => {
                         ? action.value
                         : "rename";
 
+                if (window.EdmsAPI && typeof window.EdmsAPI.takeoutWebview === "function") {
+                    if (!selectedItem || selectedItem.purpose === "WebView" || selectedItem.purpose === "webview") {
+                        window.EdmsAPI.takeoutWebview(folderName.value.trim(), { action: actionValue })
+                            .then((res) => {
+                                if (res && !res.ok) console.warn("takeoutWebview returned:", res.status);
+                            })
+                            .catch((err) => {
+                                console.warn("Failed takeoutWebview API call:", err);
+                            });
+                    }
+                }
+
                 alert(
                     "Takeout requested:\n\n" +
                     "Folder: " +
