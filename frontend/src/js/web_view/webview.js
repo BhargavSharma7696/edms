@@ -1160,8 +1160,90 @@
   }
 
   // ============================================================
+  // TAG INPUT COMPONENT HELPER
+  // ============================================================
+
+  function setupTagInput({ listElId, inputElId, addBtnElId, initialTags = [] }) {
+    const listEl = document.getElementById(listElId);
+    const inputEl = document.getElementById(inputElId);
+    const addBtnEl = document.getElementById(addBtnElId);
+    const tags = [...new Set((initialTags || []).map((t) => String(t).trim()).filter(Boolean))];
+
+    function render() {
+      if (!listEl) return;
+      listEl.innerHTML = tags
+        .map(
+          (tag, index) => `
+            <span class="inline-flex items-center gap-1.5 rounded-md border border-cyan-500/30 bg-cyan-500/10 px-2 py-0.5 text-xs text-cyan-300">
+              <span>${escapeHtml(tag)}</span>
+              <button
+                type="button"
+                data-remove-tag-index="${index}"
+                class="ml-0.5 text-cyan-400 hover:text-white hover:bg-cyan-500/30 rounded px-1 leading-none transition cursor-pointer"
+                title="Remove ${escapeAttr(tag)}"
+              >&times;</button>
+            </span>
+          `,
+        )
+        .join("");
+    }
+
+    function addTagFromInput() {
+      if (!inputEl) return;
+      const raw = inputEl.value;
+      if (!raw || !raw.trim()) return;
+      const items = raw
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean);
+      for (const item of items) {
+        if (!tags.includes(item)) {
+          tags.push(item);
+        }
+      }
+      inputEl.value = "";
+      render();
+    }
+
+    inputEl?.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        event.stopPropagation();
+        addTagFromInput();
+      }
+    });
+
+    addBtnEl?.addEventListener("click", (event) => {
+      event.preventDefault();
+      addTagFromInput();
+    });
+
+    listEl?.addEventListener("click", (event) => {
+      const btn = event.target.closest("[data-remove-tag-index]");
+      if (!btn) return;
+      event.preventDefault();
+      const idx = parseInt(btn.dataset.removeTagIndex, 10);
+      if (!isNaN(idx) && idx >= 0 && idx < tags.length) {
+        tags.splice(idx, 1);
+        render();
+      }
+    });
+
+    render();
+
+    return {
+      getTags: () => {
+        addTagFromInput();
+        return [...tags];
+      }
+    };
+  }
+
+  // ============================================================
   // CREATE
   // ============================================================
+
+  let activeCreateTagHelper = null;
 
   async function openCreateModal() {
     openModal(`
@@ -1176,7 +1258,11 @@
       </select>
 
       <label class="mb-1 block text-[11px] text-slate-500">Tags</label>
-      <input id="createTags" class="mb-3 h-9 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500 text-slate-200" placeholder="api, production, users">
+      <div id="createTagsList" class="flex flex-wrap gap-1.5 mb-2 empty:hidden"></div>
+      <div class="flex items-center gap-2 mb-3">
+        <input id="createTags" class="h-9 flex-1 rounded-md border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500 text-slate-200" placeholder="Type a tag and press Enter">
+        <button id="createAddTagBtn" type="button" class="h-9 px-3 rounded-md border border-slate-700 bg-slate-800 text-xs text-slate-300 hover:bg-slate-700 hover:text-white transition">Add</button>
+      </div>
 
       <label class="mb-1 block text-[11px] text-slate-500">Annotation</label>
       <textarea id="createAnnotation" class="mb-4 h-20 w-full resize-none rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-xs outline-none focus:border-cyan-500 text-slate-200" placeholder="Web view description..."></textarea>
@@ -1187,9 +1273,16 @@
       </div>
     `);
 
+    activeCreateTagHelper = setupTagInput({
+      listElId: "createTagsList",
+      inputElId: "createTags",
+      addBtnElId: "createAddTagBtn",
+      initialTags: []
+    });
+
     document
       .getElementById("confirmCreate")
-      ?.addEventListener("click", createWeb);
+      ?.addEventListener("click", () => createWeb(activeCreateTagHelper));
 
     const select = document.getElementById("createSourceCollection");
     try {
@@ -1223,7 +1316,7 @@
     }
   }
 
-  async function createWeb() {
+  async function createWeb(tagHelper) {
     const name = document.getElementById("createName")?.value.trim();
     const sourceCollection = document.getElementById("createSourceCollection")?.value.trim();
 
@@ -1258,11 +1351,12 @@
         return;
       }
 
-      const tagsInput = document.getElementById("createTags")?.value || "";
-      const tags = tagsInput
-        .split(",")
-        .map((tag) => tag.trim())
-        .filter(Boolean);
+      const tags = tagHelper
+        ? tagHelper.getTags()
+        : (document.getElementById("createTags")?.value || "")
+            .split(",")
+            .map((tag) => tag.trim())
+            .filter(Boolean);
 
       for (const t of tags) {
         if (window.EdmsAPI && typeof window.EdmsAPI.addWebviewMembershipTag === "function") {
@@ -1441,7 +1535,11 @@
             <input id="editWebName" value="${escapeAttr(web.name)}" class="mb-3 h-9 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500">
 
             <label class="mb-1 block text-[11px] text-slate-500">Tags</label>
-            <input id="editWebTags" value="${escapeAttr((web.tags || []).join(", "))}" class="mb-4 h-9 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500">
+            <div id="editWebTagsList" class="flex flex-wrap gap-1.5 mb-2 empty:hidden"></div>
+            <div class="flex items-center gap-2 mb-4">
+              <input id="editWebTags" class="h-9 flex-1 rounded-md border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500 text-slate-200" placeholder="Type a tag and press Enter">
+              <button id="editWebAddTagBtn" type="button" class="h-9 px-3 rounded-md border border-slate-700 bg-slate-800 text-xs text-slate-300 hover:bg-slate-700 hover:text-white transition">Add</button>
+            </div>
 
             <div class="flex justify-end gap-2">
                 <button type="button" data-modal-close class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">Cancel</button>
@@ -1449,6 +1547,13 @@
             </div>
 
         `);
+
+    const editTagHelper = setupTagInput({
+      listElId: "editWebTagsList",
+      inputElId: "editWebTags",
+      addBtnElId: "editWebAddTagBtn",
+      initialTags: Array.isArray(web.tags) ? web.tags : []
+    });
 
     document.getElementById("saveWebEdit")?.addEventListener("click", async () => {
       const newName = document.getElementById("editWebName").value.trim();
@@ -1487,11 +1592,13 @@
       }
 
       const currentTags = Array.isArray(web.tags) ? web.tags : [];
-      const newTags = document
-        .getElementById("editWebTags")
-        .value.split(",")
-        .map((tag) => tag.trim())
-        .filter(Boolean);
+      const newTags = editTagHelper
+        ? editTagHelper.getTags()
+        : document
+            .getElementById("editWebTags")
+            ?.value.split(",")
+            .map((tag) => tag.trim())
+            .filter(Boolean) || [];
 
       const targetWebName = newName || web.name;
 
