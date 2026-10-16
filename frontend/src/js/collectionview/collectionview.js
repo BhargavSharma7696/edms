@@ -65,8 +65,8 @@
     if (typeof TagManager !== "undefined") {
       TagManager.init({
         view: "collectionview",
-        getItems: () => state.selected.size > 0 
-          ? state.folders.filter(f => state.selected.has(Number(f.id))) 
+        getItems: () => state.selected.size > 0
+          ? state.folders.filter(f => state.selected.has(Number(f.id)))
           : state.folders,
         getTags: folder => Array.isArray(folder.tags) ? folder.tags : [],
         setTags: (folder, tags) => {
@@ -2604,8 +2604,8 @@
         >
 
             ${folders
-              .map(
-                (folder) => `
+        .map(
+          (folder) => `
 
                             <div
                                 class="border-b
@@ -2627,19 +2627,18 @@
                                            text-[10px]
                                            text-slate-600"
                                 >
-                                    ${
-                                      Array.isArray(folder.endpoints)
-                                        ? folder.endpoints.length
-                                        : 0
-                                    }
+                                    ${Array.isArray(folder.endpoints)
+              ? folder.endpoints.length
+              : 0
+            }
                                     endpoints
                                 </p>
 
                             </div>
 
                         `,
-              )
-              .join("")}
+        )
+        .join("")}
 
         </div>
 
@@ -2783,11 +2782,10 @@
                    bg-slate-950/60 p-3"
         >
 
-            ${
-              targets.length
-                ? targets
-                    .map(
-                      (folder) => `
+            ${targets.length
+        ? targets
+          .map(
+            (folder) => `
 
                                 <div
                                     class="flex
@@ -2812,20 +2810,19 @@
                                                text-[10px]
                                                text-slate-600"
                                     >
-                                        ${
-                                          Array.isArray(folder.endpoints)
-                                            ? folder.endpoints.length
-                                            : 0
-                                        }
+                                        ${Array.isArray(folder.endpoints)
+                ? folder.endpoints.length
+                : 0
+              }
                                         endpoints
                                     </span>
 
                                 </div>
 
                             `,
-                    )
-                    .join("")
-                : `
+          )
+          .join("")
+        : `
                         <span
                             class="text-xs
                                    text-slate-600"
@@ -2833,7 +2830,7 @@
                             Select a collection first.
                         </span>
                       `
-            }
+      }
 
         </div>
 

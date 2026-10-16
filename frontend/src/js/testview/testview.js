@@ -137,16 +137,12 @@ document.addEventListener(
 async function initTestView() {
 
     try {
-
         await loadTestData();
-
     } catch (error) {
-
         console.error(
             "Failed to initialize Test View:",
             error
         );
-
     }
 
     setupTestSearch();
@@ -163,12 +159,12 @@ async function initTestView() {
     setupQPMenu();
     setupHistoryContextMenu();
     setupHistoryMenu();
+
     updateMethodButtons();
     updateSidebarTabButtons();
     applyTestFilters();
 
     await initCollectionContext();
-
 }
 
 // ============================================================
@@ -320,6 +316,7 @@ async function initCollectionContext() {
 // LOAD DATA
 // ============================================================
 
+
 async function loadTestData() {
 
     await loadEndpointsFromBackend();
@@ -337,7 +334,6 @@ async function loadTestData() {
     await loadEndpointTagsFromBackend();
 
 }
-
 // ============================================================
 // TAG API
 // ============================================================
@@ -604,7 +600,6 @@ async function loadEndpointTagsFromBackend() {
 // ============================================================
 // BACKEND ENDPOINT SNAPSHOT
 // ============================================================
-
 function loadEndpointsFromBackend() {
 
     return new Promise(
@@ -963,14 +958,13 @@ function loadHistoryFromBackend() {
                             )
                         ) {
 
-                            historyRecords =
-                                message.history.map(
-                                    normalizeBackendHistory
-                                );
+                            const hiddenHistoryIds = getHiddenHistoryIds();
 
                             historyRecords =
-                                historyRecords.map(
-                                    history => ({
+                                message.history
+                                    .map(normalizeBackendHistory)
+                                    .filter(history => !hiddenHistoryIds.has(String(history.id)))
+                                    .map(history => ({
 
                                         ...history,
 
@@ -979,9 +973,7 @@ function loadHistoryFromBackend() {
                                                 history.endpointId
                                             )
 
-                                    })
-                                );
-
+                                    }));
                             const wasFinished = finished;
                             finished = true;
 
@@ -1431,7 +1423,6 @@ function getActiveSidebarItems() {
 // ============================================================
 // RENDER SIDEBAR
 // ============================================================
-
 function renderTestEndpoints() {
 
     if (!testEndpointList) return;
@@ -1599,8 +1590,7 @@ function createTestEndpointCard(item) {
                                 type="checkbox"
                                 class="
                                     history-checkbox
-                                    hidden
-                                    group-hover:block
+                                    block
                                     h-3.5
                                     w-3.5
                                     accent-cyan-500
@@ -1619,7 +1609,7 @@ function createTestEndpointCard(item) {
 
                 <span
                     class="px-2 py-1 rounded-md text-[11px]
-                           font-semibold border
+                           font-medium border
                            ${getMethodColor(
             item.method ||
             endpoint.method
@@ -1697,10 +1687,10 @@ function createTestEndpointCard(item) {
 
         </div>
 
-        <p
-            class="mt-2 text-sm font-medium
-                   text-slate-200 truncate
-                   group-hover:text-white">
+            <p
+    class="mt-2 text-sm
+           text-slate-200 truncate
+           group-hover:text-white">
             ${escapeHTML(
             item.endpoint ||
             endpoint.endpoint ||
@@ -1708,8 +1698,13 @@ function createTestEndpointCard(item) {
         )}
         </p>
 
-        ${isHistory
-            ? ""
+          ${isHistory
+            ? (item.qpId !== undefined && item.qpId !== null
+                ? `<div class="mt-2 flex items-center justify-between text-[11px] text-slate-500">
+               <span></span>
+               <span>QP ${escapeHTML(String(item.qpId))}</span>
+           </div>`
+                : "")
             : `
                     <div
                         class="mt-2 flex items-center
@@ -1872,6 +1867,21 @@ function createTestEndpointCard(item) {
     return card;
 
 }
+const HIDDEN_HISTORY_KEY = "testview.hiddenHistoryIds";
+
+function getHiddenHistoryIds() {
+    try {
+        return new Set(JSON.parse(localStorage.getItem(HIDDEN_HISTORY_KEY) || "[]"));
+    } catch {
+        return new Set();
+    }
+}
+
+function hideHistoryIdLocally(historyId) {
+    const hidden = getHiddenHistoryIds();
+    hidden.add(String(historyId));
+    localStorage.setItem(HIDDEN_HISTORY_KEY, JSON.stringify([...hidden]));
+}
 async function deleteHistoryItem(historyId) {
 
     if (!historyId) {
@@ -1883,20 +1893,15 @@ async function deleteHistoryItem(historyId) {
             `${API_BASE}/test-view/history/${encodeURIComponent(historyId)}/delete`,
             { method: "POST" }
         );
-
-    if (!response.ok) {
-
-        throw new Error(
-            `History delete failed: ${response.status}`
-        );
-
+    if (response.status === 404) {
+        hideHistoryIdLocally(historyId);
+    } else if (!response.ok) {
+        throw new Error(`History delete failed: ${response.status}`);
     }
 
-    selectedHistoryIds.delete(
-        String(historyId)
-    );
-
+    selectedHistoryIds.delete(String(historyId));
 }
+
 // ============================================================
 // HISTORY MENU ACTION
 // ============================================================
@@ -4007,6 +4012,7 @@ function setupRunner() {
     const confirmAddToCollectionBtn = document.getElementById("confirmAddToCollectionBtn");
     const collectionSelect = document.getElementById("collectionSelect");
 
+
     if (saveButton && saveMenu && saveDropdownContainer) {
         saveButton.type = "button";
 
@@ -4014,7 +4020,14 @@ function setupRunner() {
             event.preventDefault();
             event.stopPropagation();
             saveMenu.classList.toggle("hidden");
-            if (!saveMenu.classList.contains("hidden")) refreshSaveMenuState();
+
+            if (!saveMenu.classList.contains("hidden")) {
+                if (selectedTestQP) {
+                    btnUpdateQP.style.display = "flex";
+                } else {
+                    btnUpdateQP.style.display = "none";
+                }
+            }
         });
 
         document.addEventListener("click", event => {
@@ -4023,7 +4036,7 @@ function setupRunner() {
             }
         });
 
-        document.getElementById("btnCreateQP")?.addEventListener("click", async event => {
+        btnUpdateQP.addEventListener("click", async event => {
             event.preventDefault();
             event.stopPropagation();
             saveMenu.classList.add("hidden");
@@ -4051,15 +4064,8 @@ function setupRunner() {
                         // Force UI refresh for the updated QP
                         renderTestQP(endpoint, selectedTestQP.id);
                     }
-
-                    saveMenu.classList.add(
-                        "hidden"
-                    );
-
-                    runSave(
-                        updateExistingQP
-                    );
-
+                } else {
+                    console.error("Failed to update QP on backend");
                 }
             } catch (e) {
                 console.error("Error updating QP:", e);

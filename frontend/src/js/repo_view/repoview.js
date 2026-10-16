@@ -593,15 +593,14 @@
             <h2 class="mb-4 text-sm font-semibold text-white">EQP Tags</h2>
 
             <div class="flex flex-wrap gap-2">
-                ${
-                    tags.length
-                        ? tags.map(tag => `
+                ${tags.length
+                ? tags.map(tag => `
                             <span class="rounded-md border border-slate-700 bg-slate-800 px-2.5 py-1 text-xs text-slate-300">
                                 ${escapeHtml(tag)}
                             </span>
                         `).join('')
-                        : '<span class="text-xs text-slate-600">No EQP Tags.</span>'
-                }
+                : '<span class="text-xs text-slate-600">No tags in data.</span>'
+            }
             </div>
 
             <div class="mt-4 flex justify-end">
@@ -929,7 +928,7 @@
         }
 
         const repo = getRepo(state.activeRowId);
-        
+
         if (!repo) {
             section.classList.add('hidden');
             return;
