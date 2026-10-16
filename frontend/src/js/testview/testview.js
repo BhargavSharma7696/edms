@@ -3590,6 +3590,8 @@ function setupRunner() {
     const btnUpdateQP = document.getElementById("btnUpdateQP");
     const btnCreateQP = document.getElementById("btnCreateQP");
     const btnAddToCollection = document.getElementById("btnAddToCollection");
+    const btnSaveCurrentCollection = document.getElementById("btnSaveCurrentCollection");
+    const btnSaveCurrentCollectionSep = document.getElementById("btnSaveCurrentCollectionSep");
     const addToCollectionModal = document.getElementById("addToCollectionModal");
     const closeAddToCollectionModal = document.getElementById("closeAddToCollectionModal");
     const cancelAddToCollectionBtn = document.getElementById("cancelAddToCollectionBtn");
@@ -3609,6 +3611,25 @@ function setupRunner() {
                     btnUpdateQP.style.display = "flex";
                 } else {
                     btnUpdateQP.style.display = "none";
+                }
+
+                // Show "Save to Current Collection" only when inside a collection context
+                if (activeCollectionFilter) {
+                    if (btnSaveCurrentCollection) {
+                        btnSaveCurrentCollection.classList.remove("hidden");
+                        btnSaveCurrentCollection.classList.add("flex");
+                    }
+                    if (btnSaveCurrentCollectionSep) {
+                        btnSaveCurrentCollectionSep.classList.remove("hidden");
+                    }
+                } else {
+                    if (btnSaveCurrentCollection) {
+                        btnSaveCurrentCollection.classList.add("hidden");
+                        btnSaveCurrentCollection.classList.remove("flex");
+                    }
+                    if (btnSaveCurrentCollectionSep) {
+                        btnSaveCurrentCollectionSep.classList.add("hidden");
+                    }
                 }
             }
         });
@@ -3703,6 +3724,39 @@ function setupRunner() {
                 console.error("Error creating QP:", e);
             }
         });
+
+        if (btnSaveCurrentCollection) {
+            btnSaveCurrentCollection.addEventListener("click", async event => {
+                event.preventDefault();
+                event.stopPropagation();
+                saveMenu.classList.add("hidden");
+
+                const endpoint = selectedTestEndpoint;
+                if (!endpoint) {
+                    window.alert("No endpoint selected.");
+                    return;
+                }
+                if (!activeCollectionFilter) {
+                    window.alert("No active collection context.");
+                    return;
+                }
+
+                try {
+                    await window.EdmsAPI.addActiveBookmark(activeCollectionFilter, endpoint.id);
+                    try {
+                        await window.EdmsAPI.saveActiveBookmark(activeCollectionFilter, endpoint.id);
+                    } catch (e) {
+                        console.warn("REST saveActiveBookmark returned an error, but WS may have succeeded", e);
+                    }
+                    console.log(`Saved endpoint ${endpoint.id} to current collection '${activeCollectionFilter}'`);
+                    await loadBookmarksFromBackend();
+                    applyTestFilters();
+                } catch (e) {
+                    console.error("Error saving to current collection:", e);
+                    window.alert("Failed to save to current collection: " + e.message);
+                }
+            });
+        }
 
         if (btnAddToCollection) {
             btnAddToCollection.addEventListener("click", async event => {

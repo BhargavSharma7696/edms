@@ -1588,6 +1588,12 @@
       ?.addEventListener("click", clearSelection);
 
     document
+      .getElementById("mergeCollectionsBtn")
+      ?.addEventListener("click", () => {
+        openMergeModal([...state.selected]);
+      });
+
+    document
       .getElementById("selectAllFolders")
       ?.addEventListener("change", (event) => {
         currentPageItems().forEach((folder) => {
@@ -1629,6 +1635,19 @@
 
     if (count) {
       count.textContent = `${selected.length} selected`;
+    }
+
+    const mergeBtn = document.getElementById("mergeCollectionsBtn");
+    if (mergeBtn) {
+      if (selected.length >= 2) {
+        mergeBtn.disabled = false;
+        mergeBtn.classList.remove("opacity-40", "cursor-not-allowed");
+        mergeBtn.title = `Merge ${selected.length} selected collections`;
+      } else {
+        mergeBtn.disabled = true;
+        mergeBtn.classList.add("opacity-40", "cursor-not-allowed");
+        mergeBtn.title = "Select at least 2 collections to merge";
+      }
     }
 
     if (list) {
@@ -1989,22 +2008,269 @@
   // ============================================================
 
   function openMergeModal(ids) {
-    const uniqueIds = [...new Set(ids.map(Number))];
-
+    const targetIds = (ids && ids.length) ? ids : [...state.selected];
+    const uniqueIds = [...new Set(targetIds.map(Number))];
     const sourceFolders = uniqueIds.map(getFolder).filter(Boolean);
 
     if (sourceFolders.length < 2) {
-      showAlert("Select at least two folders to merge.");
-
+      showAlert("Select at least two collections to merge.");
       return;
     }
 
-    /*
-     * There is no backend merge endpoint in the supplied API.
-     * Do not create a fake local collection because the backend
-     * is the source of truth.
-     */
-    showAlert("Merge is not available through the backend API yet.");
+    openModal(`
+      <div class="space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div>
+            <h2 class="text-sm font-semibold text-white flex items-center gap-2">
+              <svg class="h-4 w-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M8 7v10M16 7v10M8 12h8" />
+              </svg>
+              Merge Collections
+            </h2>
+            <p class="mt-0.5 text-[11px] text-slate-400">
+              Combine endpoints from selected collections into a target collection.
+            </p>
+          </div>
+          <button
+            type="button"
+            data-modal-close
+            class="rounded-md p-1 text-slate-500 hover:bg-slate-800 hover:text-white"
+            title="Close"
+          >
+            ${iconClose()}
+          </button>
+        </div>
+
+        <div>
+          <label class="mb-1.5 block text-xs font-medium text-slate-300">
+            Selected Collections (${sourceFolders.length})
+          </label>
+          <div class="max-h-36 overflow-y-auto rounded-lg border border-slate-800 bg-slate-950/70 p-2 space-y-1.5 scrollbar-thin scrollbar-thumb-slate-800">
+            ${sourceFolders
+              .map(
+                (f) => `
+                <div class="flex items-center justify-between rounded px-2.5 py-1.5 bg-slate-900/80 border border-slate-800/80">
+                  <div class="flex items-center gap-2 min-w-0">
+                    <span class="inline-block h-2 w-2 rounded-full bg-cyan-400"></span>
+                    <span class="text-xs font-mono font-medium text-slate-200 truncate">${escapeHtml(f.name)}</span>
+                    ${f.annotation ? `<span class="text-[10px] text-slate-400 truncate">(${escapeHtml(f.annotation)})</span>` : ""}
+                  </div>
+                  <span class="shrink-0 text-[10px] text-cyan-400/80 font-mono">
+                    ${Array.isArray(f.endpoints) ? f.endpoints.length : (f.endpoint_count ?? 0)} endpoints
+                  </span>
+                </div>
+              `,
+              )
+              .join("")}
+          </div>
+        </div>
+
+        <div>
+          <label class="mb-1.5 block text-xs font-medium text-slate-300">
+            Primary / Target Collection <span class="text-rose-400">*</span>
+          </label>
+          <select
+            id="mergeTargetSelect"
+            class="mb-2 h-9 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-xs text-slate-200 outline-none focus:border-cyan-500"
+          >
+            ${sourceFolders
+              .map(
+                (f, idx) => `
+                <option value="${escapeAttr(f.name)}" ${idx === 0 ? "selected" : ""}>
+                  ${escapeHtml(f.name)} (Merge sources into this collection)
+                </option>
+              `,
+              )
+              .join("")}
+            <option value="__custom__">+ Enter custom / new target collection name...</option>
+          </select>
+          <input
+            id="customMergeTargetInput"
+            type="text"
+            placeholder="Enter target collection name"
+            class="hidden h-9 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-xs text-slate-200 outline-none focus:border-cyan-500"
+          />
+        </div>
+
+        <div id="mergeStatusArea" class="hidden rounded-lg border px-3 py-2 text-xs"></div>
+
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+          <button
+            type="button"
+            id="cancelMergeBtn"
+            data-modal-close
+            class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800"
+          >
+            Cancel
+          </button>
+          <button
+            id="confirmMergeBtn"
+            type="button"
+            class="inline-flex items-center gap-1.5 rounded-md bg-cyan-600 px-3.5 py-1.5 text-xs font-medium text-white hover:bg-cyan-500 transition shadow-sm"
+          >
+            <span id="mergeBtnSpinner" class="hidden">
+              <svg class="h-3.5 w-3.5 animate-spin text-white" viewBox="0 0 24 24" fill="none">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+            </span>
+            <span id="mergeBtnText">Merge Collections</span>
+          </button>
+        </div>
+      </div>
+    `);
+
+    const targetSelect = document.getElementById("mergeTargetSelect");
+    const customInput = document.getElementById("customMergeTargetInput");
+    const confirmBtn = document.getElementById("confirmMergeBtn");
+    const cancelBtn = document.getElementById("cancelMergeBtn");
+    const statusArea = document.getElementById("mergeStatusArea");
+    const spinner = document.getElementById("mergeBtnSpinner");
+    const btnText = document.getElementById("mergeBtnText");
+
+    targetSelect?.addEventListener("change", () => {
+      if (targetSelect.value === "__custom__") {
+        customInput?.classList.remove("hidden");
+        customInput?.focus();
+      } else {
+        customInput?.classList.add("hidden");
+      }
+    });
+
+    confirmBtn?.addEventListener("click", async () => {
+      let targetName = "";
+      if (targetSelect.value === "__custom__") {
+        targetName = customInput?.value.trim() || "";
+        if (!targetName) {
+          showMergeStatus("Target collection name is required.", "error");
+          return;
+        }
+      } else {
+        targetName = targetSelect.value;
+      }
+
+      const sources = sourceFolders
+        .map((f) => f.name)
+        .filter((name) => name !== targetName);
+
+      if (sources.length === 0) {
+        showMergeStatus("At least one distinct source collection is required to merge.", "error");
+        return;
+      }
+
+      setMergeLoading(true);
+      showMergeStatus(`Initiating merge into "${targetName}"...`, "info");
+
+      const api = getApi();
+      if (!api || typeof api.mergeDataViewFolder !== "function") {
+        showMergeStatus("Merge API is not available.", "error");
+        setMergeLoading(false);
+        return;
+      }
+
+      try {
+        const payload = { sources };
+        const response = await api.mergeDataViewFolder(targetName, payload);
+
+        if (response?.ok === false && response?.status !== 202) {
+          const errMsg =
+            response?.data?.error ||
+            response?.data?.message ||
+            `Failed to merge collections (HTTP ${response?.status ?? "unknown"}).`;
+          showMergeStatus(errMsg, "error");
+          setMergeLoading(false);
+          return;
+        }
+
+        // Response is 202 Accepted or 200 OK
+        clearSelection();
+
+        showMergeStatus(
+          `Merge accepted (HTTP ${response?.status ?? 202}). Waiting for background completion event...`,
+          "success",
+        );
+
+        let wsFinished = false;
+        const onMergeComplete = async (eventDetails) => {
+          if (wsFinished) return;
+          wsFinished = true;
+          cleanupWsListener?.();
+
+          clearSelection();
+          closeModal();
+          await loadFolders();
+          renderSidebar();
+          applyFilters();
+          showAlert(`Successfully merged collections into "${targetName}".`);
+        };
+
+        const cleanupWsListener = typeof api.listenForMergeNotification === "function"
+          ? api.listenForMergeNotification(targetName, onMergeComplete, 6000)
+          : null;
+
+        // Fallback timer if WebSocket doesn't fire within 6s
+        setTimeout(async () => {
+          if (!wsFinished) {
+            wsFinished = true;
+            cleanupWsListener?.();
+            clearSelection();
+            closeModal();
+            await loadFolders();
+            renderSidebar();
+            applyFilters();
+            showAlert(`Collections merge into "${targetName}" completed.`);
+          }
+        }, 6500);
+      } catch (error) {
+        console.error("Failed to merge collections:", error);
+        showMergeStatus(`Merge failed: ${error.message || "An unexpected error occurred."}`, "error");
+        setMergeLoading(false);
+      }
+    });
+
+    function setMergeLoading(loading) {
+      if (confirmBtn) {
+        confirmBtn.disabled = loading;
+        if (loading) {
+          confirmBtn.classList.add("opacity-60", "cursor-not-allowed");
+          spinner?.classList.remove("hidden");
+          if (btnText) btnText.textContent = "Merging...";
+        } else {
+          confirmBtn.classList.remove("opacity-60", "cursor-not-allowed");
+          spinner?.classList.add("hidden");
+          if (btnText) btnText.textContent = "Merge Collections";
+        }
+      }
+      if (cancelBtn) cancelBtn.disabled = loading;
+      if (targetSelect) targetSelect.disabled = loading;
+      if (customInput) customInput.disabled = loading;
+    }
+
+    function showMergeStatus(msg, type) {
+      if (!statusArea) return;
+      statusArea.classList.remove(
+        "hidden",
+        "border-rose-500/40",
+        "bg-rose-500/10",
+        "text-rose-300",
+        "border-cyan-500/40",
+        "bg-cyan-500/10",
+        "text-cyan-300",
+        "border-amber-500/40",
+        "bg-amber-500/10",
+        "text-amber-300",
+      );
+
+      if (type === "error") {
+        statusArea.classList.add("border-rose-500/40", "bg-rose-500/10", "text-rose-300");
+      } else if (type === "success") {
+        statusArea.classList.add("border-cyan-500/40", "bg-cyan-500/10", "text-cyan-300");
+      } else {
+        statusArea.classList.add("border-amber-500/40", "bg-amber-500/10", "text-amber-300");
+      }
+
+      statusArea.textContent = msg;
+    }
   }
 
   // ============================================================
