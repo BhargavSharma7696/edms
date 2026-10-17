@@ -11,7 +11,10 @@ let selectedTestEndpoint = null;
 let selectedTestQP = null;
 
 let selectedQPIds = new Set();
-
+let selectedHistoryIds = new Set();
+let listPage = 1;
+const LIST_PAGE_SIZE = 5;
+let lastFilterSignature = "";
 let activeSidebarTab = "endpoints";
 let activeTestMethod = "ALL";
 let activeTimeFilter = "all";
@@ -42,7 +45,7 @@ let activeCollectionEndpointIds = null;
 
 const LOCAL_QP_KEY = "edmsTestViewQPs";
 
-const API_BASE = "http://localhost:3001";
+const API_BASE = "http://localhost:3000";
 
 // ============================================================
 // DOM
@@ -160,7 +163,7 @@ async function initTestView() {
     setupAddressMode();
     setupQPMenu();
     setupHistoryContextMenu();
-
+    setupHistoryMenu();
     updateMethodButtons();
     updateSidebarTabButtons();
     applyTestFilters();
@@ -1015,11 +1018,12 @@ function loadHistoryFromBackend() {
                             )
                         ) {
 
-                            historyRecords =
-                                message.history.map(
-                                    normalizeBackendHistory
-                                );
+                            const hiddenHistoryIds = getHiddenHistoryIds();
 
+                            historyRecords =
+                                message.history
+                                    .map(normalizeBackendHistory)
+                                    .filter(h => !hiddenHistoryIds.has(String(h.id)));
                             historyRecords =
                                 historyRecords.map(
                                     history => ({
@@ -1483,54 +1487,113 @@ function getActiveSidebarItems() {
 // ============================================================
 // RENDER SIDEBAR
 // ============================================================
-
 function renderTestEndpoints() {
 
     if (!testEndpointList) return;
 
     testEndpointList.innerHTML = "";
 
-    if (
-        filteredTestEndpoints.length === 0
-    ) {
-
+    if (filteredTestEndpoints.length === 0) {
         testEndpointList.innerHTML = `
             <div class="p-4 text-sm text-slate-500">
                 No ${escapeHTML(activeSidebarTab)} found.
             </div>
         `;
-
         return;
-
     }
 
-    filteredTestEndpoints.forEach(
-        item => {
+    // back to page 1 when the tab or a filter changes
+    const signature = [
+        activeSidebarTab,
+        activeTestMethod,
+        activeTimeFilter,
+        testSearchInput?.value,
+        urlFilter?.value
+    ].join("|");
 
-            testEndpointList.appendChild(
-                createTestEndpointCard(item)
-            );
+    if (signature !== lastFilterSignature) {
+        listPage = 1;
+        lastFilterSignature = signature;
+    }
 
-        }
+    const totalPages = Math.max(
+        1,
+        Math.ceil(filteredTestEndpoints.length / LIST_PAGE_SIZE)
     );
+    listPage = Math.min(Math.max(listPage, 1), totalPages);
+
+    const start = (listPage - 1) * LIST_PAGE_SIZE;
+
+    filteredTestEndpoints
+        .slice(start, start + LIST_PAGE_SIZE)
+        .forEach(item => {
+            testEndpointList.appendChild(createTestEndpointCard(item));
+        });
+
+    if (totalPages > 1) {
+        testEndpointList.appendChild(createListPager(totalPages));
+    }
 
     updateSelectedEndpointHighlight();
-
 }
 
+function createListPager(totalPages) {
+
+    const bar = document.createElement("div");
+
+    bar.className =
+        "sticky bottom-0 flex items-center justify-between gap-2 " +
+        "border-t border-slate-200 dark:border-slate-800 " +
+        "bg-slate-50 dark:bg-slate-950 px-3 py-2 " +
+        "text-xs text-slate-500 dark:text-slate-400";
+
+    const btn =
+        "rounded-md border border-slate-300 dark:border-slate-700 px-3 py-1 " +
+        "hover:bg-slate-200 dark:hover:bg-slate-800 " +
+        "disabled:opacity-40 disabled:cursor-not-allowed";
+
+    bar.innerHTML = `
+        <button type="button" data-page="prev" class="${btn}">Prev</button>
+        <span>Page ${listPage} of ${totalPages}</span>
+        <button type="button" data-page="next" class="${btn}">Next</button>
+    `;
+
+    const prev = bar.querySelector('[data-page="prev"]');
+    const next = bar.querySelector('[data-page="next"]');
+
+    prev.disabled = listPage <= 1;
+    next.disabled = listPage >= totalPages;
+
+    prev.addEventListener("click", () => {
+        listPage--;
+        renderTestEndpoints();
+        testEndpointList.scrollTop = 0;
+    });
+
+    next.addEventListener("click", () => {
+        listPage++;
+        renderTestEndpoints();
+        testEndpointList.scrollTop = 0;
+    });
+
+    return bar;
+}
 // ============================================================
 // ENDPOINT CARD
 // ============================================================
 
 function createTestEndpointCard(item) {
 
-    const card =
-        document.createElement("div");
+    const card = document.createElement("div");
 
     const endpoint =
         item.endpointRef ||
         item.source ||
         item;
+
+    const isHistory = item.type === "history";
+
+    const itemId = String(item.id ?? endpoint.id);
 
     card.className = `
         endpoint-card
@@ -1546,56 +1609,73 @@ function createTestEndpointCard(item) {
         cursor-pointer
         px-3
         py-3
+        ${isHistory && selectedHistoryIds.has(itemId) ? "ring-2 ring-cyan-400" : ""}
     `;
 
-    card.dataset.id =
-        item.id ??
-        endpoint.id;
-
-    card.dataset.endpointId =
-        item.endpointId ??
-        endpoint.id;
+    card.dataset.id = item.id ?? endpoint.id;
+    card.dataset.endpointId = item.endpointId ?? endpoint.id;
 
     card.innerHTML = `
 
         <div class="flex items-center justify-between">
 
-            <span
-                class="px-2 py-1 rounded-md text-[11px]
-                       font-semibold border
-                       ${getMethodColor(
-        item.method ||
-        endpoint.method
-    )}">
-                ${escapeHTML(
-        item.method ||
-        endpoint.method ||
-        ""
-    )}
-            </span>
+            <div class="flex items-center gap-2">
 
-            <span
-                class="text-[11px]
-text-slate-500
-group-hover:text-slate-700 dark:group-hover:text-slate-300">
-                ${escapeHTML(
-        formatEndpointDate(
-            item.updated
-        )
-    )}
-            </span>
+                ${isHistory ? `
+                    <input
+                        type="checkbox"
+                        class="history-checkbox h-3.5 w-3.5 accent-cyan-500 cursor-pointer"
+                        data-history-id="${escapeHTML(itemId)}"
+                        ${selectedHistoryIds.has(itemId) ? "checked" : ""}
+                    />
+                ` : ""}
+
+                <span
+                    class="px-2 py-1 rounded-md text-[11px]
+                           font-semibold border
+                           ${getMethodColor(item.method || endpoint.method)}">
+                    ${escapeHTML(item.method || endpoint.method || "")}
+                </span>
+
+            </div>
+
+            <div class="flex items-center gap-2">
+
+                <span
+                    class="text-[11px] text-slate-500
+                           group-hover:text-slate-700 dark:group-hover:text-slate-300">
+                    ${escapeHTML(formatEndpointDate(item.updated))}
+                </span>
+
+                ${isHistory ? `
+                    <button
+                        type="button"
+                        class="history-delete hidden group-hover:flex items-center justify-center
+                               w-7 h-7 rounded-md text-slate-400
+                               hover:text-red-500 hover:bg-red-500/10 transition"
+                        data-history-id="${escapeHTML(itemId)}"
+                        title="Delete">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round" class="w-4 h-4">
+                            <path d="M3 6h18"></path>
+                            <path d="M8 6V4h8v2"></path>
+                            <path d="M19 6l-1 14H6L5 6"></path>
+                            <path d="M10 11v5"></path>
+                            <path d="M14 11v5"></path>
+                        </svg>
+                    </button>
+                ` : ""}
+
+            </div>
 
         </div>
 
         <p
             class="mt-2 text-sm font-medium
                    text-slate-800 dark:text-slate-200 truncate
-group-hover:text-slate-900 dark:group-hover:text-white">
-            ${escapeHTML(
-        item.endpoint ||
-        endpoint.endpoint ||
-        ""
-    )}
+                   group-hover:text-slate-900 dark:group-hover:text-white">
+            ${escapeHTML(item.endpoint || endpoint.endpoint || "")}
         </p>
 
         <div
@@ -1603,52 +1683,190 @@ group-hover:text-slate-900 dark:group-hover:text-white">
                    justify-between text-[11px]
                    text-slate-500">
 
-            <span>
-                ${escapeHTML(
-        getItemBadge(item)
-    )}
-            </span>
+            <span></span>
 
             <span>
-                ${getQPCountLabel(endpoint)}
+                ${isHistory
+            ? (item.qpId !== undefined && item.qpId !== null
+                ? `QP ${escapeHTML(String(item.qpId))}`
+                : "")
+            : getQPCountLabel(endpoint)}
             </span>
 
         </div>
     `;
 
-    card.addEventListener(
-        "click",
-        () => {
+    if (isHistory) {
 
-            selectSidebarItem(
-                item,
-                card
-            );
+        const checkbox = card.querySelector(".history-checkbox");
 
-        }
-    );
+        checkbox.addEventListener("click", event => event.stopPropagation());
 
-    if (
-        item.type ===
-        "history"
-    ) {
-
-        card.addEventListener(
-            "contextmenu",
-            event => {
-
-                showHistoryContextMenu(
-                    event,
-                    item.source
-                );
-
+        checkbox.addEventListener("change", () => {
+            if (checkbox.checked) {
+                selectedHistoryIds.add(itemId);
+                card.classList.add("ring-2", "ring-cyan-400");
+            } else {
+                selectedHistoryIds.delete(itemId);
+                card.classList.remove("ring-2", "ring-cyan-400");
             }
-        );
+        });
 
+        card.querySelector(".history-delete").addEventListener("click", async event => {
+            event.stopPropagation();
+            try {
+                await deleteHistoryItem(itemId);
+                await loadHistoryFromBackend();
+                applyTestFilters();
+            } catch (error) {
+                console.error("Failed to delete history:", error);
+                window.alert(error?.message || "Could not delete history.");
+            }
+        });
+    }
+
+    card.addEventListener("click", () => {
+        selectSidebarItem(item, card);
+    });
+
+    if (isHistory) {
+        card.addEventListener("contextmenu", event => {
+            showHistoryContextMenu(event, item.source);
+        });
     }
 
     return card;
+}
+// ============================================================
+// HISTORY: DELETE + THREE-DOT MENU
+// ============================================================
 
+const HIDDEN_HISTORY_KEY = "testview.hiddenHistoryIds";
+
+function getHiddenHistoryIds() {
+    try {
+        return new Set(JSON.parse(localStorage.getItem(HIDDEN_HISTORY_KEY) || "[]"));
+    } catch {
+        return new Set();
+    }
+}
+
+function hideHistoryIdLocally(historyId) {
+    const hidden = getHiddenHistoryIds();
+    hidden.add(String(historyId));
+    localStorage.setItem(HIDDEN_HISTORY_KEY, JSON.stringify([...hidden]));
+}
+
+async function deleteHistoryItem(historyId) {
+
+    if (!historyId) return;
+
+    const response = await fetch(
+        `${API_BASE}/test-view/history/${encodeURIComponent(historyId)}/delete`,
+        { method: "POST" }
+    );
+
+    if (response.status === 404) {
+        hideHistoryIdLocally(historyId);
+    } else if (!response.ok) {
+        throw new Error(`History delete failed: ${response.status}`);
+    }
+
+    selectedHistoryIds.delete(String(historyId));
+}
+
+function setHistoryCheckbox(checkbox, checked) {
+    checkbox.checked = checked;
+    const id = String(checkbox.dataset.historyId);
+    const card = checkbox.closest(".endpoint-card");
+    if (checked) {
+        selectedHistoryIds.add(id);
+        card?.classList.add("ring-2", "ring-cyan-400");
+    } else {
+        selectedHistoryIds.delete(id);
+        card?.classList.remove("ring-2", "ring-cyan-400");
+    }
+}
+
+function doSelectAllHistory() {
+    selectedHistoryIds = new Set(historyRecords.map(h => String(h.id)));
+    document.querySelectorAll(".history-checkbox")
+        .forEach(cb => setHistoryCheckbox(cb, true));
+}
+
+function doClearSelectionHistory() {
+    selectedHistoryIds = new Set();
+    document.querySelectorAll(".history-checkbox")
+        .forEach(cb => setHistoryCheckbox(cb, false));
+}
+
+function doInvertSelectionHistory() {
+    if (activeSidebarTab !== "history") return;
+    document.querySelectorAll(".history-checkbox")
+        .forEach(cb => setHistoryCheckbox(cb, !cb.checked));
+}
+
+async function doDeleteSelectedHistory() {
+
+    if (selectedHistoryIds.size === 0) {
+        console.warn("No history items selected.");
+        return;
+    }
+
+    await Promise.all(
+        [...selectedHistoryIds].map(id =>
+            deleteHistoryItem(id).catch(error => {
+                console.error(`Error deleting history ${id}:`, error);
+            })
+        )
+    );
+
+    selectedHistoryIds = new Set();
+
+    await loadHistoryFromBackend();
+
+    applyTestFilters();
+}
+
+function handleHistoryMenuAction(action) {
+    switch (action) {
+        case "select-all": doSelectAllHistory(); break;
+        case "invert-selection": doInvertSelectionHistory(); break;
+        case "clear-selection": doClearSelectionHistory(); break;
+        case "delete-selected": doDeleteSelectedHistory(); break;
+    }
+}
+
+function setupHistoryMenu() {
+
+    const historyMenuButton = document.getElementById("historyMenuButton");
+    const historyMenu = document.getElementById("historyMenu");
+
+    if (!historyMenuButton || !historyMenu) return;
+
+    historyMenuButton.addEventListener("click", event => {
+        event.preventDefault();
+        event.stopPropagation();
+        qpMenu?.classList.add("hidden");
+        historyMenu.classList.toggle("hidden");
+    });
+
+    historyMenu.addEventListener("click", event => {
+        const button = event.target.closest("[data-history-action]");
+        if (!button) return;
+        handleHistoryMenuAction(button.dataset.historyAction);
+        historyMenu.classList.add("hidden");
+    });
+
+    document.addEventListener("click", event => {
+        if (
+            !historyMenu.classList.contains("hidden") &&
+            !historyMenu.contains(event.target) &&
+            !historyMenuButton.contains(event.target)
+        ) {
+            historyMenu.classList.add("hidden");
+        }
+    });
 }
 
 // ============================================================
@@ -2641,7 +2859,7 @@ function setupQPMenu() {
 
             event.preventDefault();
             event.stopPropagation();
-
+            document.getElementById("historyMenu")?.classList.add("hidden");
             qpMenu.classList.toggle(
                 "hidden"
             );
@@ -2705,8 +2923,8 @@ function handleQPMenuAction(action) {
 
     switch (action) {
 
-        case "create":
-            doCreateQP();
+        case "invert-selection":
+            doInvertSelectionQP();
             break;
 
         case "select-all":
@@ -2852,7 +3070,17 @@ function doSelectAllQP() {
         );
 
 }
+function doInvertSelectionQP() {
 
+    if (!selectedTestEndpoint || !Array.isArray(selectedTestEndpoint.qps)) return;
+
+    testQPPanel
+        .querySelectorAll('input[type="checkbox"]')
+        .forEach(checkbox => {
+            checkbox.checked = !checkbox.checked;
+            checkbox.dispatchEvent(new Event("change"));
+        });
+}
 // ============================================================
 // CLEAR QP SELECTION
 // ============================================================
@@ -6119,50 +6347,35 @@ function setupSidebarTab(
 function updateSidebarTabButtons() {
 
     const tabs = {
-
-        historyTab:
-            "history",
-
-
-
-        endpointsTab:
-            "endpoints"
-
+        historyTab: "history",
+        endpointsTab: "endpoints"
     };
 
-    Object.entries(tabs).forEach(
-        ([id, tab]) => {
+    const ACTIVE = ["text-sky-600", "dark:text-sky-400", "border-sky-500"];
+    const INACTIVE = ["text-slate-500", "dark:text-slate-400", "border-transparent"];
 
-            const button =
-                document.getElementById(
-                    id
-                );
+    Object.entries(tabs).forEach(([id, tab]) => {
+        const button = document.getElementById(id);
+        if (!button) return;
 
-            if (!button) return;
+        const active = activeSidebarTab === tab;
 
-            const active =
-                activeSidebarTab ===
-                tab;
+        button.classList.remove(...(active ? INACTIVE : ACTIVE));
+        button.classList.add(...(active ? ACTIVE : INACTIVE));
+    });
 
-            button.classList.toggle("text-sky-600", active);
-            button.classList.toggle("dark:text-sky-400", active);
-            button.classList.toggle(
-                "border-sky-500",
-                active
-            );
+    const historyMenuWrap = document.getElementById("historyMenuWrap");
+    if (historyMenuWrap) {
+        historyMenuWrap.classList.toggle("invisible", activeSidebarTab !== "history");
+    }
 
+    const historyMenu = document.getElementById("historyMenu");
+    if (historyMenu && activeSidebarTab !== "history") {
+        historyMenu.classList.add("hidden");
+    }
 
-            button.classList.toggle("text-slate-500", !active);
-            button.classList.toggle("dark:text-slate-400", !active);
-        }
-    );
-
-    requestAnimationFrame(
-        updateSidebarTabUnderline
-    );
-
+    requestAnimationFrame(updateSidebarTabUnderline);
 }
-
 // ============================================================
 // SIDEBAR TAB UNDERLINE
 // ============================================================
