@@ -207,26 +207,74 @@
           endpoint_str: info.endpoint_str ?? endpoint.endpoint_str ?? "",
           annotation: info.annotation ?? endpoint.annotation,
           method: info.method ?? endpoint.method ?? "",
-          tags: Array.isArray(info.tags) ? info.tags : (Array.isArray(endpoint.tags) ? endpoint.tags : []),
+          tags: Array.isArray(info.tags)
+            ? info.tags
+            : Array.isArray(endpoint.tags)
+              ? endpoint.tags
+              : [],
         };
       });
 
-      if (window.EdmsAPI && typeof window.EdmsAPI.listEndpointTags === "function") {
-        await Promise.all(
-          state.endpoints.map(async (endpoint) => {
-            try {
-              const res = await window.EdmsAPI.listEndpointTags(getEndpointId(endpoint));
-              const data = res?.data ?? res;
-              if (data && Array.isArray(data.tags)) {
-                endpoint.tags = data.tags;
-              } else if (Array.isArray(data)) {
-                endpoint.tags = data;
+      const preloadTasks = [];
+
+      if (
+        window.EdmsAPI &&
+        typeof window.EdmsAPI.listEndpointTags === "function"
+      ) {
+        preloadTasks.push(
+          Promise.all(
+            state.endpoints.map(async (endpoint) => {
+              try {
+                const res = await window.EdmsAPI.listEndpointTags(
+                  getEndpointId(endpoint),
+                );
+                const data = res?.data ?? res;
+                if (data && Array.isArray(data.tags)) {
+                  endpoint.tags = data.tags;
+                } else if (Array.isArray(data)) {
+                  endpoint.tags = data;
+                }
+              } catch (e) {
+                console.error(
+                  "Failed to load tags for",
+                  getEndpointId(endpoint),
+                  e,
+                );
               }
-            } catch (e) {
-              console.error("Failed to load tags for", getEndpointId(endpoint), e);
-            }
-          })
+            }),
+          ),
         );
+      }
+
+      if (
+        window.EdmsAPI &&
+        typeof window.EdmsAPI.listQPs === "function"
+      ) {
+        preloadTasks.push(
+          Promise.all(
+            state.endpoints.map(async (endpoint) => {
+              try {
+                const res = await window.EdmsAPI.listQPs(
+                  getEndpointId(endpoint),
+                );
+                const data = res?.data ?? res;
+                const qps = data?.qps ?? (Array.isArray(data) ? data : []);
+                endpoint.qpCount = Array.isArray(qps) ? qps.length : 0;
+              } catch (e) {
+                console.error(
+                  "Failed to load QPs for",
+                  getEndpointId(endpoint),
+                  e,
+                );
+                endpoint.qpCount = 0;
+              }
+            }),
+          ),
+        );
+      }
+
+      if (preloadTasks.length > 0) {
+        await Promise.all(preloadTasks);
       }
 
       state.filtered = [...state.endpoints];
@@ -268,11 +316,17 @@
 
       const matchesMethod = state.method === "all" || method === state.method;
 
-      const matchesTags = state.tags.size === 0 || [...state.tags].every((tag) => tags.includes(tag));
+      const matchesTags =
+        state.tags.size === 0 ||
+        [...state.tags].every((tag) => tags.includes(tag));
 
       const endpointSegments = getEndpointSegments(path);
 
-      const matchesSegments = state.segments.size === 0 || [...state.segments].every((segment) => endpointSegments.includes(segment));
+      const matchesSegments =
+        state.segments.size === 0 ||
+        [...state.segments].every((segment) =>
+          endpointSegments.includes(segment),
+        );
 
       return matchesSearch && matchesMethod && matchesTags && matchesSegments;
     });
@@ -360,7 +414,7 @@
     updateSelectAllState();
   }
 
-  function createEndpointRow(endpoint) {
+function createEndpointRow(endpoint) {
     const row = document.createElement("tr");
 
     const endpointId = getEndpointId(endpoint);
@@ -372,6 +426,31 @@
     const tags = Array.isArray(endpoint.tags) ? endpoint.tags : [];
 
     const annotation = endpoint.annotation || "—";
+    const qpCount =
+      typeof endpoint.qpCount === "number"
+        ? endpoint.qpCount
+        : "—";
+
+    if (
+      typeof endpoint.qpCount !== "number" &&
+      window.EdmsAPI &&
+      typeof window.EdmsAPI.listQPs === "function"
+    ) {
+      window.EdmsAPI.listQPs(endpointId)
+        .then((res) => {
+          const data = res?.data ?? res;
+          const qps = data?.qps ?? (Array.isArray(data) ? data : []);
+          const count = Array.isArray(qps) ? qps.length : 0;
+          endpoint.qpCount = count;
+          const badge = row.querySelector(".qp-count-badge");
+          if (badge) {
+            badge.textContent = count;
+          }
+        })
+        .catch((error) => {
+          console.error("Error listing QP:", error);
+        });
+    }
 
     row.dataset.id = endpointId;
 
@@ -482,7 +561,8 @@
             >
 
                 <span
-                    class="inline-flex
+                    class="qp-count-badge
+                           inline-flex
                            min-w-6
                            justify-center
                            rounded-md
@@ -491,7 +571,7 @@
                            text-[10px]
                            text-slate-400"
                 >
-                    ${getQPCount(endpoint)}
+                    ${qpCount}
                 </span>
 
             </td>
@@ -590,70 +670,79 @@
     const eid = getEndpointId(endpoint);
     let qps = [];
     try {
-        const res = await EdmsAPI.listQPs(eid);
-        if (res.ok) {
-            const data = res.data;
-            if (data && Array.isArray(data.qps)) {
-                qps = data.qps.map(qp => ({
-                    id: qp.request_number,
-                    name: String(qp.request_number)
-                }));
-            }
+      const res = await EdmsAPI.listQPs(eid);
+      if (res.ok) {
+        const data = res.data;
+        if (data && Array.isArray(data.qps)) {
+          qps = data.qps.map((qp) => ({
+            id: qp.request_number,
+            name: String(qp.request_number),
+          }));
+          endpoint.qpCount = data.qps.length;
+          const badge = document.querySelector(`tr[data-id="${eid}"] .qp-count-badge`);
+          if (badge) {
+            badge.textContent = endpoint.qpCount;
+          }
         }
+      }
     } catch (e) {
-        console.error("Failed to fetch QPs", e);
+      console.error("Failed to fetch QPs", e);
     }
 
     // Populate QP sidebar
     const qpPanel = document.getElementById("qpPanel");
     if (qpPanel) {
-        qpPanel.innerHTML = "";
-        
-        const selectAllCb = document.getElementById("selectAllQPs");
-        if (selectAllCb) selectAllCb.checked = false;
+      qpPanel.innerHTML = "";
 
-        if (qps.length > 0) {
-            qps.forEach((qp, index) => {
-                const wrapper = document.createElement("div");
-                wrapper.className = "flex items-center gap-1 w-full";
+      const selectAllCb = document.getElementById("selectAllQPs");
+      if (selectAllCb) selectAllCb.checked = false;
 
-                const cb = document.createElement("input");
-                cb.type = "checkbox";
-                cb.value = qp.id;
-                cb.className = "qp-checkbox h-3 w-3 rounded border-slate-700 bg-slate-800 accent-rose-500 shrink-0 cursor-pointer";
-                cb.onchange = () => {
-                    const allCbs = document.querySelectorAll(".qp-checkbox");
-                    const checkedCbs = document.querySelectorAll(".qp-checkbox:checked");
-                    if (selectAllCb) selectAllCb.checked = allCbs.length === checkedCbs.length;
-                };
+      if (qps.length > 0) {
+        qps.forEach((qp, index) => {
+          const wrapper = document.createElement("div");
+          wrapper.className = "flex items-center gap-1 w-full";
 
-                const btn = document.createElement("button");
-                btn.type = "button";
-                btn.title = `QP ${qp.name}`;
-                btn.className = [
-                    "flex h-8 flex-1 items-center justify-center",
-                    "rounded-md border border-slate-700",
-                    "bg-slate-800 text-[10px] font-semibold text-slate-400",
-                    "transition hover:border-cyan-500/50 hover:text-cyan-300"
-                ].join(" ");
-                btn.textContent = qp.name;
-                btn.onclick = () => loadQPDetails(eid, qp.id, btn);
-                
-                wrapper.appendChild(cb);
-                wrapper.appendChild(btn);
-                qpPanel.appendChild(wrapper);
+          const cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.value = qp.id;
+          cb.className =
+            "qp-checkbox h-3 w-3 rounded border-slate-700 bg-slate-800 accent-rose-500 shrink-0 cursor-pointer";
+          cb.onchange = () => {
+            const allCbs = document.querySelectorAll(".qp-checkbox");
+            const checkedCbs = document.querySelectorAll(
+              ".qp-checkbox:checked",
+            );
+            if (selectAllCb)
+              selectAllCb.checked = allCbs.length === checkedCbs.length;
+          };
 
-                if (index === 0) {
-                    // auto-load first QP
-                    btn.click();
-                }
-            });
-        } else {
-            qpPanel.innerHTML = `<div class="py-5 text-center text-[10px] text-slate-600">No QPs</div>`;
-            selectedQPId = null;
-            // Still open the panel showing empty state
-            openDetailsPanel(endpoint, null);
-        }
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.title = `QP ${qp.name}`;
+          btn.className = [
+            "flex h-8 flex-1 items-center justify-center",
+            "rounded-md border border-slate-700",
+            "bg-slate-800 text-[10px] font-semibold text-slate-400",
+            "transition hover:border-cyan-500/50 hover:text-cyan-300",
+          ].join(" ");
+          btn.textContent = qp.name;
+          btn.onclick = () => loadQPDetails(eid, qp.id, btn);
+
+          wrapper.appendChild(cb);
+          wrapper.appendChild(btn);
+          qpPanel.appendChild(wrapper);
+
+          if (index === 0) {
+            // auto-load first QP
+            btn.click();
+          }
+        });
+      } else {
+        qpPanel.innerHTML = `<div class="py-5 text-center text-[10px] text-slate-600">No QPs</div>`;
+        selectedQPId = null;
+        // Still open the panel showing empty state
+        openDetailsPanel(endpoint, null);
+      }
     }
 
     renderTable();
@@ -663,12 +752,24 @@
     // Highlight active QP button in sidebar
     const qpPanel = document.getElementById("qpPanel");
     if (qpPanel) {
-        qpPanel.querySelectorAll("button").forEach(b => {
-            b.classList.remove("border-cyan-500", "text-cyan-300", "bg-cyan-500/10");
-            b.classList.add("border-slate-700", "text-slate-400", "bg-slate-800");
-        });
-        activeBtn.classList.remove("border-slate-700", "text-slate-400", "bg-slate-800");
-        activeBtn.classList.add("border-cyan-500", "text-cyan-300", "bg-cyan-500/10");
+      qpPanel.querySelectorAll("button").forEach((b) => {
+        b.classList.remove(
+          "border-cyan-500",
+          "text-cyan-300",
+          "bg-cyan-500/10",
+        );
+        b.classList.add("border-slate-700", "text-slate-400", "bg-slate-800");
+      });
+      activeBtn.classList.remove(
+        "border-slate-700",
+        "text-slate-400",
+        "bg-slate-800",
+      );
+      activeBtn.classList.add(
+        "border-cyan-500",
+        "text-cyan-300",
+        "bg-cyan-500/10",
+      );
     }
 
     selectedQPId = qpId;
@@ -677,36 +778,36 @@
     if (delBtn) delBtn.disabled = false;
 
     try {
-        const [reqRes, resRes, hdrRes] = await Promise.all([
-            EdmsAPI.fetchRequest(endpointId, qpId).catch(() => null),
-            EdmsAPI.fetchResponse(endpointId, qpId).catch(() => null),
-            EdmsAPI.fetchHeaders(endpointId, qpId).catch(() => null)
-        ]);
+      const [reqRes, resRes, hdrRes] = await Promise.all([
+        EdmsAPI.fetchRequest(endpointId, qpId).catch(() => null),
+        EdmsAPI.fetchResponse(endpointId, qpId).catch(() => null),
+        EdmsAPI.fetchHeaders(endpointId, qpId).catch(() => null),
+      ]);
 
-        const reqData = reqRes?.ok ? reqRes.data : null;
-        const resData = resRes?.ok ? resRes.data : null;
-        const hdrData = hdrRes?.ok ? hdrRes.data : null;
+      const reqData = reqRes?.ok ? reqRes.data : null;
+      const resData = resRes?.ok ? resRes.data : null;
+      const hdrData = hdrRes?.ok ? hdrRes.data : null;
 
-        const request = { 
-            body: reqData?.body || null,
-            headers: hdrData || {}
-        };
-        const response = { 
-            status: resData?.status || null, 
-            body: resData?.body || resData || null,
-            headers: resData?.headers || {} 
-        };
-        openDetailsPanel(state.selectedEndpoint, { request, response });
+      const request = {
+        body: reqData?.body || null,
+        headers: hdrData || {},
+      };
+      const response = {
+        status: resData?.status || null,
+        body: resData?.body || resData || null,
+        headers: resData?.headers || {},
+      };
+      openDetailsPanel(state.selectedEndpoint, { request, response });
     } catch (e) {
-        console.error("Failed to load QP details", e);
-        openDetailsPanel(state.selectedEndpoint, null);
+      console.error("Failed to load QP details", e);
+      openDetailsPanel(state.selectedEndpoint, null);
     }
   }
 
   function openDetailsPanel(endpoint, qpData) {
     const overlay = document.getElementById("detailsOverlay");
     if (overlay) {
-        overlay.classList.remove("hidden");
+      overlay.classList.remove("hidden");
     }
 
     const request = qpData?.request || endpoint.request || {};
@@ -719,37 +820,48 @@
     // Request body
     const reqBodyEl = document.getElementById("requestBody");
     if (reqBodyEl) {
-        reqBodyEl.textContent = formatData(request.body ?? "Not available");
+      reqBodyEl.textContent = formatData(request.body ?? "Not available");
     }
 
     // Request headers
     const reqHeadersEl = document.getElementById("requestHeaders");
     if (reqHeadersEl) {
-        reqHeadersEl.textContent = formatData(request.headers ?? "Not available");
+      reqHeadersEl.textContent = formatData(request.headers ?? "Not available");
     }
 
     // Response status
     const resStatus = document.getElementById("responseStatus");
     if (resStatus) {
-        resStatus.textContent = response.status ? String(response.status) : "Prototype";
-        resStatus.className = `mt-0.5 text-[11px] font-semibold ${
-            response.status >= 200 && response.status < 300 ? "text-emerald-400" :
-            response.status >= 400 ? "text-rose-400" : "text-slate-400"
-        }`;
+      resStatus.textContent = response.status
+        ? String(response.status)
+        : "Prototype";
+      resStatus.className = `mt-0.5 text-[11px] font-semibold ${
+        response.status >= 200 && response.status < 300
+          ? "text-emerald-400"
+          : response.status >= 400
+            ? "text-rose-400"
+            : "text-slate-400"
+      }`;
     }
 
     // Response body
     const resBodyEl = document.getElementById("responseBody");
     if (resBodyEl) {
-        resBodyEl.textContent = formatData(
-            response.body ?? response ?? { endpoint: endpoint.endpoint, message: "No response payload defined." }
-        );
+      resBodyEl.textContent = formatData(
+        response.body ??
+          response ?? {
+            endpoint: endpoint.endpoint,
+            message: "No response payload defined.",
+          },
+      );
     }
 
     // Response headers
     const resHeadersEl = document.getElementById("responseHeaders");
     if (resHeadersEl) {
-        resHeadersEl.textContent = formatData(response.headers ?? "Not available");
+      resHeadersEl.textContent = formatData(
+        response.headers ?? "Not available",
+      );
     }
   }
 
@@ -814,7 +926,9 @@
   // ============================================================
 
   function getEndpointSegments(endpointPath) {
-    return String(endpointPath || "").split("/").filter(Boolean);
+    return String(endpointPath || "")
+      .split("/")
+      .filter(Boolean);
   }
 
   function wireSidebar() {
@@ -897,17 +1011,19 @@
 
         const checkbox = wrapper.querySelector(".tag-checkbox");
         checkbox.checked = state.tags.has(tag);
-        
+
         checkbox.addEventListener("change", () => {
           setTagFilter(tag, checkbox.checked);
         });
 
-        wrapper.querySelector(".tag-filter-button").addEventListener("click", (e) => {
-          e.preventDefault();
-          const checked = !state.tags.has(tag);
-          checkbox.checked = checked;
-          setTagFilter(tag, checked);
-        });
+        wrapper
+          .querySelector(".tag-filter-button")
+          .addEventListener("click", (e) => {
+            e.preventDefault();
+            const checked = !state.tags.has(tag);
+            checkbox.checked = checked;
+            setTagFilter(tag, checked);
+          });
 
         container.appendChild(wrapper);
       });
@@ -951,17 +1067,19 @@
 
         const checkbox = wrapper.querySelector(".segment-checkbox");
         checkbox.checked = state.segments.has(segment);
-        
+
         checkbox.addEventListener("change", () => {
           setSegmentFilter(segment, checkbox.checked);
         });
 
-        wrapper.querySelector(".segment-filter-button").addEventListener("click", (e) => {
-          e.preventDefault();
-          const checked = !state.segments.has(segment);
-          checkbox.checked = checked;
-          setSegmentFilter(segment, checked);
-        });
+        wrapper
+          .querySelector(".segment-filter-button")
+          .addEventListener("click", (e) => {
+            e.preventDefault();
+            const checked = !state.segments.has(segment);
+            checkbox.checked = checked;
+            setSegmentFilter(segment, checked);
+          });
 
         container.appendChild(wrapper);
       });
@@ -1213,7 +1331,9 @@
     document.getElementById("methodFilter").value = "all";
 
     // Uncheck sidebar inputs
-    document.querySelectorAll(".tag-checkbox, .segment-checkbox").forEach(cb => cb.checked = false);
+    document
+      .querySelectorAll(".tag-checkbox, .segment-checkbox")
+      .forEach((cb) => (cb.checked = false));
 
     applyFilters();
   }
@@ -1253,17 +1373,17 @@
         startY = e.clientY;
 
         const rect = detailsPanel.getBoundingClientRect();
-        
+
         // Remove classes that interfere with free positioning
         detailsPanel.classList.remove("absolute", "bottom-4", "right-4");
         detailsPanel.classList.add("fixed");
-        
+
         detailsPanel.style.left = rect.left + "px";
         detailsPanel.style.top = rect.top + "px";
         detailsPanel.style.bottom = "auto";
         detailsPanel.style.right = "auto";
         detailsPanel.style.margin = "0";
-        
+
         initialLeft = rect.left;
         initialTop = rect.top;
 
@@ -1272,12 +1392,12 @@
 
       document.addEventListener("mousemove", (e) => {
         if (!isDragging) return;
-        
+
         const dx = e.clientX - startX;
         const dy = e.clientY - startY;
-        
-        detailsPanel.style.left = (initialLeft + dx) + "px";
-        detailsPanel.style.top = (initialTop + dy) + "px";
+
+        detailsPanel.style.left = initialLeft + dx + "px";
+        detailsPanel.style.top = initialTop + dy + "px";
       });
 
       document.addEventListener("mouseup", () => {
@@ -1290,34 +1410,41 @@
 
     // Select All QPs checkbox
     document.getElementById("selectAllQPs")?.addEventListener("change", (e) => {
-        document.querySelectorAll(".qp-checkbox").forEach(cb => {
-            cb.checked = e.target.checked;
-        });
+      document.querySelectorAll(".qp-checkbox").forEach((cb) => {
+        cb.checked = e.target.checked;
+      });
     });
 
     // Delete QP button
     document.getElementById("deleteQP")?.addEventListener("click", async () => {
       if (!state.selectedEndpoint) return;
-      
+
       const checkedBoxes = document.querySelectorAll(".qp-checkbox:checked");
       let qpsToDelete = [];
-      
+
       if (checkedBoxes.length > 0) {
-          qpsToDelete = Array.from(checkedBoxes).map(cb => cb.value);
+        qpsToDelete = Array.from(checkedBoxes).map((cb) => cb.value);
       } else if (selectedQPId !== null) {
-          qpsToDelete = [selectedQPId];
+        qpsToDelete = [selectedQPId];
       }
-      
+
       if (qpsToDelete.length === 0) return;
 
       const eid = getEndpointId(state.selectedEndpoint);
       try {
-        await Promise.all(qpsToDelete.map(id => 
-            EdmsAPI.deleteQP(eid, id)
-        ));
+        await Promise.all(qpsToDelete.map((id) => EdmsAPI.deleteQP(eid, id)));
         selectedQPId = null;
         document.getElementById("deleteQP").disabled = true;
         document.getElementById("detailsOverlay")?.classList.add("hidden");
+        if (state.selectedEndpoint) {
+          if (typeof state.selectedEndpoint.qpCount === "number") {
+            state.selectedEndpoint.qpCount = Math.max(0, state.selectedEndpoint.qpCount - qpsToDelete.length);
+          }
+          const badge = document.querySelector(`tr[data-id="${eid}"] .qp-count-badge`);
+          if (badge && typeof state.selectedEndpoint.qpCount === "number") {
+            badge.textContent = state.selectedEndpoint.qpCount;
+          }
+        }
         // Re-select endpoint to refresh QP sidebar
         selectEndpoint(state.selectedEndpoint);
       } catch (e) {
@@ -1332,26 +1459,30 @@
     const reqHeadersSec = document.getElementById("requestHeadersSection");
 
     if (reqBodyTab && reqHeadersTab && reqBodySec && reqHeadersSec) {
-        const activeTabClass = ["bg-cyan-500", "text-slate-950", "font-semibold"];
-        const inactiveTabClass = ["text-slate-400", "font-medium", "hover:text-slate-200"];
+      const activeTabClass = ["bg-cyan-500", "text-slate-950", "font-semibold"];
+      const inactiveTabClass = [
+        "text-slate-400",
+        "font-medium",
+        "hover:text-slate-200",
+      ];
 
-        reqBodyTab.addEventListener("click", () => {
-            reqBodySec.classList.remove("hidden");
-            reqHeadersSec.classList.add("hidden");
-            reqBodyTab.classList.add(...activeTabClass);
-            reqBodyTab.classList.remove(...inactiveTabClass);
-            reqHeadersTab.classList.add(...inactiveTabClass);
-            reqHeadersTab.classList.remove(...activeTabClass);
-        });
+      reqBodyTab.addEventListener("click", () => {
+        reqBodySec.classList.remove("hidden");
+        reqHeadersSec.classList.add("hidden");
+        reqBodyTab.classList.add(...activeTabClass);
+        reqBodyTab.classList.remove(...inactiveTabClass);
+        reqHeadersTab.classList.add(...inactiveTabClass);
+        reqHeadersTab.classList.remove(...activeTabClass);
+      });
 
-        reqHeadersTab.addEventListener("click", () => {
-            reqHeadersSec.classList.remove("hidden");
-            reqBodySec.classList.add("hidden");
-            reqHeadersTab.classList.add(...activeTabClass);
-            reqHeadersTab.classList.remove(...inactiveTabClass);
-            reqBodyTab.classList.add(...inactiveTabClass);
-            reqBodyTab.classList.remove(...activeTabClass);
-        });
+      reqHeadersTab.addEventListener("click", () => {
+        reqHeadersSec.classList.remove("hidden");
+        reqBodySec.classList.add("hidden");
+        reqHeadersTab.classList.add(...activeTabClass);
+        reqHeadersTab.classList.remove(...inactiveTabClass);
+        reqBodyTab.classList.add(...inactiveTabClass);
+        reqBodyTab.classList.remove(...activeTabClass);
+      });
     }
 
     // Response tabs
@@ -1361,26 +1492,30 @@
     const resHeadersSec = document.getElementById("responseHeadersSection");
 
     if (resBodyTab && resHeadersTab && resBodySec && resHeadersSec) {
-        const activeTabClass = ["bg-cyan-500", "text-slate-950", "font-semibold"];
-        const inactiveTabClass = ["text-slate-400", "font-medium", "hover:text-slate-200"];
+      const activeTabClass = ["bg-cyan-500", "text-slate-950", "font-semibold"];
+      const inactiveTabClass = [
+        "text-slate-400",
+        "font-medium",
+        "hover:text-slate-200",
+      ];
 
-        resBodyTab.addEventListener("click", () => {
-            resBodySec.classList.remove("hidden");
-            resHeadersSec.classList.add("hidden");
-            resBodyTab.classList.add(...activeTabClass);
-            resBodyTab.classList.remove(...inactiveTabClass);
-            resHeadersTab.classList.add(...inactiveTabClass);
-            resHeadersTab.classList.remove(...activeTabClass);
-        });
+      resBodyTab.addEventListener("click", () => {
+        resBodySec.classList.remove("hidden");
+        resHeadersSec.classList.add("hidden");
+        resBodyTab.classList.add(...activeTabClass);
+        resBodyTab.classList.remove(...inactiveTabClass);
+        resHeadersTab.classList.add(...inactiveTabClass);
+        resHeadersTab.classList.remove(...activeTabClass);
+      });
 
-        resHeadersTab.addEventListener("click", () => {
-            resHeadersSec.classList.remove("hidden");
-            resBodySec.classList.add("hidden");
-            resHeadersTab.classList.add(...activeTabClass);
-            resHeadersTab.classList.remove(...inactiveTabClass);
-            resBodyTab.classList.add(...inactiveTabClass);
-            resBodyTab.classList.remove(...activeTabClass);
-        });
+      resHeadersTab.addEventListener("click", () => {
+        resHeadersSec.classList.remove("hidden");
+        resBodySec.classList.add("hidden");
+        resHeadersTab.classList.add(...activeTabClass);
+        resHeadersTab.classList.remove(...inactiveTabClass);
+        resBodyTab.classList.add(...inactiveTabClass);
+        resBodyTab.classList.remove(...activeTabClass);
+      });
     }
   }
 
@@ -1471,10 +1606,16 @@
      * older prototype data still works.
      */
 
-    return String(endpoint.endpoint_id ?? endpoint.id ?? endpoint.endpoint ?? Math.random());
+    return String(
+      endpoint.endpoint_id ?? endpoint.id ?? endpoint.endpoint ?? Math.random(),
+    );
   }
 
   function getQPCount(endpoint) {
+    if (typeof endpoint.qpCount === "number") {
+      return endpoint.qpCount;
+    }
+
     if (Array.isArray(endpoint.queryParams)) {
       return endpoint.queryParams.length;
     }
@@ -1558,9 +1699,9 @@
   function openEndpointContextMenu(event, endpoint) {
     if (!contextMenu) return;
 
-        const count = state.selected.size;
+    const count = state.selected.size;
 
-        let menuHtml = `
+    let menuHtml = `
             <div class="px-3 py-2 text-[10px] font-semibold tracking-wide text-slate-500 uppercase border-b border-slate-800">
                 ${count > 1 ? `${count} Endpoints Selected` : "Endpoint Options"}
             </div>
@@ -1568,8 +1709,8 @@
             <div class="p-1">
         `;
 
-        if (count === 1) {
-          menuHtml += `
+    if (count === 1) {
+      menuHtml += `
                 <button type="button" id="ctxEditTags" class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs text-slate-300 hover:bg-slate-800">
                     <svg class="h-3.5 w-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                         <path d="M20.5 13.5 13.5 20.5 a2 2 0 0 1-2.8 0L4 13.8V4h9.8l6.7 6.7 a2 2 0 0 1 0 2.8Z" />
@@ -1578,9 +1719,9 @@
                     Modify
                 </button>
             `;
-        }
+    }
 
-        menuHtml += `
+    menuHtml += `
                 <button type="button" id="ctxManageTags" class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs text-slate-300 hover:bg-slate-800">
                     <svg class="h-3.5 w-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                         <path d="M20.5 13.5 13.5 20.5 a2 2 0 0 1-2.8 0L4 13.8V4h9.8l6.7 6.7 a2 2 0 0 1 0 2.8Z" />
@@ -1603,61 +1744,59 @@
             </div>
         `;
 
-        contextMenu.innerHTML = menuHtml;
-        contextMenu.classList.remove("hidden");
+    contextMenu.innerHTML = menuHtml;
+    contextMenu.classList.remove("hidden");
 
-        // Position menu
-        const rect = contextMenu.getBoundingClientRect();
-        let x = event.clientX;
-        let y = event.clientY;
+    // Position menu
+    const rect = contextMenu.getBoundingClientRect();
+    let x = event.clientX;
+    let y = event.clientY;
 
-        if (x + rect.width > window.innerWidth)
-          x = window.innerWidth - rect.width - 5;
-        if (y + rect.height > window.innerHeight)
-          y = window.innerHeight - rect.height - 5;
+    if (x + rect.width > window.innerWidth)
+      x = window.innerWidth - rect.width - 5;
+    if (y + rect.height > window.innerHeight)
+      y = window.innerHeight - rect.height - 5;
 
-        contextMenu.style.left = `${x}px`;
-        contextMenu.style.top = `${y}px`;
+    contextMenu.style.left = `${x}px`;
+    contextMenu.style.top = `${y}px`;
 
-        // Bind events
-        if (count === 1) {
-          document
-            .getElementById("ctxEditTags")
-            ?.addEventListener("click", () => {
-              closeContextMenu();
-              openTagEditor(endpoint);
-            });
-        }
+    // Bind events
+    if (count === 1) {
+      document.getElementById("ctxEditTags")?.addEventListener("click", () => {
+        closeContextMenu();
+        openTagEditor(endpoint);
+      });
+    }
 
-        document
-          .getElementById("ctxManageTags")
-          .addEventListener("click", () => {
-            closeContextMenu();
-            const btn = document.getElementById("tagsManager");
-            if (btn) btn.click();
-          });
+    document.getElementById("ctxManageTags").addEventListener("click", () => {
+      closeContextMenu();
+      const btn = document.getElementById("tagsManager");
+      if (btn) btn.click();
+    });
 
-        document
-          .getElementById("ctxRemoveEndpoint")
-          .addEventListener("click", () => {
-            closeContextMenu();
-            const btn = document.getElementById("deleteSelected");
-            if (btn) btn.click();
-          });
-      }
+    document
+      .getElementById("ctxRemoveEndpoint")
+      .addEventListener("click", () => {
+        closeContextMenu();
+        const btn = document.getElementById("deleteSelected");
+        if (btn) btn.click();
+      });
+  }
 
-      function openTagEditor(endpoint) {
-        const currentTags = Array.isArray(endpoint.tags)
-          ? endpoint.tags.join(", ")
-          : "";
-        const currentAnnotation = endpoint.annotation || "";
+  function openTagEditor(endpoint) {
+    const currentTags = Array.isArray(endpoint.tags)
+      ? endpoint.tags.join(", ")
+      : "";
+    const currentAnnotation = endpoint.annotation || "";
 
-        const endpointId = getEndpointId(endpoint);
-        const pathText = endpoint.endpoint ? ` — ${escapeHtml(endpoint.endpoint)}` : "";
+    const endpointId = getEndpointId(endpoint);
+    const pathText = endpoint.endpoint
+      ? ` — ${escapeHtml(endpoint.endpoint)}`
+      : "";
 
-        openModal(
-          `Endpoint — ${escapeHtml(endpointId)}${pathText}`,
-          `
+    openModal(
+      `Endpoint — ${escapeHtml(endpointId)}${pathText}`,
+      `
                 <div class="space-y-4">
                     <div>
                         <label class="mb-1 block text-xs text-slate-500">Tags</label>
@@ -1674,74 +1813,80 @@
                     </div>
                 </div>
             `,
+    );
+
+    document
+      .getElementById("saveTagsBtn")
+      ?.addEventListener("click", async () => {
+        const btn = document.getElementById("saveTagsBtn");
+        const input = document.getElementById("tagEditorInput");
+        const annotationInput = document.getElementById(
+          "annotationEditorInput",
         );
 
-        document
-          .getElementById("saveTagsBtn")
-          ?.addEventListener("click", async () => {
-            const btn = document.getElementById("saveTagsBtn");
-            const input = document.getElementById("tagEditorInput");
-            const annotationInput = document.getElementById("annotationEditorInput");
+        btn.disabled = true;
+        btn.textContent = "Saving...";
 
-            btn.disabled = true;
-            btn.textContent = "Saving...";
+        const newTags = input.value
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter(Boolean);
+        const oldTags = Array.isArray(endpoint.tags) ? [...endpoint.tags] : [];
+        const oldTagSet = new Set(oldTags);
+        const newTagSet = new Set(newTags);
 
-            const newTags = input.value
-              .split(",")
-              .map((tag) => tag.trim())
-              .filter(Boolean);
-            const oldTags = Array.isArray(endpoint.tags)
-              ? [...endpoint.tags]
-              : [];
-            const oldTagSet = new Set(oldTags);
-            const newTagSet = new Set(newTags);
+        const tagsToAdd = newTags.filter((tag) => !oldTagSet.has(tag));
+        const tagsToRemove = oldTags.filter((tag) => !newTagSet.has(tag));
 
-            const tagsToAdd = newTags.filter((tag) => !oldTagSet.has(tag));
-            const tagsToRemove = oldTags.filter((tag) => !newTagSet.has(tag));
+        const newAnnotation = annotationInput.value;
+        const isAnnotationChanged = newAnnotation !== currentAnnotation;
 
-            const newAnnotation = annotationInput.value;
-            const isAnnotationChanged = newAnnotation !== currentAnnotation;
+        const api = window.EdmsAPI;
+        if (!api || typeof api.addEndpointTag !== "function") {
+          console.error("API unavailable");
+          return;
+        }
 
-            const api = window.EdmsAPI;
-            if (!api || typeof api.addEndpointTag !== "function") {
-              console.error("API unavailable");
-              return;
-            }
+        try {
+          for (const tag of tagsToRemove) {
+            await api.removeEndpointTag(getEndpointId(endpoint), tag);
+          }
+          for (const tag of tagsToAdd) {
+            await api.addEndpointTag(getEndpointId(endpoint), tag);
+          }
 
-            try {
-              for (const tag of tagsToRemove) {
-                await api.removeEndpointTag(getEndpointId(endpoint), tag);
-              }
-              for (const tag of tagsToAdd) {
-                await api.addEndpointTag(getEndpointId(endpoint), tag);
-              }
+          if (
+            isAnnotationChanged &&
+            typeof api.setEndpointAnnotation === "function"
+          ) {
+            await api.setEndpointAnnotation(
+              getEndpointId(endpoint),
+              newAnnotation,
+            );
+            endpoint.annotation = newAnnotation;
+          }
 
-              if (isAnnotationChanged && typeof api.setEndpointAnnotation === "function") {
-                await api.setEndpointAnnotation(getEndpointId(endpoint), newAnnotation);
-                endpoint.annotation = newAnnotation;
-              }
+          // Instead of completely reloading, update local state
+          endpoint.tags = newTags;
+          renderTable();
+          closeModal();
+        } catch (err) {
+          console.error(err);
+          btn.disabled = false;
+          btn.textContent = "Error";
+        }
+      });
+  }
 
-              // Instead of completely reloading, update local state
-              endpoint.tags = newTags;
-              renderTable();
-              closeModal();
-            } catch (err) {
-              console.error(err);
-              btn.disabled = false;
-              btn.textContent = "Error";
-            }
-          });
-      }
+  function wireRemoveAction() {
+    const delBtn = document.getElementById("deleteSelected");
+    if (delBtn) {
+      delBtn.addEventListener("click", () => {
+        if (state.selected.size === 0) return;
 
-      function wireRemoveAction() {
-        const delBtn = document.getElementById("deleteSelected");
-        if (delBtn) {
-          delBtn.addEventListener("click", () => {
-            if (state.selected.size === 0) return;
-
-            openModal(
-              "Remove Endpoints",
-              `
+        openModal(
+          "Remove Endpoints",
+          `
                     <div class="space-y-4">
                         <p class="text-xs text-slate-300">
                             Are you sure you want to remove ${state.selected.size} endpoint${state.selected.size === 1 ? "" : "s"} from this collection?
@@ -1755,48 +1900,48 @@
                         </div>
                     </div>
                 `,
+        );
+
+        const confirmBtn = document.getElementById("confirmRemove");
+        if (confirmBtn) {
+          confirmBtn.addEventListener("click", async () => {
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = "Removing...";
+
+            const api = window.EdmsAPI;
+            if (!api) return closeModal();
+
+            const folderId = new URLSearchParams(window.location.search).get(
+              "folder",
             );
 
-            const confirmBtn = document.getElementById("confirmRemove");
-            if (confirmBtn) {
-              confirmBtn.addEventListener("click", async () => {
-                confirmBtn.disabled = true;
-                confirmBtn.textContent = "Removing...";
+            try {
+              const ids = Array.from(state.selected);
+              for (const eid of ids) {
+                await api.removeCollectionEndpoint(folderId, eid);
+              }
 
-                const api = window.EdmsAPI;
-                if (!api) return closeModal();
-
-                const folderId = new URLSearchParams(
-                  window.location.search,
-                ).get("folder");
-
-                try {
-                  const ids = Array.from(state.selected);
-                  for (const eid of ids) {
-                    await api.removeCollectionEndpoint(folderId, eid);
-                  }
-
-                  // Re-fetch everything
-                  await loadCollection();
-                  state.selected.clear();
-                  updateSelectionUI();
-                  closeModal();
-                } catch (e) {
-                  console.error("Failed to remove endpoints:", e);
-                  confirmBtn.disabled = false;
-                  confirmBtn.textContent = "Error";
-                }
-              });
+              // Re-fetch everything
+              await loadCollection();
+              state.selected.clear();
+              updateSelectionUI();
+              closeModal();
+            } catch (e) {
+              console.error("Failed to remove endpoints:", e);
+              confirmBtn.disabled = false;
+              confirmBtn.textContent = "Error";
             }
           });
         }
-      }
-
-      // Call wireRemoveAction during init
-      document.addEventListener("DOMContentLoaded", () => {
-        // Will wait for init to finish before wiring to ensure DOM is ready
-        setTimeout(wireRemoveAction, 100);
       });
+    }
+  }
+
+  // Call wireRemoveAction during init
+  document.addEventListener("DOMContentLoaded", () => {
+    // Will wait for init to finish before wiring to ensure DOM is ready
+    setTimeout(wireRemoveAction, 100);
+  });
 
   function escapeHtml(value) {
     const div = document.createElement("div");
