@@ -66,68 +66,59 @@
 
             menu.innerHTML = `
                 <!-- EDIT FRONT PAGE -->
-                ${
-                    isSingle
-                        ? menuItem('frontpage', iconEdit(), 'Edit Front Page')
-                        : ''
+                ${isSingle
+                    ? menuItem('frontpage', iconEdit(), 'Edit Front Page')
+                    : ''
                 }
 
                 <!-- RENAME -->
-                ${
-                    isSingle
-                        ? menuItem('edit', iconEdit(), 'Rename')
-                        : ''
+                ${isSingle
+                    ? menuItem('edit', iconEdit(), 'Rename')
+                    : ''
                 }
 
                 <!-- ANNOTATION -->
-                ${
-                    isSingle
-                        ? menuItem('annotation', iconFileText(), 'Edit Annotation')
-                        : ''
+                ${isSingle
+                    ? menuItem('annotation', iconFileText(), 'Edit Annotation')
+                    : ''
                 }
 
                 <!-- DATA TAGS -->
-                ${
-                    isSingle
-                        ? menuItem('datatags', iconTags(), 'View EQP Tags')
-                        : ''
+                ${isSingle
+                    ? menuItem('datatags', iconTags(), 'View EQP Tags')
+                    : ''
                 }
 
                 <!-- DUPLICATE -->
-                ${
-                    isSingle
-                        ? menuItem('duplicate', iconCopy(), 'Duplicate')
-                        : ''
+                ${isSingle
+                    ? menuItem('duplicate', iconCopy(), 'Duplicate')
+                    : ''
                 }
 
                 <!-- CONVERT TO COLLECTION -->
-                ${
-                    isSingle
-                        ? menuItem('convert', iconFolderSwitch(), 'Convert to Collection')
-                        : ''
+                ${isSingle
+                    ? menuItem('convert', iconFolderSwitch(), 'Convert to Collection')
+                    : ''
                 }
 
                 <!-- TAKEOUT -->
-                ${
-                    isSingle
-                        ? menuItem('takeout', iconDownload(), 'Takeout')
-                        : ''
+                ${isSingle
+                    ? menuItem('takeout', iconDownload(), 'Takeout')
+                    : ''
                 }
 
                 <!-- COMBINE -->
-                ${
-                    isMultiple
-                        ? menuItem('combine', iconMerge(), `Combine Selected (${count})`)
-                        : ''
+                ${isMultiple
+                    ? menuItem('combine', iconMerge(), `Combine Selected (${count})`)
+                    : ''
                 }
 
-                <div class="my-1 border-t border-slate-800"></div>
+                <div class="my-1 border-t border-slate-200 dark:border-slate-800"></div>
 
                 <!-- CREATE -->
-                ${
-                    isSingle
-                        ? menuItem('create', iconPlus(), 'Create Web View')
-                        : ''
+                ${isSingle
+                    ? menuItem('create', iconPlus(), 'Create Web View')
+                    : ''
                 }
 
                 <!-- DELETE -->
@@ -137,7 +128,7 @@
                     isMultiple
                         ? `Delete ${count} Web Views`
                         : 'Delete Web View',
-                    'text-rose-400 hover:bg-rose-500/10'
+                    'text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 dark:hover:bg-rose-500/10'
                 )}
             `;
         }
@@ -160,10 +151,13 @@
                         py-2
                         text-left
                         text-xs
-                        text-slate-300
+                        text-slate-800
+                        dark:text-slate-300
                         transition-colors
-                        hover:bg-slate-800
-                        hover:text-white
+                        hover:bg-slate-100
+                        dark:hover:bg-slate-800
+                        hover:text-slate-900
+                        dark:hover:text-white
                         ${extraClass}
                     "
                 >
