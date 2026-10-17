@@ -1630,7 +1630,20 @@
         return cleanup;
     }
 
+    function removeCollectionEndpoint(
+        collectionId,
+        endpointId
+    ) {
 
+        return http(
+            'POST',
+            `/collections/${encodeURIComponent(collectionId)}/endpoints/remove`,
+            {
+                endpoint_id: endpointId
+            }
+        );
+
+    }
 
     function activateDataViewFolder(
         folder
@@ -3165,6 +3178,7 @@
         mergeDataViewFolder,
         mergeCollections: mergeDataViewFolder,
         listenForMergeNotification,
+        removeCollectionEndpoint,
         activateDataViewFolder,
 
 
