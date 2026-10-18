@@ -263,6 +263,30 @@ Content-Type: application/json
 ### List (endpoint_id, tag) pairs this collection carries from the import above
 GET {{baseUrl}}/collections/auth-suite/tags/endpoints
 
+### Merge COLLECTIONS (Collection level): everything in auth-suite and smoke-tests goes into
+### "release-candidate" - a new collection, or added to it if it exists. The two sources are
+### never changed. 202 {job_id,...}; the result arrives as a ViewIoDone event (op "merge") on
+### GET /jobs/ws and on GET /jobs/:id: target_created, members_before/after, added, log.
+POST {{baseUrl}}/collections/release-candidate/merge
+Content-Type: application/json
+
+{ "sources": ["auth-suite", "smoke-tests"] }
+
+### Merge BY TAGS (Tag level): only the endpoints carrying one of that source's tags
+POST {{baseUrl}}/collections/release-candidate/merge
+Content-Type: application/json
+
+{ "sources": [
+    { "collection": "auth-suite",  "tags": ["critical", "smoke"] },
+    { "collection": "smoke-tests", "tags": ["critical"] }
+] }
+
+### Same, with one tag list for every source named without its own
+POST {{baseUrl}}/collections/release-candidate/merge
+Content-Type: application/json
+
+{ "sources": ["auth-suite", "smoke-tests"], "tags": ["critical"] }
+
 ### Remove an endpoint from a collection
 POST {{baseUrl}}/collections/auth-suite/endpoints/remove
 Content-Type: application/json
@@ -607,9 +631,13 @@ GET {{baseUrl}}/repoview/tags/list
 ### Delete a data folder
 POST {{baseUrl}}/dataview/my-folder/delete
 
-### Merge a data folder (fire-and-forget — returns 202 immediately,
-### result arrives later via POST /internal/callback -> ExportReady event)
+### Merge collections into my-folder (created if new, added to if it exists). This is the
+### path the Merge dialog calls; it is the same as POST /collections/my-folder/merge below.
+### 202 {job_id,...}; the result arrives as a ViewIoDone event (op "merge") on GET /jobs/ws and on GET /jobs/:id
 POST {{baseUrl}}/dataview/my-folder/merge
+Content-Type: application/json
+
+{ "sources": ["fun-apis", "open-data"] }
 
 ### WS ONLY — mark a folder active (syncs to disk, broadcasts FolderBecameActive): GET /dataview/{folder}/active
 

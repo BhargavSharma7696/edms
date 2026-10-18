@@ -26,12 +26,13 @@ use std::{net::SocketAddr, sync::Arc};
 use handlers::{
     bookmarks::{remove_from_collection, save_to_collection, ws_load_collection},
     callback::ipc_callback,
+    collection_merge::merge_collections,
     dashboard::{
         compare_daily_snapshots, execute_purge_orphaned, get_crud_operations, get_dashboard_snapshot,
         get_dashboard_snapshot_history, get_purge_audit_report, get_static_data,
         refresh_crud_operations,
     },
-    dataview::{dashboard, delete_folder, merge_folder, ws_make_folder_active},
+    dataview::{dashboard, delete_folder, ws_make_folder_active},
     endpoints::{create_endpoint, delete_endpoint, lookup_endpoint, update_endpoint_annotation},
     logs::get_logs,
     report_export::export_eqp_report,
@@ -332,7 +333,8 @@ async fn main() -> anyhow::Result<()> {
         .route("/bookmarks/:collection/:endpoint_id/save", post(save_to_collection))
         .route("/bookmarks/:collection/:endpoint_id/unsave", post(remove_from_collection))
         .route("/dataview/:folder/delete", post(delete_folder))
-        .route("/dataview/:folder/merge", post(merge_folder))
+        // the Merge dialog calls the /dataview path; /collections/:name/merge is the same thing
+        .route("/dataview/:folder/merge", post(merge_collections))
         .route("/dataview/:folder/active", get(ws_make_folder_active))
         .route("/dataview/dashboard", get(dashboard))
         .route("/dashboard/snapshot", get(get_dashboard_snapshot))
@@ -349,6 +351,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/collections/:name/rename", post(rename_collection_entry))
         .route("/collections/:name/annotation", post(annotate_collection_entry))
         .route("/collections/:name/delete", post(delete_collection_entry))
+        .route("/collections/:name/merge", post(merge_collections))
         .route("/collections/:name/endpoints/remove", post(remove_endpoint_from_collection))
         .route("/collections/:name/endpoints", get(list_collection_endpoints))
         .route("/collections/:name/tags/import", post(import_tags_into_collection))
