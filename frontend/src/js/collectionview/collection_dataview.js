@@ -60,8 +60,8 @@
         getItems: () =>
           state.selected.size > 0
             ? state.endpoints.filter((ep) =>
-                state.selected.has(getEndpointId(ep)),
-              )
+              state.selected.has(getEndpointId(ep)),
+            )
             : state.endpoints,
         getTags: (endpoint) =>
           Array.isArray(endpoint.tags) ? endpoint.tags : [],
@@ -372,35 +372,35 @@
     if (!items.length) {
       tbody.innerHTML = `
 
-                <tr>
+                  <tr>
 
-                    <td
-                        colspan="6"
-                        class="px-4 py-16
-                               text-center"
-                    >
+                      <td
+                          colspan="6"
+                          class="px-4 py-16
+                                text-center"
+                      >
 
-                        <p
-                            class="text-sm
-                                   text-slate-400"
-                        >
-                            No endpoints found
-                        </p>
+                          <p
+                              class="text-sm
+                                    text-slate-500 dark:text-slate-400  "
+                          >
+                              No endpoints found
+                          </p>
 
-                        <p
-                            class="mt-1
-                                   text-[11px]
-                                   text-slate-600"
-                        >
-                            Try changing the
-                            current filters.
-                        </p>
+                          <p
+                              class="mt-1
+                                    text-[11px]
+                                     text-slate-400 dark:text-slate-600"
+                          >
+                              Try changing the
+                              current filters.
+                          </p>
 
-                    </td>
+                      </td>
 
-                </tr>
+                  </tr>
 
-            `;
+              `;
 
       return;
     }
@@ -414,7 +414,7 @@
     updateSelectAllState();
   }
 
-function createEndpointRow(endpoint) {
+  function createEndpointRow(endpoint) {
     const row = document.createElement("tr");
 
     const endpointId = getEndpointId(endpoint);
@@ -456,10 +456,10 @@ function createEndpointRow(endpoint) {
 
     row.className = [
       "border-b",
-      "border-slate-800",
+      "border-slate-200", "dark:border-slate-800",
       "cursor-pointer",
       "transition-colors",
-      "hover:bg-slate-800/60",
+      "hover:bg-slate-100", "dark:hover:bg-slate-800/60",
 
       selected ? "bg-cyan-500/[0.055]" : "",
     ]
@@ -468,131 +468,129 @@ function createEndpointRow(endpoint) {
 
     row.innerHTML = `
 
-            <td class="px-3 py-2">
+              <td class="px-3 py-2">
 
-                <input
-                    type="checkbox"
-                    class="endpoint-select
-                           h-3.5 w-3.5
-                           accent-cyan-400"
-                    ${selected ? "checked" : ""}
-                >
+                  <input
+                      type="checkbox"
+                      class="endpoint-select
+                            h-3.5 w-3.5
+                            accent-cyan-400"
+                      ${selected ? "checked" : ""}
+                  >
 
-            </td>
-
-
-            <td
-                class="px-3 py-2
-                       font-semibold
-                       ${methodClass(method)}"
-            >
-                ${escapeHtml(method || "—")}
-            </td>
+              </td>
 
 
-            <td class="px-3 py-2">
-
-                <div
-                    class="flex items-center
-                           gap-2"
-                >
-
-                    <span
-                        class="font-mono
-                               text-[11px]
-                               text-slate-300"
-                    >
-                        ${renderEndpointPath(endpoint.endpoint)}
-                    </span>
-
-                </div>
-
-            </td>
+              <td
+                  class="px-3 py-2
+                        font-semibold
+                        ${methodClass(method)}"
+              >
+                  ${escapeHtml(method || "—")}
+              </td>
 
 
-            <td class="px-3 py-2">
+              <td class="px-3 py-2">
 
-                <div
-                    class="flex flex-wrap
-                           gap-1"
-                >
+                  <div
+                      class="flex items-center
+                            gap-2"
+                  >
 
-                    ${
-                      tags.length
-                        ? tags
-                            .map(
-                              (tag) => `
+                      <span
+                          class="font-mono
+                                text-[11px]
+                               text-slate-700 dark:text-slate-300"
+                      >
+                          ${renderEndpointPath(endpoint.endpoint)}
+                      </span>
 
-                                        <button
-                                            type="button"
-                                            class="endpoint-tag
-                                                   rounded
-                                                   bg-sky-900/40
-                                                   px-1.5 py-0.5
-                                                   text-[10px]
-                                                   text-sky-300
-                                                   hover:bg-sky-500/20"
-                                            data-tag="${escapeAttr(tag)}"
-                                        >
-                                            ${escapeHtml(tag)}
-                                        </button>
+                  </div>
 
-                                    `,
-                            )
-                            .join("")
-                        : `
-                                <span
-                                    class="text-[10px]
-                                           text-slate-600"
-                                >
-                                    —
-                                </span>
-                              `
-                    }
-
-                </div>
-
-            </td>
+              </td>
 
 
-            <td
-                class="px-3 py-2
-                       text-center"
-            >
+              <td class="px-3 py-2">
 
-                <span
-                    class="qp-count-badge
-                           inline-flex
-                           min-w-6
-                           justify-center
-                           rounded-md
-                           bg-slate-800
-                           px-1.5 py-0.5
-                           text-[10px]
-                           text-slate-400"
-                >
-                    ${qpCount}
-                </span>
+                  <div
+                      class="flex flex-wrap
+                            gap-1"
+                  >
 
-            </td>
+                      ${tags.length
+        ? tags
+          .map(
+            (tag) => `
+
+                                          <button
+                                              type="button"
+                                              class="endpoint-tag
+                                                    rounded
+                                                   bg-sky-100 dark:bg-sky-900/40
+                                                    px-1.5 py-0.5
+                                                    text-[10px]
+                                                     text-sky-700 dark:text-sky-300
+                                                    hover:bg-sky-500/20"
+                                              data-tag="${escapeAttr(tag)}"
+                                          >
+                                              ${escapeHtml(tag)}
+                                          </button>
+
+                                      `,
+          )
+          .join("")
+        : `
+                                  <span
+                                      class="text-[10px]
+                                             text-slate-400 dark:text-slate-600"
+                                  >
+                                      —
+                                  </span>
+                                `
+      }
+
+                  </div>
+
+              </td>
 
 
-            <td
-                class="px-3 py-2
-                       text-[11px]
-                       text-slate-500"
-            >
+              <td
+                  class="px-3 py-2
+                        text-center"
+              >
 
-                <span
-                    class="line-clamp-2"
-                    title="${escapeAttr(annotation)}"
-                >
-                    ${escapeHtml(annotation)}
-                </span>
+                  <span
+                      class="inline-flex
+                            min-w-6
+                            justify-center
+                            rounded-md
+                            bg-slate-200 dark:bg-slate-800
+                            px-1.5 py-0.5
+                            text-[10px]
+                            text-slate-600 dark:text-slate-400"
+                  >
+                      ${getQPCount(endpoint)}
+                  </span>
 
-            </td>
+              </td>
 
-        `;
+
+              <td
+                  class="px-3 py-2
+                        text-[11px]
+                        text-slate-500"
+              >
+
+                  <span
+                      class="line-clamp-2"
+                      title="${escapeAttr(annotation)}"
+                  >
+                      ${escapeHtml(annotation)}
+                  </span>
+
+              </td>
+
+          `;
 
     // --------------------------------------------------------
     // CHECKBOX
@@ -705,15 +703,11 @@ function createEndpointRow(endpoint) {
           const cb = document.createElement("input");
           cb.type = "checkbox";
           cb.value = qp.id;
-          cb.className =
-            "qp-checkbox h-3 w-3 rounded border-slate-700 bg-slate-800 accent-rose-500 shrink-0 cursor-pointer";
+          cb.className = "qp-checkbox h-3 w-3 rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 accent-rose-500 shrink-0 cursor-pointer";
           cb.onchange = () => {
             const allCbs = document.querySelectorAll(".qp-checkbox");
-            const checkedCbs = document.querySelectorAll(
-              ".qp-checkbox:checked",
-            );
-            if (selectAllCb)
-              selectAllCb.checked = allCbs.length === checkedCbs.length;
+            const checkedCbs = document.querySelectorAll(".qp-checkbox:checked");
+            if (selectAllCb) selectAllCb.checked = allCbs.length === checkedCbs.length;
           };
 
           const btn = document.createElement("button");
@@ -721,9 +715,9 @@ function createEndpointRow(endpoint) {
           btn.title = `QP ${qp.name}`;
           btn.className = [
             "flex h-8 flex-1 items-center justify-center",
-            "rounded-md border border-slate-700",
-            "bg-slate-800 text-[10px] font-semibold text-slate-400",
-            "transition hover:border-cyan-500/50 hover:text-cyan-300",
+            "rounded-md border border-slate-300 dark:border-slate-700",
+            "bg-slate-200 dark:bg-slate-800 text-[10px] font-semibold text-slate-600 dark:text-slate-400",
+            "transition hover:border-cyan-500/50 hover:text-cyan-700 dark:hover:text-cyan-300"
           ].join(" ");
           btn.textContent = qp.name;
           btn.onclick = () => loadQPDetails(eid, qp.id, btn);
@@ -738,7 +732,7 @@ function createEndpointRow(endpoint) {
           }
         });
       } else {
-        qpPanel.innerHTML = `<div class="py-5 text-center text-[10px] text-slate-600">No QPs</div>`;
+        qpPanel.innerHTML = `<div class="py-5 text-center text-[10px] text-slate-400 dark:text-slate-600">No QPs</div>`;
         selectedQPId = null;
         // Still open the panel showing empty state
         openDetailsPanel(endpoint, null);
@@ -752,24 +746,12 @@ function createEndpointRow(endpoint) {
     // Highlight active QP button in sidebar
     const qpPanel = document.getElementById("qpPanel");
     if (qpPanel) {
-      qpPanel.querySelectorAll("button").forEach((b) => {
-        b.classList.remove(
-          "border-cyan-500",
-          "text-cyan-300",
-          "bg-cyan-500/10",
-        );
-        b.classList.add("border-slate-700", "text-slate-400", "bg-slate-800");
+      qpPanel.querySelectorAll("button").forEach(b => {
+        b.classList.remove("border-cyan-500", "text-cyan-700", "dark:text-cyan-300", "bg-cyan-500/10");
+        b.classList.add("border-slate-300", "dark:border-slate-700", "text-slate-600", "dark:text-slate-400", "bg-slate-200", "dark:bg-slate-800");
       });
-      activeBtn.classList.remove(
-        "border-slate-700",
-        "text-slate-400",
-        "bg-slate-800",
-      );
-      activeBtn.classList.add(
-        "border-cyan-500",
-        "text-cyan-300",
-        "bg-cyan-500/10",
-      );
+      activeBtn.classList.remove("border-slate-300", "dark:border-slate-700", "text-slate-600", "dark:text-slate-400", "bg-slate-200", "dark:bg-slate-800");
+      activeBtn.classList.add("border-cyan-500", "text-cyan-700", "dark:text-cyan-300", "bg-cyan-500/10");
     }
 
     selectedQPId = qpId;
@@ -781,7 +763,7 @@ function createEndpointRow(endpoint) {
       const [reqRes, resRes, hdrRes] = await Promise.all([
         EdmsAPI.fetchRequest(endpointId, qpId).catch(() => null),
         EdmsAPI.fetchResponse(endpointId, qpId).catch(() => null),
-        EdmsAPI.fetchHeaders(endpointId, qpId).catch(() => null),
+        EdmsAPI.fetchHeaders(endpointId, qpId).catch(() => null)
       ]);
 
       const reqData = reqRes?.ok ? reqRes.data : null;
@@ -790,12 +772,12 @@ function createEndpointRow(endpoint) {
 
       const request = {
         body: reqData?.body || null,
-        headers: hdrData || {},
+        headers: hdrData || {}
       };
       const response = {
         status: resData?.status || null,
         body: resData?.body || resData || null,
-        headers: resData?.headers || {},
+        headers: resData?.headers || {}
       };
       openDetailsPanel(state.selectedEndpoint, { request, response });
     } catch (e) {
@@ -832,36 +814,24 @@ function createEndpointRow(endpoint) {
     // Response status
     const resStatus = document.getElementById("responseStatus");
     if (resStatus) {
-      resStatus.textContent = response.status
-        ? String(response.status)
-        : "Prototype";
-      resStatus.className = `mt-0.5 text-[11px] font-semibold ${
-        response.status >= 200 && response.status < 300
-          ? "text-emerald-400"
-          : response.status >= 400
-            ? "text-rose-400"
-            : "text-slate-400"
-      }`;
+      resStatus.textContent = response.status ? String(response.status) : "Prototype";
+      resStatus.className = `mt-0.5 text-[11px] font-semibold ${response.status >= 200 && response.status < 300 ? "text-emerald-600 dark:text-emerald-400" :
+        response.status >= 400 ? "text-rose-600 dark:text-rose-400" : "text-slate-500 dark:text-slate-400"
+        }`;
     }
 
     // Response body
     const resBodyEl = document.getElementById("responseBody");
     if (resBodyEl) {
       resBodyEl.textContent = formatData(
-        response.body ??
-          response ?? {
-            endpoint: endpoint.endpoint,
-            message: "No response payload defined.",
-          },
+        response.body ?? response ?? { endpoint: endpoint.endpoint, message: "No response payload defined." }
       );
     }
 
     // Response headers
     const resHeadersEl = document.getElementById("responseHeaders");
     if (resHeadersEl) {
-      resHeadersEl.textContent = formatData(
-        response.headers ?? "Not available",
-      );
+      resHeadersEl.textContent = formatData(response.headers ?? "Not available");
     }
   }
 
@@ -1002,12 +972,12 @@ function createEndpointRow(endpoint) {
         const wrapper = document.createElement("label");
         wrapper.className = "group flex cursor-pointer items-center gap-2";
         wrapper.innerHTML = `
-            <input type="checkbox" class="tag-checkbox h-3.5 w-3.5 accent-cyan-400">
-            <button type="button" class="tag-filter-button min-w-0 flex-1 truncate rounded px-1.5 py-1 text-left text-[11px] text-slate-400 transition hover:bg-sky-500/10 hover:text-sky-300">
-                ${escapeHtml(tag)}
-                <span class="text-slate-600">(${count})</span>
-            </button>
-        `;
+              <input type="checkbox" class="tag-checkbox h-3.5 w-3.5 accent-cyan-400">
+              <button type="button" class="tag-filter-button min-w-0 flex-1 truncate rounded px-1.5 py-1 text-left text-[11px] text-slate-600 dark:text-slate-400 transition hover:bg-sky-500/10 hover:text-sky-700 dark:hover:text-sky-300">
+                  ${escapeHtml(tag)}
+                  <span class="text-slate-600">(${count})</span>
+              </button>
+          `;
 
         const checkbox = wrapper.querySelector(".tag-checkbox");
         checkbox.checked = state.tags.has(tag);
@@ -1058,12 +1028,12 @@ function createEndpointRow(endpoint) {
         const wrapper = document.createElement("label");
         wrapper.className = "group flex cursor-pointer items-center gap-2";
         wrapper.innerHTML = `
-            <input type="checkbox" class="segment-checkbox h-3.5 w-3.5 accent-cyan-400">
-            <button type="button" class="segment-filter-button min-w-0 flex-1 truncate rounded px-1.5 py-1 text-left text-[11px] text-slate-400 transition hover:bg-cyan-500/10 hover:text-cyan-300">
-                ${escapeHtml(segment)}
-                <span class="text-slate-600">(${count})</span>
-            </button>
-        `;
+              <input type="checkbox" class="segment-checkbox h-3.5 w-3.5 accent-cyan-400">
+              <button type="button" class="segment-filter-button min-w-0 flex-1 truncate rounded px-1.5 py-1 text-left text-[11px] text-slate-600 dark:text-slate-400  transition hover:bg-cyan-500/10 hover:text-cyan-700 dark:hover:text-cyan-300">
+                  ${escapeHtml(segment)}
+                  <span class="text-slate-600">(${count})</span>
+              </button>
+          `;
 
         const checkbox = wrapper.querySelector(".segment-checkbox");
         checkbox.checked = state.segments.has(segment);
@@ -1122,7 +1092,7 @@ function createEndpointRow(endpoint) {
       if (page === "...") {
         const span = document.createElement("span");
 
-        span.className = "px-1 text-slate-600";
+        span.className = "px-1 text-slate-400 dark:text-slate-600";
 
         span.textContent = "…";
 
@@ -1140,20 +1110,20 @@ function createEndpointRow(endpoint) {
       button.className =
         page === state.page
           ? `
-                            min-w-7 rounded-md
-                            bg-cyan-500
-                            px-2 py-1
-                            text-[11px] text-white
-                          `
+                              min-w-7 rounded-md
+                              bg-cyan-500
+                              px-2 py-1
+                              text-[11px] text-white
+                            `
           : `
-                            min-w-7 rounded-md
-                            border border-slate-700
-                            px-2 py-1
-                            text-[11px]
-                            text-slate-400
-                            hover:bg-slate-800
-                            hover:text-white
-                          `;
+                              min-w-7 rounded-md
+                              border border-slate-300 dark:border-slate-700
+                              px-2 py-1
+                              text-[11px]
+                              text-slate-600 dark:text-slate-400
+
+                              hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white
+                            `;
 
       button.addEventListener("click", () => {
         state.page = page;
@@ -1344,9 +1314,9 @@ function createEndpointRow(endpoint) {
 
   function wireTable() {
     /*
-     * The table itself is rendered dynamically.
-     * Row-level events are attached when rows are created.
-     */
+    * The table itself is rendered dynamically.
+    * Row-level events are attached when rows are created.
+    */
   }
 
   // ============================================================
@@ -1396,8 +1366,8 @@ function createEndpointRow(endpoint) {
         const dx = e.clientX - startX;
         const dy = e.clientY - startY;
 
-        detailsPanel.style.left = initialLeft + dx + "px";
-        detailsPanel.style.top = initialTop + dy + "px";
+        detailsPanel.style.left = (initialLeft + dx) + "px";
+        detailsPanel.style.top = (initialTop + dy) + "px";
       });
 
       document.addEventListener("mouseup", () => {
@@ -1410,7 +1380,7 @@ function createEndpointRow(endpoint) {
 
     // Select All QPs checkbox
     document.getElementById("selectAllQPs")?.addEventListener("change", (e) => {
-      document.querySelectorAll(".qp-checkbox").forEach((cb) => {
+      document.querySelectorAll(".qp-checkbox").forEach(cb => {
         cb.checked = e.target.checked;
       });
     });
@@ -1423,7 +1393,7 @@ function createEndpointRow(endpoint) {
       let qpsToDelete = [];
 
       if (checkedBoxes.length > 0) {
-        qpsToDelete = Array.from(checkedBoxes).map((cb) => cb.value);
+        qpsToDelete = Array.from(checkedBoxes).map(cb => cb.value);
       } else if (selectedQPId !== null) {
         qpsToDelete = [selectedQPId];
       }
@@ -1432,7 +1402,9 @@ function createEndpointRow(endpoint) {
 
       const eid = getEndpointId(state.selectedEndpoint);
       try {
-        await Promise.all(qpsToDelete.map((id) => EdmsAPI.deleteQP(eid, id)));
+        await Promise.all(qpsToDelete.map(id =>
+          EdmsAPI.deleteQP(eid, id)
+        ));
         selectedQPId = null;
         document.getElementById("deleteQP").disabled = true;
         document.getElementById("detailsOverlay")?.classList.add("hidden");
@@ -1460,12 +1432,7 @@ function createEndpointRow(endpoint) {
 
     if (reqBodyTab && reqHeadersTab && reqBodySec && reqHeadersSec) {
       const activeTabClass = ["bg-cyan-500", "text-slate-950", "font-semibold"];
-      const inactiveTabClass = [
-        "text-slate-400",
-        "font-medium",
-        "hover:text-slate-200",
-      ];
-
+      const inactiveTabClass = ["text-slate-500", "dark:text-slate-400", "font-medium", "hover:text-slate-800", "dark:hover:text-slate-200"];
       reqBodyTab.addEventListener("click", () => {
         reqBodySec.classList.remove("hidden");
         reqHeadersSec.classList.add("hidden");
@@ -1493,11 +1460,7 @@ function createEndpointRow(endpoint) {
 
     if (resBodyTab && resHeadersTab && resBodySec && resHeadersSec) {
       const activeTabClass = ["bg-cyan-500", "text-slate-950", "font-semibold"];
-      const inactiveTabClass = [
-        "text-slate-400",
-        "font-medium",
-        "hover:text-slate-200",
-      ];
+      const inactiveTabClass = ["text-slate-400", "font-medium", "hover:text-slate-200"];
 
       resBodyTab.addEventListener("click", () => {
         resBodySec.classList.remove("hidden");
@@ -1557,42 +1520,41 @@ function createEndpointRow(endpoint) {
 
     document.getElementById("endpointTableBody").innerHTML = `
 
-            <tr>
+              <tr>
 
-                <td
-                    colspan="6"
-                    class="px-4 py-20
-                           text-center"
-                >
+                  <td
+                      colspan="6"
+                      class="px-4 py-20
+                            text-center"
+                  >
 
-                    <p
-                        class="text-sm
-                               text-rose-400"
-                    >
-                        ${escapeHtml(message)}
-                    </p>
+                      <p
+                          class="text-sm
+                                text-rose-600 dark:text-rose-400"
+                      >
+                          ${escapeHtml(message)}
+                      </p>
 
-                    <button
-                        type="button"
-                        class="mt-4 rounded-md
-                               bg-slate-800
-                               px-3 py-1.5
-                               text-xs
-                               text-slate-300
-                               hover:bg-slate-700"
-                        onclick="
-                            window.location.href =
-                            './collection_view.html'
-                        "
-                    >
-                        Back to Collections
-                    </button>
+                      <button
+                          type="button"
+                          class="mt-4 rounded-md
+                                bg-slate-200 dark:bg-slate-800
+                                px-3 py-1.5
+                                text-xs
+                               text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700"
+                          onclick="
+                              window.location.href =
+                              './collection_view.html'
+                          "
+                      >
+                          Back to Collections
+                      </button>
 
-                </td>
+                  </td>
 
-            </tr>
+              </tr>
 
-        `;
+          `;
   }
 
   // ============================================================
@@ -1601,10 +1563,10 @@ function createEndpointRow(endpoint) {
 
   function getEndpointId(endpoint) {
     /*
-     * Prefer the endpoint's own ID.
-     * Fall back to the endpoint path so
-     * older prototype data still works.
-     */
+    * Prefer the endpoint's own ID.
+    * Fall back to the endpoint path so
+    * older prototype data still works.
+    */
 
     return String(
       endpoint.endpoint_id ?? endpoint.id ?? endpoint.endpoint ?? Math.random(),
@@ -1661,16 +1623,12 @@ function createEndpointRow(endpoint) {
   function methodClass(method) {
     return (
       {
-        GET: "text-emerald-400",
-
-        POST: "text-sky-400",
-
-        PUT: "text-amber-400",
-
-        PATCH: "text-violet-400",
-
-        DELETE: "text-rose-400",
-      }[method] || "text-slate-300"
+        GET: "text-emerald-600 dark:text-emerald-400",
+        POST: "text-sky-600 dark:text-sky-400",
+        PUT: "text-amber-600 dark:text-amber-400",
+        PATCH: "text-violet-600 dark:text-violet-400",
+        DELETE: "text-rose-600 dark:text-rose-400",
+      }[method] || "text-slate-700 dark:text-slate-300"
     );
   }
 
@@ -1702,8 +1660,10 @@ function createEndpointRow(endpoint) {
     const count = state.selected.size;
 
     let menuHtml = `
-            <div class="px-3 py-2 text-[10px] font-semibold tracking-wide text-slate-500 uppercase border-b border-slate-800">
-                ${count > 1 ? `${count} Endpoints Selected` : "Endpoint Options"}
+<div class="border-b border-slate-200 dark:border-slate-800
+            px-3 py-2 text-[10px] font-semibold tracking-wide
+            uppercase text-slate-500 dark:text-slate-400">
+              ${count > 1 ? `${count} Endpoints Selected` : "Endpoint Options"}
             </div>
             
             <div class="p-1">
@@ -1711,8 +1671,13 @@ function createEndpointRow(endpoint) {
 
     if (count === 1) {
       menuHtml += `
-                <button type="button" id="ctxEditTags" class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs text-slate-300 hover:bg-slate-800">
-                    <svg class="h-3.5 w-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <button type="button" id="ctxEditTags" class="flex w-full items-center gap-2 rounded px-2 py-1.5
+       text-left text-xs
+       text-slate-700 dark:text-slate-300
+       hover:bg-slate-100 dark:hover:bg-slate-800
+       hover:text-slate-900 dark:hover:text-white
+       transition">
+                    <svg class="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                         <path d="M20.5 13.5 13.5 20.5 a2 2 0 0 1-2.8 0L4 13.8V4h9.8l6.7 6.7 a2 2 0 0 1 0 2.8Z" />
                         <circle cx="8.5" cy="8.5" r="1" />
                     </svg>
@@ -1722,8 +1687,13 @@ function createEndpointRow(endpoint) {
     }
 
     menuHtml += `
-                <button type="button" id="ctxManageTags" class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs text-slate-300 hover:bg-slate-800">
-                    <svg class="h-3.5 w-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <button type="button" id="ctxManageTags" class="flex w-full items-center gap-2 rounded px-2 py-1.5
+       text-left text-xs
+       text-slate-700 dark:text-slate-300
+       hover:bg-slate-100 dark:hover:bg-slate-800
+       hover:text-slate-900 dark:hover:text-white
+       transition">
+                    <svg class="h-3.5 w-3.5 text-slate-500 dark:text-slate-400"" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                         <path d="M20.5 13.5 13.5 20.5 a2 2 0 0 1-2.8 0L4 13.8V4h9.8l6.7 6.7 a2 2 0 0 1 0 2.8Z" />
                         <circle cx="8.5" cy="8.5" r="1" />
                     </svg>
@@ -1731,8 +1701,13 @@ function createEndpointRow(endpoint) {
                 </button>
             </div>
             
-            <div class="border-t border-slate-800 p-1">
-                <button type="button" id="ctxRemoveEndpoint" class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs text-rose-400 hover:bg-rose-500/10 hover:text-rose-300">
+           <div class="border-t border-slate-200 dark:border-slate-800 p-1">
+                <button type="button" id="ctxRemoveEndpoint" class="flex w-full items-center gap-2 rounded px-2 py-1.5
+       text-left text-xs
+       text-rose-600 dark:text-rose-400
+       hover:bg-rose-500/10
+       hover:text-rose-700 dark:hover:text-rose-300
+       transition">
                     <svg class="h-3.5 w-3.5 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                         <path d="M4 7h16" />
                         <path d="M10 11v6M14 11v6" />

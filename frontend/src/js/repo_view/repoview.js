@@ -44,7 +44,7 @@
 
     let sizeUnits = {};
 
-    const API_BASE = 'http://localhost:3000';
+    const API_BASE = 'http://localhost:3001';
 
 
     // ============================================================
@@ -311,8 +311,8 @@
             tbody.innerHTML = `
                 <tr>
                     <td colspan="15" class="px-4 py-16 text-center">
-                        <p class="text-sm font-medium text-slate-400">No repo views found</p>
-                        <p class="mt-1 text-xs text-slate-600">Try changing the current search or filters.</p>
+                        <p class="text-sm font-medium text-slate-500 dark:text-slate-400">No repo views found</p>
+                        <p class="mt-1 text-xs text-slate-400 dark:text-slate-600">Try changing the current search or filters.</p>
                     </td>
                 </tr>
             `;
@@ -346,13 +346,15 @@
         row.className = [
             'repo-row',
             'border-b',
-            'border-slate-800',
+            'border-slate-200',
+            'dark:border-slate-800',
             'transition-colors',
             'duration-100',
             'cursor-pointer',
-            'hover:bg-slate-800/60',
+            'hover:bg-slate-100',
+            'dark:hover:bg-slate-800/60',
             isSelected ? 'bg-cyan-500/[0.045]' : '',
-            isActive ? 'bg-slate-800/80 ring-1 ring-inset ring-cyan-500/50' : ''
+            isActive ? 'bg-slate-200 dark:bg-slate-800/80 ring-1 ring-inset ring-cyan-500/50' : ''
         ].filter(Boolean).join(' ');
 
         const dataTagsCount = (repo.dataTags || []).length;
@@ -366,10 +368,10 @@
             </td>
 
             <!-- Folder Name -->
-            <td class="px-2 py-2 font-medium text-slate-200">
+            <td class="px-2 py-2 font-medium text-slate-800 dark:text-slate-200">
                 <button
                     type="button"
-                    class="repo-name-btn truncate text-left hover:text-cyan-400"
+                    class="repo-name-btn truncate text-left hover:text-cyan-600 dark:hover:text-cyan-400"
                     title="${escapeAttr(repo.name)}">
                     ${escapeHtml(repo.name)}
                 </button>
@@ -379,7 +381,7 @@
             <td class="px-2 py-2">
                 <button
                     type="button"
-                    class="repo-annotation-btn block max-w-xs truncate text-left text-[11px] text-slate-500 hover:text-cyan-400"
+                    class="repo-annotation-btn block max-w-xs truncate text-left text-[11px] text-slate-500 hover:text-cyan-600 dark:hover:text-cyan-400"
                     title="${escapeAttr(repo.annotation || '')}">
                     ${escapeHtml(repo.annotation || '—')}
                 </button>
@@ -399,42 +401,42 @@
 
             <!-- Size -->
             <td class="px-2 py-2">
-                <button type="button" class="repo-size-btn text-slate-300 hover:text-cyan-400">
+                <button type="button" class="repo-size-btn text-slate-800 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400">
                     ${formatSize(repo.dataSizeBytes, sizeUnits[repo.id])}
                 </button>
             </td>
 
             <!-- GET -->
-            <td class="px-1 py-2 text-center border-l border-slate-800">${crudCountBadge(repo.crud?.GET, 'text-emerald-400')}</td>
+            <td class="px-1 py-2 text-center border-l border-slate-200 dark:border-slate-800">${crudCountBadge(repo.crud?.GET, 'text-emerald-600 dark:text-emerald-400')}</td>
             <!-- POST -->
-            <td class="px-1 py-2 text-center">${crudCountBadge(repo.crud?.POST, 'text-sky-400')}</td>
+            <td class="px-1 py-2 text-center">${crudCountBadge(repo.crud?.POST, 'text-sky-600 dark:text-sky-400')}</td>
             <!-- PUT -->
-            <td class="px-1 py-2 text-center">${crudCountBadge(repo.crud?.PUT, 'text-amber-400')}</td>
+            <td class="px-1 py-2 text-center">${crudCountBadge(repo.crud?.PUT, 'text-amber-600 dark:text-amber-400')}</td>
             <!-- PATCH -->
-            <td class="px-1 py-2 text-center">${crudCountBadge(repo.crud?.PATCH, 'text-violet-400')}</td>
+            <td class="px-1 py-2 text-center">${crudCountBadge(repo.crud?.PATCH, 'text-violet-600 dark:text-violet-400')}</td>
             <!-- DELETE -->
-            <td class="px-1 py-2 text-center">${crudCountBadge(repo.crud?.DELETE, 'text-rose-400')}</td>
+            <td class="px-1 py-2 text-center">${crudCountBadge(repo.crud?.DELETE, 'text-rose-600 dark:text-rose-400')}</td>
 
             <!-- EID Count -->
-            <td class="px-2 py-2 text-slate-300">${repo.eidCount ?? 0}</td>
+            <td class="px-2 py-2 text-slate-800 dark:text-slate-300">${repo.eidCount ?? 0}</td>
 
             <!-- Segments -->
-            <td class="px-2 py-2 text-slate-300">${segmentCount}</td>
+            <td class="px-2 py-2 text-slate-800 dark:text-slate-300">${segmentCount}</td>
 
             <!-- Data Tags -->
             <td class="px-2 py-2">
                 <button
                     type="button"
-                    class="repo-datatags-btn rounded-md border border-slate-700 bg-slate-800 px-2 py-0.5 text-[11px] text-slate-300 transition hover:border-cyan-500/60 hover:text-cyan-400">
+                    class="repo-datatags-btn rounded-md border border-slate-300 dark:border-slate-700 bg-slate-200 dark:bg-slate-800 px-2 py-0.5 text-[11px] text-slate-800 dark:text-slate-300 transition hover:border-cyan-500/60 hover:text-cyan-600 dark:hover:text-cyan-400">
                     ${dataTagsCount} tag${dataTagsCount === 1 ? '' : 's'}
                 </button>
             </td>
 
             <!-- QP Count -->
-            <td class="px-2 py-2 text-slate-300">${repo.qpCount ?? 0}</td>
+            <td class="px-2 py-2 text-slate-800 dark:text-slate-300">${repo.qpCount ?? 0}</td>
 
             <!-- Index Lists -->
-            <td class="px-2 py-2 text-slate-300">${repo.indexLists ?? 0}</td>
+            <td class="px-2 py-2 text-slate-800 dark:text-slate-300">${repo.indexLists ?? 0}</td>
 
 
         `;
@@ -548,13 +550,13 @@
         const tags = Array.isArray(repo.tags) ? repo.tags : [];
 
         if (!tags.length) {
-            return `<span class="text-[10px] text-slate-600">—</span>`;
+            return `<span class="text-[10px] text-slate-400 dark:text-slate-600">—</span>`;
         }
 
         return tags.map(tag => `
             <button
                 type="button"
-                class="repo-tag inline-flex rounded bg-sky-900/40 px-1.5 py-0.5 text-[10px] text-sky-300 transition hover:bg-sky-500/20 hover:text-sky-200"
+                class="repo-tag inline-flex rounded bg-sky-100 dark:bg-sky-900/40 px-1.5 py-0.5 text-[10px] text-sky-700 dark:text-sky-300 transition hover:bg-sky-200 dark:hover:bg-sky-500/20 hover:text-sky-800 dark:hover:text-sky-200"
                 data-tag="${escapeAttr(tag)}">
                 ${escapeHtml(tag)}
             </button>
@@ -568,7 +570,7 @@
         const value = Number(count || 0);
 
         return `
-            <span class="inline-flex min-w-6 items-center justify-center rounded-md bg-slate-800 px-1.5 py-0.5 text-[10px] ${value > 0 ? color : 'text-slate-600'}">
+            <span class="inline-flex min-w-6 items-center justify-center rounded-md bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 text-[10px] ${value > 0 ? color : 'text-slate-400 dark:text-slate-600'}">
                 ${value}
             </span>
         `;
@@ -590,22 +592,21 @@
 
         openModal(`
 
-            <h2 class="mb-4 text-sm font-semibold text-white">EQP Tags</h2>
+            <h2 class="mb-4 text-sm font-semibold text-slate-900 dark:text-white">EQP Tags</h2>
 
             <div class="flex flex-wrap gap-2">
-                ${
-                    tags.length
-                        ? tags.map(tag => `
-                            <span class="rounded-md border border-slate-700 bg-slate-800 px-2.5 py-1 text-xs text-slate-300">
+                ${tags.length
+                ? tags.map(tag => `
+                            <span class="rounded-md border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs text-slate-800 dark:text-slate-300">
                                 ${escapeHtml(tag)}
                             </span>
                         `).join('')
-                        : '<span class="text-xs text-slate-600">No EQP Tags.</span>'
-                }
+                : '<span class="text-xs text-slate-400 dark:text-slate-600">No EQP Tags.</span>'
+            }
             </div>
 
             <div class="mt-4 flex justify-end">
-                <button type="button" data-modal-close class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">
+                <button type="button" data-modal-close class="rounded-md border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
                     Close
                 </button>
             </div>
@@ -642,7 +643,7 @@
             if (page === '...') {
 
                 const span = document.createElement('span');
-                span.className = 'px-1 text-slate-600';
+                span.className = 'px-1 text-slate-400 dark:text-slate-600';
                 span.textContent = '…';
                 numbers.appendChild(span);
                 return;
@@ -654,8 +655,8 @@
             button.textContent = page;
 
             button.className = page === state.page
-                ? 'min-w-7 rounded-md bg-cyan-500 px-2 py-1 text-[11px] text-white'
-                : 'min-w-7 rounded-md border border-slate-700 px-2 py-1 text-[11px] text-slate-400 transition hover:bg-slate-800 hover:text-white';
+                ? 'min-w-7 rounded-md bg-slate-900 dark:bg-cyan-500 px-2 py-1 text-[11px] text-white'
+                : 'min-w-7 rounded-md border border-slate-300 dark:border-slate-700 px-2 py-1 text-[11px] text-slate-500 dark:text-slate-400 transition hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white';
 
             button.addEventListener('click', () => {
                 state.page = page;
@@ -770,8 +771,8 @@
 
                 wrapper.innerHTML = `
                     <input type="checkbox" class="repo-tag-checkbox h-3.5 w-3.5 accent-cyan-400" data-tag="${escapeAttr(tag)}">
-                    <button type="button" class="repo-tag-filter min-w-0 flex-1 truncate rounded px-1.5 py-1 text-left text-[11px] text-slate-400 transition hover:bg-sky-500/10 hover:text-sky-300" data-tag="${escapeAttr(tag)}">
-                        ${escapeHtml(tag)} <span class="text-slate-600">(${count})</span>
+                    <button type="button" class="repo-tag-filter min-w-0 flex-1 truncate rounded px-1.5 py-1 text-left text-[11px] text-slate-500 dark:text-slate-400 transition hover:bg-sky-500/10 hover:text-sky-700 dark:hover:text-sky-300" data-tag="${escapeAttr(tag)}">
+                        ${escapeHtml(tag)} <span class="text-slate-400 dark:text-slate-600">(${count})</span>
                     </button>
                 `;
 
@@ -812,7 +813,7 @@
 
         if (Object.keys(counts).length === 0) {
 
-            container.innerHTML = `<span class="text-[11px] text-slate-600">No segment data available.</span>`;
+            container.innerHTML = `<span class="text-[11px] text-slate-400 dark:text-slate-600">No segment data available.</span>`;
             return;
 
         }
@@ -826,8 +827,8 @@
 
                 wrapper.innerHTML = `
                     <input type="checkbox" class="repo-segment-checkbox h-3.5 w-3.5 accent-cyan-400" data-segment="${escapeAttr(segment)}">
-                    <button type="button" class="repo-segment-filter min-w-0 flex-1 truncate rounded px-1.5 py-1 text-left text-[11px] text-slate-400 transition hover:bg-cyan-500/10 hover:text-cyan-300" data-segment="${escapeAttr(segment)}">
-                        ${escapeHtml(segment)} <span class="text-slate-600">(${count})</span>
+                    <button type="button" class="repo-segment-filter min-w-0 flex-1 truncate rounded px-1.5 py-1 text-left text-[11px] text-slate-500 dark:text-slate-400 transition hover:bg-cyan-500/10 hover:text-cyan-700 dark:hover:text-cyan-300" data-segment="${escapeAttr(segment)}">
+                        ${escapeHtml(segment)} <span class="text-slate-400 dark:text-slate-600">(${count})</span>
                     </button>
                 `;
 
@@ -897,15 +898,18 @@
 
         if (!tabRepo || !tabEqp) return;
 
+        const activeClass = 'flex-1 rounded-sm px-2 py-1.5 text-[10px] font-medium bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm transition';
+        const inactiveClass = 'flex-1 rounded-sm px-2 py-1.5 text-[10px] font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition';
+
         function updateTabs() {
             if (activeTab === 'repo') {
-                tabRepo.className = 'flex-1 rounded-sm px-2 py-1.5 text-[10px] font-medium bg-slate-700 text-white shadow-sm transition';
-                tabEqp.className = 'flex-1 rounded-sm px-2 py-1.5 text-[10px] font-medium text-slate-400 hover:text-slate-200 transition';
+                tabRepo.className = activeClass;
+                tabEqp.className = inactiveClass;
                 contentRepo.classList.remove('hidden');
                 contentEqp.classList.add('hidden');
             } else {
-                tabEqp.className = 'flex-1 rounded-sm px-2 py-1.5 text-[10px] font-medium bg-slate-700 text-white shadow-sm transition';
-                tabRepo.className = 'flex-1 rounded-sm px-2 py-1.5 text-[10px] font-medium text-slate-400 hover:text-slate-200 transition';
+                tabEqp.className = activeClass;
+                tabRepo.className = inactiveClass;
                 contentEqp.classList.remove('hidden');
                 contentRepo.classList.add('hidden');
             }
@@ -929,7 +933,7 @@
         }
 
         const repo = getRepo(state.activeRowId);
-        
+
         if (!repo) {
             section.classList.add('hidden');
             return;
@@ -937,11 +941,11 @@
 
         section.classList.remove('hidden');
 
-        const tagsHtml = (repo.tags || []).map(t => `<span class="rounded bg-sky-900/40 px-1.5 py-0.5 text-[10px] text-sky-300">${escapeHtml(t)}</span>`).join('');
-        const eqpTagsHtml = (repo.dataTags || []).map(t => `<span class="rounded bg-slate-800 border border-slate-700 px-1.5 py-1 text-[11px] text-slate-300">${escapeHtml(t)}</span>`).join('');
+        const tagsHtml = (repo.tags || []).map(t => `<span class="rounded bg-sky-100 dark:bg-sky-900/40 px-1.5 py-0.5 text-[10px] text-sky-700 dark:text-sky-300">${escapeHtml(t)}</span>`).join('');
+        const eqpTagsHtml = (repo.dataTags || []).map(t => `<span class="rounded bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 px-1.5 py-1 text-[11px] text-slate-800 dark:text-slate-300">${escapeHtml(t)}</span>`).join('');
         const segments = Array.isArray(repo.segments) ? repo.segments : [];
         const eqpSegmentsHtml = segments.map(segment => `
-            <span class="rounded bg-slate-800 border border-slate-700 px-1.5 py-1 text-[11px] text-slate-300">
+            <span class="rounded bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 px-1.5 py-1 text-[11px] text-slate-800 dark:text-slate-300">
                 ${escapeHtml(segment)}
             </span>
         `).join('');
@@ -949,18 +953,18 @@
         contentRepo.innerHTML = `
             <div>
                 <p class="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Tags</p>
-                <div class="flex flex-wrap gap-1">${tagsHtml || '<span class="text-xs text-slate-600">—</span>'}</div>
+                <div class="flex flex-wrap gap-1">${tagsHtml || '<span class="text-xs text-slate-400 dark:text-slate-600">—</span>'}</div>
             </div>
         `;
 
         contentEqp.innerHTML = `
             <div>
                 <p class="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Tags</p>
-                <div class="flex flex-wrap gap-1">${eqpTagsHtml || '<span class="text-xs text-slate-600">—</span>'}</div>
+                <div class="flex flex-wrap gap-1">${eqpTagsHtml || '<span class="text-xs text-slate-400 dark:text-slate-600">—</span>'}</div>
             </div>
             <div>
                 <p class="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Segments</p>
-                <div class="flex flex-wrap gap-1">${eqpSegmentsHtml || '<span class="text-xs text-slate-600">—</span>'}</div>
+                <div class="flex flex-wrap gap-1">${eqpSegmentsHtml || '<span class="text-xs text-slate-400 dark:text-slate-600">—</span>'}</div>
             </div>
         `;
 
@@ -1049,7 +1053,7 @@
         if (list) {
 
             list.innerHTML = selected.map(repo => `
-                <span class="shrink-0 rounded-md border border-cyan-500/20 bg-cyan-500/10 px-2 py-1 font-mono text-[10px] text-cyan-300">
+                <span class="shrink-0 rounded-md border border-cyan-500/20 bg-cyan-500/10 px-2 py-1 font-mono text-[10px] text-cyan-700 dark:text-cyan-300">
                     ${escapeHtml(repo.name)}
                 </span>
             `).join('');
@@ -1155,9 +1159,17 @@
         function render() {
             if (!listEl) return;
             listEl.innerHTML = tags.map((tag, index) => `
-                <span class="inline-flex items-center gap-1.5 rounded-md border border-cyan-500/30 bg-cyan-500/10 px-2 py-0.5 text-xs text-cyan-300">
-                    <span>${escapeHtml(tag)}</span>
-                    <button type="button" data-remove-tag-index="${index}" class="ml-0.5 text-cyan-400 hover:text-white hover:bg-cyan-500/30 rounded px-1 leading-none transition cursor-pointer" title="Remove ${escapeAttr(tag)}">&times;</button>
+<span class="inline-flex items-center gap-1.5 rounded-md
+             border border-cyan-700/40 dark:border-cyan-500/30
+             bg-cyan-200 dark:bg-cyan-500/10
+             px-2 py-0.5 text-xs
+             text-cyan-900 dark:text-cyan-300">
+                                 <span>${escapeHtml(tag)}</span>
+                    <button type="button" data-remove-tag-index="${index}" class="ml-0.5 rounded px-1 leading-none
+       text-cyan-800 dark:text-cyan-400
+       hover:bg-cyan-300 dark:hover:bg-cyan-500/30
+       hover:text-cyan-950 dark:hover:text-white
+       transition cursor-pointer""Remove ${escapeAttr(tag)}">&times;</button>
                 </span>
             `).join('');
         }
@@ -1212,36 +1224,76 @@
 
         openModal(`
 
-            <h2 class="mb-4 text-sm font-semibold text-white">Create Repo View</h2>
+            <h2 class="mb-4 text-sm font-semibold text-slate-900 dark:text-white">Create Repo View</h2>
 
-            <label class="mb-1 block text-[11px] text-slate-500">Folder Name <span class="text-rose-400">*</span></label>
-            <input id="createName" class="mb-3 h-9 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500 text-slate-200" placeholder="e.g. Production APIs">
+            <label class="mb-1 block text-[11px] text-slate-500">Folder Name <span class="text-rose-500 dark:text-rose-400">*</span></label>
+            <input id="createName" class="mb-3 h-9 w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-600" placeholder="e.g. Production APIs">
 
-            <label class="mb-1 block text-[11px] text-slate-500">Source Collection <span class="text-rose-400">*</span></label>
-            <select id="createSourceCollection" class="mb-3 h-9 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500 text-slate-200">
+            <label class="mb-1 block text-[11px] text-slate-500">Source Collection <span class="text-rose-500 dark:text-rose-400">*</span></label>
+            <select id="createSourceCollection" class="mb-3 h-9 w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500 text-slate-800 dark:text-slate-200">
                 <option value="" disabled selected>Loading collections...</option>
             </select>
 
-            <label class="mb-1 block text-[11px] text-slate-500">Tags</label>
-            <div id="createTagsList" class="flex flex-wrap gap-1.5 mb-2 empty:hidden"></div>
-            <div class="flex items-center gap-2 mb-3">
-                <input id="createTags" class="h-9 flex-1 rounded-md border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500 text-slate-200" placeholder="Type a tag and press Enter">
-                <button id="createAddTagBtn" type="button" class="h-9 px-3 rounded-md border border-slate-700 bg-slate-800 text-xs text-slate-300 hover:bg-slate-700 hover:text-white transition">Add</button>
-            </div>
+           <label class="mb-1 block text-[11px] text-slate-500">Tags</label>
+
+<input
+    id="createTags"
+    class="mb-3 h-9 w-full rounded-md
+           border border-slate-300 dark:border-slate-700
+           bg-white dark:bg-slate-950
+           px-3 text-xs
+           text-slate-800 dark:text-slate-200
+           placeholder:text-slate-400 dark:placeholder:text-slate-600
+           outline-none focus:border-cyan-500"
+    placeholder="api, production, users"
+>
+
+<div id="createTagsList"
+     class="mb-2 flex flex-wrap gap-1.5 empty:hidden">
+</div>
+
+<div class="mb-3 flex items-center gap-2">
+    <input
+        id="createTagInput"
+        class="h-9 flex-1 rounded-md
+               border border-slate-300 dark:border-slate-700
+               bg-white dark:bg-slate-950
+               px-3 text-xs
+               text-slate-800 dark:text-slate-200
+               placeholder:text-slate-400 dark:placeholder:text-slate-600
+               outline-none focus:border-cyan-500"
+        placeholder="Type a tag and press Enter"
+    >
+
+    <button
+        id="createAddTagBtn"
+        type="button"
+        class="h-9 rounded-md border
+               border-slate-300 dark:border-slate-700
+               bg-slate-100 dark:bg-slate-800
+               px-3 text-xs
+               text-slate-700 dark:text-slate-300
+               hover:bg-slate-200 dark:hover:bg-slate-700
+               hover:text-slate-900 dark:hover:text-white
+               transition"
+    >
+        Add
+    </button>
+</div>
 
             <label class="mb-1 block text-[11px] text-slate-500">Annotation</label>
-            <textarea id="createAnnotation" class="mb-4 h-20 w-full resize-none rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-xs outline-none focus:border-cyan-500 text-slate-200" placeholder="Repository description..."></textarea>
+            <textarea id="createAnnotation" class="mb-4 h-20 w-full resize-none rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-xs outline-none focus:border-cyan-500 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-600" placeholder="Repository description..."></textarea>
 
             <div class="flex justify-end gap-2">
-                <button type="button" data-modal-close class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">Cancel</button>
-                <button id="confirmCreate" type="button" class="rounded-md bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-cyan-500">Create</button>
+                <button type="button" data-modal-close class="rounded-md border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
+                <button id="confirmCreate" type="button" class="rounded-md bg-slate-900 dark:bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800 dark:hover:bg-cyan-500">Create</button>
             </div>
 
         `);
 
         activeCreateTagHelper = setupTagInput({
             listElId: 'createTagsList',
-            inputElId: 'createTags',
+            inputElId: 'createTagInput',
             addBtnElId: 'createAddTagBtn',
             initialTags: []
         });
@@ -1404,23 +1456,23 @@
         openModal(`
 
             <div class="flex items-start gap-3 rounded-lg border border-rose-500/20 bg-rose-500/5 p-3">
-                <div class="mt-0.5 text-rose-400">${iconTrash()}</div>
+                <div class="mt-0.5 text-rose-600 dark:text-rose-400">${iconTrash()}</div>
                 <div>
-                    <h2 class="text-sm font-semibold text-rose-300">Delete ${repos.length > 1 ? 'Repo Views' : 'Repo View'}</h2>
+                    <h2 class="text-sm font-semibold text-rose-700 dark:text-rose-300">Delete ${repos.length > 1 ? 'Repo Views' : 'Repo View'}</h2>
                     <p class="mt-1 text-[11px] text-slate-500">This removes the selected repo view(s) from the system.</p>
                 </div>
             </div>
 
-            <div class="my-4 max-h-48 overflow-y-auto rounded-lg border border-slate-800">
+            <div class="my-4 max-h-48 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-800">
                 ${repos.map(repo => `
-                    <div class="border-b border-slate-800 px-3 py-2 last:border-0">
-                        <p class="font-mono text-xs text-slate-300">${escapeHtml(repo.name)}</p>
+                    <div class="border-b border-slate-200 dark:border-slate-800 px-3 py-2 last:border-0">
+                        <p class="font-mono text-xs text-slate-800 dark:text-slate-300">${escapeHtml(repo.name)}</p>
                     </div>
                 `).join('')}
             </div>
 
             <div class="flex justify-end gap-2">
-                <button type="button" data-modal-close class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">Cancel</button>
+                <button type="button" data-modal-close class="rounded-md border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
                 <button id="confirmDelete" type="button" class="rounded-md bg-rose-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-rose-500">Delete</button>
             </div>
 
@@ -1484,17 +1536,17 @@
 
         openModal(`
 
-            <h2 class="mb-4 text-sm font-semibold text-white">Edit Repo View</h2>
+            <h2 class="mb-4 text-sm font-semibold text-slate-900 dark:text-white">Edit Repo View</h2>
 
             <label class="mb-1 block text-[11px] text-slate-500">Folder Name</label>
-            <input id="editRepoName" value="${escapeAttr(repo.name)}" class="mb-3 h-9 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500 text-slate-200">
+            <input id="editRepoName" value="${escapeAttr(repo.name)}" class="mb-3 h-9 w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500 text-slate-800 dark:text-slate-200">
 
             <label class="mb-1 block text-[11px] text-slate-500">Tags</label>
-            <input id="editRepoTags" value="${escapeAttr((repo.tags || []).join(', '))}" class="mb-4 h-9 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500 text-slate-200">
+            <input id="editRepoTags" value="${escapeAttr((repo.tags || []).join(', '))}" class="mb-4 h-9 w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500 text-slate-800 dark:text-slate-200">
 
             <div class="flex justify-end gap-2">
-                <button type="button" data-modal-close class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">Cancel</button>
-                <button id="saveRepoEdit" type="button" class="rounded-md bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-cyan-500">Save</button>
+                <button type="button" data-modal-close class="rounded-md border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
+                <button id="saveRepoEdit" type="button" class="rounded-md bg-slate-900 dark:bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800 dark:hover:bg-cyan-500">Save</button>
             </div>
 
         `);
@@ -1589,15 +1641,15 @@
 
         openModal(`
 
-            <h2 class="mb-4 text-sm font-semibold text-white">Annotation</h2>
+            <h2 class="mb-4 text-sm font-semibold text-slate-900 dark:text-white">Annotation</h2>
 
             <p class="mb-2 text-[11px] text-slate-500">Markdown annotation</p>
 
-            <textarea id="annotationEditor" class="h-64 w-full resize-none rounded-md border border-slate-700 bg-slate-950 px-3 py-2 font-mono text-sm text-slate-300 outline-none focus:border-cyan-500">${escapeHtml(repo.annotation || '')}</textarea>
+            <textarea id="annotationEditor" class="h-64 w-full resize-none rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 font-mono text-sm text-slate-800 dark:text-slate-300 outline-none focus:border-cyan-500">${escapeHtml(repo.annotation || '')}</textarea>
 
             <div class="mt-4 flex justify-end gap-2">
-                <button type="button" data-modal-close class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">Cancel</button>
-                <button id="saveAnnotation" type="button" class="rounded-md bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-cyan-500">Save</button>
+                <button type="button" data-modal-close class="rounded-md border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
+                <button id="saveAnnotation" type="button" class="rounded-md bg-slate-900 dark:bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800 dark:hover:bg-cyan-500">Save</button>
             </div>
 
         `);
@@ -1648,16 +1700,16 @@
         const defaultName = `${repos[0].name}_combined`;
 
         openModal(`
-            <h2 class="mb-4 text-sm font-semibold text-white">Combine Repo Views</h2>
-            <p class="mb-3 text-[11px] text-slate-400">Combine ${repos.length} repo views into a unified repo view:</p>
-            <div class="mb-4 max-h-36 overflow-y-auto rounded-lg border border-slate-800 bg-slate-950/60 p-2 text-xs font-mono text-slate-300">
+            <h2 class="mb-4 text-sm font-semibold text-slate-900 dark:text-white">Combine Repo Views</h2>
+            <p class="mb-3 text-[11px] text-slate-500 dark:text-slate-400">Combine ${repos.length} repo views into a unified repo view:</p>
+            <div class="mb-4 max-h-36 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950/60 p-2 text-xs font-mono text-slate-800 dark:text-slate-300">
                 ${repos.map(r => `<div>• ${escapeHtml(r.name)}</div>`).join('')}
             </div>
-            <label class="mb-1 block text-[11px] text-slate-500">Combined Repo View Name <span class="text-rose-400">*</span></label>
-            <input id="combinedRepoName" value="${escapeAttr(defaultName)}" class="mb-4 h-9 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500 text-slate-200">
+            <label class="mb-1 block text-[11px] text-slate-500">Combined Repo View Name <span class="text-rose-500 dark:text-rose-400">*</span></label>
+            <input id="combinedRepoName" value="${escapeAttr(defaultName)}" class="mb-4 h-9 w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500 text-slate-800 dark:text-slate-200">
             <div class="flex justify-end gap-2">
-                <button type="button" data-modal-close class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">Cancel</button>
-                <button id="confirmCombineRepo" type="button" class="rounded-md bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-cyan-500">Combine</button>
+                <button type="button" data-modal-close class="rounded-md border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
+                <button id="confirmCombineRepo" type="button" class="rounded-md bg-slate-900 dark:bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800 dark:hover:bg-cyan-500">Combine</button>
             </div>
         `);
 
@@ -1721,31 +1773,38 @@
 
         openModal(`
             <div class="rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 mb-3">
-                <div class="text-xs font-semibold text-amber-300">Conflict: View Already Exists (409)</div>
-                <div class="text-[11px] text-amber-200/80 mt-1">${escapeHtml(errorMsg)}</div>
+                <div class="text-xs font-semibold text-amber-700 dark:text-amber-300">Conflict: View Already Exists (409)</div>
+                <div class="text-[11px] text-amber-800 dark:text-amber-200/80 mt-1">${escapeHtml(errorMsg)}</div>
             </div>
-            <p class="mb-3 text-[11px] text-slate-400">Choose how to resolve this conflict:</p>
+            <p class="mb-3 text-[11px] text-slate-500 dark:text-slate-400">Choose how to resolve this conflict:</p>
             <div class="mb-4 space-y-3">
                 ${options.includes('merge') ? `
-                    <div class="rounded-md border border-slate-800 bg-slate-900/60 p-3">
-                        <div class="text-xs font-medium text-white mb-1">Merge</div>
-                        <p class="text-[11px] text-slate-400 mb-2">Merge sources into the existing "${escapeHtml(targetName)}" Repo View.</p>
-                        <button id="conflictMergeBtn" type="button" class="rounded bg-amber-600 px-2.5 py-1 text-xs text-white hover:bg-amber-500">Merge into "${escapeHtml(targetName)}"</button>
-                    </div>
+                    <div class="rounded-md border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/60 p-3">
+                        <div class="text-xs font-medium text-slate-900 dark:text-white mb-1">Merge</div>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-2">Merge sources into the existing "${escapeHtml(targetName)}" Repo View.</p>
+<button
+    id="conflictMergeBtn"
+    type="button"
+    class="rounded bg-orange-600 px-2.5 py-1 text-xs text-white
+           hover:bg-orange-700 active:bg-orange-800
+           dark:bg-amber-700 dark:hover:bg-amber-600 dark:active:bg-amber-800
+           transition">
+    Merge into "${escapeHtml(targetName)}"
+</button>                    </div>
                 ` : ''}
                 ${options.includes('rename') ? `
-                    <div class="rounded-md border border-slate-800 bg-slate-900/60 p-3">
-                        <div class="text-xs font-medium text-white mb-1">Rename</div>
-                        <p class="text-[11px] text-slate-400 mb-2">Save with a new, non-conflicting name.</p>
+                    <div class="rounded-md border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/60 p-3">
+                        <div class="text-xs font-medium text-slate-900 dark:text-white mb-1">Rename</div>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-2">Save with a new, non-conflicting name.</p>
                         <div class="flex gap-2">
-                            <input id="conflictRenameInput" value="${escapeAttr(targetName + '_1')}" class="h-8 flex-1 rounded-md border border-slate-700 bg-slate-950 px-2 text-xs text-slate-200 outline-none focus:border-cyan-500">
-                            <button id="conflictRenameBtn" type="button" class="rounded bg-cyan-600 px-2.5 py-1 text-xs text-white hover:bg-cyan-500">Rename & Combine</button>
+                            <input id="conflictRenameInput" value="${escapeAttr(targetName + '_1')}" class="h-8 flex-1 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-2 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-cyan-500">
+                            <button id="conflictRenameBtn" type="button" class="rounded bg-slate-900 dark:bg-cyan-600 px-2.5 py-1 text-xs text-white hover:bg-slate-800 dark:hover:bg-cyan-500">Rename & Combine</button>
                         </div>
                     </div>
                 ` : ''}
             </div>
             <div class="flex justify-end">
-                <button type="button" data-modal-close class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">Cancel</button>
+                <button type="button" data-modal-close class="rounded-md border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
             </div>
         `);
 
@@ -1775,15 +1834,15 @@
         if (!repo) return;
 
         openModal(`
-            <h2 class="mb-4 text-sm font-semibold text-white">Convert to Collection</h2>
-            <p class="mb-3 text-[11px] text-slate-400">Convert Repo View <strong class="text-white">${escapeHtml(repo.name)}</strong> into a Collection.</p>
+            <h2 class="mb-4 text-sm font-semibold text-slate-900 dark:text-white">Convert to Collection</h2>
+            <p class="mb-3 text-[11px] text-slate-500 dark:text-slate-400">Convert Repo View <strong class="text-slate-900 dark:text-white">${escapeHtml(repo.name)}</strong> into a Collection.</p>
             
-            <label class="mb-1 block text-[11px] text-slate-500">Collection Name <span class="text-rose-400">*</span></label>
-            <input id="convertCollectionName" value="${escapeAttr(repo.name)}" class="mb-4 h-9 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500 text-slate-200">
+            <label class="mb-1 block text-[11px] text-slate-500">Collection Name <span class="text-rose-500 dark:text-rose-400">*</span></label>
+            <input id="convertCollectionName" value="${escapeAttr(repo.name)}" class="mb-4 h-9 w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500 text-slate-800 dark:text-slate-200">
 
             <div class="flex justify-end gap-2">
-                <button type="button" data-modal-close class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">Cancel</button>
-                <button id="confirmConvertToCollection" type="button" class="rounded-md bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-cyan-500">Convert</button>
+                <button type="button" data-modal-close class="rounded-md border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
+                <button id="confirmConvertToCollection" type="button" class="rounded-md bg-slate-900 dark:bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800 dark:hover:bg-cyan-500">Convert</button>
             </div>
         `);
 
@@ -1837,31 +1896,31 @@
 
         openModal(`
             <div class="rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 mb-3">
-                <div class="text-xs font-semibold text-amber-300">Conflict: Collection Already Exists (409)</div>
-                <div class="text-[11px] text-amber-200/80 mt-1">${escapeHtml(errorMsg)}</div>
+                <div class="text-xs font-semibold text-amber-700 dark:text-amber-300">Conflict: Collection Already Exists (409)</div>
+                <div class="text-[11px] text-amber-800 dark:text-amber-200/80 mt-1">${escapeHtml(errorMsg)}</div>
             </div>
-            <p class="mb-3 text-[11px] text-slate-400">Choose how to resolve this conflict:</p>
+            <p class="mb-3 text-[11px] text-slate-500 dark:text-slate-400">Choose how to resolve this conflict:</p>
             <div class="mb-4 space-y-3">
                 ${options.includes('merge') ? `
-                    <div class="rounded-md border border-slate-800 bg-slate-900/60 p-3">
-                        <div class="text-xs font-medium text-white mb-1">Merge</div>
-                        <p class="text-[11px] text-slate-400 mb-2">Merge into the existing collection "${escapeHtml(colName)}".</p>
+                    <div class="rounded-md border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/60 p-3">
+                        <div class="text-xs font-medium text-slate-900 dark:text-white mb-1">Merge</div>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-2">Merge into the existing collection "${escapeHtml(colName)}".</p>
                         <button id="convertConflictMergeBtn" type="button" class="rounded bg-amber-600 px-2.5 py-1 text-xs text-white hover:bg-amber-500">Merge into "${escapeHtml(colName)}"</button>
                     </div>
                 ` : ''}
                 ${options.includes('rename') ? `
-                    <div class="rounded-md border border-slate-800 bg-slate-900/60 p-3">
-                        <div class="text-xs font-medium text-white mb-1">Rename</div>
-                        <p class="text-[11px] text-slate-400 mb-2">Convert to a collection with a new name.</p>
+                    <div class="rounded-md border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/60 p-3">
+                        <div class="text-xs font-medium text-slate-900 dark:text-white mb-1">Rename</div>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-2">Convert to a collection with a new name.</p>
                         <div class="flex gap-2">
-                            <input id="convertConflictRenameInput" value="${escapeAttr(colName + '_1')}" class="h-8 flex-1 rounded-md border border-slate-700 bg-slate-950 px-2 text-xs text-slate-200 outline-none focus:border-cyan-500">
-                            <button id="convertConflictRenameBtn" type="button" class="rounded bg-cyan-600 px-2.5 py-1 text-xs text-white hover:bg-cyan-500">Rename & Convert</button>
+                            <input id="convertConflictRenameInput" value="${escapeAttr(colName + '_1')}" class="h-8 flex-1 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-2 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-cyan-500">
+                            <button id="convertConflictRenameBtn" type="button" class="rounded bg-slate-900 dark:bg-cyan-600 px-2.5 py-1 text-xs text-white hover:bg-slate-800 dark:hover:bg-cyan-500">Rename & Convert</button>
                         </div>
                     </div>
                 ` : ''}
             </div>
             <div class="flex justify-end">
-                <button type="button" data-modal-close class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">Cancel</button>
+                <button type="button" data-modal-close class="rounded-md border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
             </div>
         `);
 
@@ -1891,20 +1950,20 @@
         if (!repo) return;
 
         openModal(`
-            <h2 class="mb-4 text-sm font-semibold text-white">Takeout Repo View</h2>
-            <p class="mb-3 text-[11px] text-slate-400">Export and takeout Repo View <strong class="text-white">${escapeHtml(repo.name)}</strong>.</p>
+            <h2 class="mb-4 text-sm font-semibold text-slate-900 dark:text-white">Takeout Repo View</h2>
+            <p class="mb-3 text-[11px] text-slate-500 dark:text-slate-400">Export and takeout Repo View <strong class="text-slate-900 dark:text-white">${escapeHtml(repo.name)}</strong>.</p>
             
             <label class="mb-1 block text-[11px] text-slate-500">Destination Folder Name (Optional)</label>
-            <input id="takeoutDestName" value="${escapeAttr(repo.name)}" placeholder="${escapeAttr(repo.name)}" class="mb-3 h-9 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500 text-slate-200">
+            <input id="takeoutDestName" value="${escapeAttr(repo.name)}" placeholder="${escapeAttr(repo.name)}" class="mb-3 h-9 w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500 text-slate-800 dark:text-slate-200">
 
             <label class="mb-4 flex items-center gap-2 cursor-pointer">
-                <input id="takeoutOverwrite" type="checkbox" class="h-4 w-4 rounded border-slate-700 bg-slate-950 text-cyan-600 focus:ring-0 focus:ring-offset-0">
-                <span class="text-xs text-slate-300">Overwrite if destination already exists</span>
+                <input id="takeoutOverwrite" type="checkbox" class="h-4 w-4 rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-cyan-600 focus:ring-0 focus:ring-offset-0">
+                <span class="text-xs text-slate-800 dark:text-slate-300">Overwrite if destination already exists</span>
             </label>
 
             <div class="flex justify-end gap-2">
-                <button type="button" data-modal-close class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">Cancel</button>
-                <button id="confirmRepoTakeout" type="button" class="rounded-md bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-cyan-500">Takeout</button>
+                <button type="button" data-modal-close class="rounded-md border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
+                <button id="confirmRepoTakeout" type="button" class="rounded-md bg-slate-900 dark:bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800 dark:hover:bg-cyan-500">Takeout</button>
             </div>
         `);
 
@@ -1959,31 +2018,31 @@
 
         openModal(`
             <div class="rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 mb-3">
-                <div class="text-xs font-semibold text-amber-300">Conflict: Destination Already Exists (409)</div>
-                <div class="text-[11px] text-amber-200/80 mt-1">${escapeHtml(errorMsg)}</div>
+                <div class="text-xs font-semibold text-amber-700 dark:text-amber-300">Conflict: Destination Already Exists (409)</div>
+                <div class="text-[11px] text-amber-800 dark:text-amber-200/80 mt-1">${escapeHtml(errorMsg)}</div>
             </div>
-            <p class="mb-3 text-[11px] text-slate-400">Choose how to resolve this collision:</p>
+            <p class="mb-3 text-[11px] text-slate-500 dark:text-slate-400">Choose how to resolve this collision:</p>
             <div class="mb-4 space-y-3">
                 ${options.includes('overwrite') ? `
-                    <div class="rounded-md border border-slate-800 bg-slate-900/60 p-3">
-                        <div class="text-xs font-medium text-white mb-1">Overwrite</div>
-                        <p class="text-[11px] text-slate-400 mb-2">Overwrite existing files in "${escapeHtml(destName)}".</p>
+                    <div class="rounded-md border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/60 p-3">
+                        <div class="text-xs font-medium text-slate-900 dark:text-white mb-1">Overwrite</div>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-2">Overwrite existing files in "${escapeHtml(destName)}".</p>
                         <button id="takeoutConflictOverwriteBtn" type="button" class="rounded bg-rose-600 px-2.5 py-1 text-xs text-white hover:bg-rose-500">Overwrite Existing</button>
                     </div>
                 ` : ''}
                 ${options.includes('rename') ? `
-                    <div class="rounded-md border border-slate-800 bg-slate-900/60 p-3">
-                        <div class="text-xs font-medium text-white mb-1">Rename</div>
-                        <p class="text-[11px] text-slate-400 mb-2">Save takeout to a different folder name.</p>
+                    <div class="rounded-md border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/60 p-3">
+                        <div class="text-xs font-medium text-slate-900 dark:text-white mb-1">Rename</div>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-2">Save takeout to a different folder name.</p>
                         <div class="flex gap-2">
-                            <input id="takeoutConflictRenameInput" value="${escapeAttr(destName + '_1')}" class="h-8 flex-1 rounded-md border border-slate-700 bg-slate-950 px-2 text-xs text-slate-200 outline-none focus:border-cyan-500">
-                            <button id="takeoutConflictRenameBtn" type="button" class="rounded bg-cyan-600 px-2.5 py-1 text-xs text-white hover:bg-cyan-500">Rename & Takeout</button>
+                            <input id="takeoutConflictRenameInput" value="${escapeAttr(destName + '_1')}" class="h-8 flex-1 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-2 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-cyan-500">
+                            <button id="takeoutConflictRenameBtn" type="button" class="rounded bg-slate-900 dark:bg-cyan-600 px-2.5 py-1 text-xs text-white hover:bg-slate-800 dark:hover:bg-cyan-500">Rename & Takeout</button>
                         </div>
                     </div>
                 ` : ''}
             </div>
             <div class="flex justify-end">
-                <button type="button" data-modal-close class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">Cancel</button>
+                <button type="button" data-modal-close class="rounded-md border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
             </div>
         `);
 

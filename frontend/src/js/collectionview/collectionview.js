@@ -65,8 +65,8 @@
     if (typeof TagManager !== "undefined") {
       TagManager.init({
         view: "collectionview",
-        getItems: () => state.selected.size > 0 
-          ? state.folders.filter(f => state.selected.has(Number(f.id))) 
+        getItems: () => state.selected.size > 0
+          ? state.folders.filter(f => state.selected.has(Number(f.id)))
           : state.folders,
         getTags: folder => Array.isArray(folder.tags) ? folder.tags : [],
         setTags: (folder, tags) => {
@@ -774,11 +774,11 @@
       "folder-row",
       "group",
       "border-b",
-      "border-slate-800",
+      "border-slate-200", "dark:border-slate-800",
       "transition-colors",
       "duration-100",
       "cursor-pointer",
-      "hover:bg-slate-800/60",
+      "hover:bg-slate-100", "dark:hover:bg-slate-800/60",
 
       isSelected ? "bg-cyan-500/[0.045]" : "",
     ]
@@ -802,7 +802,7 @@
 
         <td
             class="px-2 py-2
-                   font-medium text-slate-200"
+                   font-medium text-slate-800 dark:text-slate-200"
         >
 
             <div
@@ -961,16 +961,19 @@
 
                 <button
                     type="button"
-                    class="folder-tag
-                           inline-flex
-                           rounded
-                           bg-sky-900/40
-                           px-1.5 py-0.5
-                           text-[10px]
-                           text-sky-300
-                           transition
-                           hover:bg-sky-500/20
-                           hover:text-sky-200"
+                   class="folder-tag
+       inline-flex
+       rounded
+       border border-transparent
+       bg-slate-200 dark:bg-slate-800
+       px-1.5 py-0.5
+       text-[10px]
+       text-sky-600 dark:text-sky-300
+       transition
+       hover:border-blue-500 dark:hover:border-blue-400
+       hover:bg-sky-100 dark:hover:bg-sky-500/20
+       hover:text-blue-700 dark:hover:text-sky-200
+       hover:ring-1 hover:ring-blue-400/50"
                     data-tag="${escapeAttr(tag)}"
                 >
                     ${escapeHtml(tag)}
@@ -988,7 +991,7 @@
             class="inline-flex min-w-6
                    items-center
                    justify-center
-                   rounded-md bg-slate-800
+                   rounded-md bg-slate-200 dark:bg-slate-800
                    px-1.5 py-0.5
                    text-[10px]
                    ${color}"
@@ -1084,9 +1087,9 @@
       button.className =
         page === state.page
           ? `
-                        min-w-7 rounded-md
-                        bg-cyan-500 px-2 py-1
-                        text-[11px] text-white
+                         min-w-7 rounded-md
+      bg-slate-900 dark:bg-cyan-500 px-2 py-1
+      text-[11px] text-white
                       `
           : `
                         min-w-7 rounded-md
@@ -2318,7 +2321,7 @@
 
         <h2
             class="mb-4 text-sm font-semibold
-                   text-white"
+                   text-slate-900 dark:text-white"
         >
             New Empty Folder
         </h2>
@@ -2335,9 +2338,11 @@
             id="newFolderName"
             class="mb-3 h-9 w-full
                    rounded-md
-                   border border-slate-700
-                   bg-slate-950 px-3
-                   text-xs outline-none
+                   border border-slate-300 dark:border-slate-700
+                   bg-white dark:bg-slate-950 px-3
+                   text-xs text-slate-900 dark:text-slate-100
+                   placeholder:text-slate-400 dark:placeholder:text-slate-600
+                   outline-none
                    focus:border-cyan-500"
             placeholder="My New Collection"
         >
@@ -2354,9 +2359,11 @@
             id="newFolderPurpose"
             class="mb-3 h-9 w-full
                    rounded-md
-                   border border-slate-700
-                   bg-slate-950 px-3
-                   text-xs outline-none"
+                   border border-slate-300 dark:border-slate-700
+                   bg-white dark:bg-slate-950 px-3
+                   text-xs text-slate-900 dark:text-slate-100
+                   outline-none
+                   focus:border-cyan-500"
         >
             <option value="importable">
                 Importable
@@ -2379,9 +2386,11 @@
             id="newFolderTags"
             class="mb-3 h-9 w-full
                    rounded-md
-                   border border-slate-700
-                   bg-slate-950 px-3
-                   text-xs outline-none
+                   border border-slate-300 dark:border-slate-700
+                   bg-white dark:bg-slate-950 px-3
+                   text-xs text-slate-900 dark:text-slate-100
+                   placeholder:text-slate-400 dark:placeholder:text-slate-600
+                   outline-none
                    focus:border-cyan-500"
             placeholder="personal, draft"
         >
@@ -2398,9 +2407,11 @@
             id="newFolderAnnotation"
             class="mb-4 h-20 w-full
                    resize-none rounded-md
-                   border border-slate-700
-                   bg-slate-950 px-3 py-2
-                   text-xs outline-none
+                   border border-slate-300 dark:border-slate-700
+                   bg-white dark:bg-slate-950 px-3 py-2
+                   text-xs text-slate-900 dark:text-slate-100
+                   placeholder:text-slate-400 dark:placeholder:text-slate-600
+                   outline-none
                    focus:border-cyan-500"
         ></textarea>
 
@@ -2414,10 +2425,10 @@
                 type="button"
                 data-modal-close
                 class="rounded-md
-                       border border-slate-700
+                       border border-slate-300 dark:border-slate-700
                        px-3 py-1.5
-                       text-xs text-slate-400
-                       hover:bg-slate-800"
+                       text-xs text-slate-600 dark:text-slate-400
+                       hover:bg-slate-100 dark:hover:bg-slate-800"
             >
                 Cancel
             </button>
@@ -2427,11 +2438,11 @@
                 id="confirmNewFolder"
                 type="button"
                 class="rounded-md
-                       bg-cyan-600
+                       bg-slate-900 dark:bg-cyan-600
                        px-3 py-1.5
                        text-xs font-medium
                        text-white
-                       hover:bg-cyan-500"
+                       hover:bg-slate-800 dark:hover:bg-cyan-500"
             >
                 Create
             </button>
@@ -2476,7 +2487,7 @@
 
         <h2
             class="mb-4 text-sm font-semibold
-                   text-white"
+                   text-slate-900 dark:text-white"
         >
             Rename Collection
         </h2>
@@ -2487,9 +2498,10 @@
             value="${escapeAttr(folder.name)}"
             class="mb-4 h-9 w-full
                    rounded-md
-                   border border-slate-700
-                   bg-slate-950 px-3
-                   text-xs outline-none
+                   border border-slate-300 dark:border-slate-700
+                   bg-white dark:bg-slate-950 px-3
+                   text-xs text-slate-900 dark:text-slate-100
+                   outline-none
                    focus:border-cyan-500"
         >
 
@@ -2503,10 +2515,10 @@
                 type="button"
                 data-modal-close
                 class="rounded-md
-                       border border-slate-700
+                       border border-slate-300 dark:border-slate-700
                        px-3 py-1.5
-                       text-xs text-slate-400
-                       hover:bg-slate-800"
+                       text-xs text-slate-600 dark:text-slate-400
+                       hover:bg-slate-100 dark:hover:bg-slate-800"
             >
                 Cancel
             </button>
@@ -2516,11 +2528,11 @@
                 id="confirmRename"
                 type="button"
                 class="rounded-md
-                       bg-cyan-600
+                       bg-slate-900 dark:bg-cyan-600
                        px-3 py-1.5
                        text-xs font-medium
                        text-white
-                       hover:bg-cyan-500"
+                       hover:bg-slate-800 dark:hover:bg-cyan-500"
             >
                 Save
             </button>
@@ -2588,7 +2600,7 @@
 
         <h2
             class="mb-4 text-sm font-semibold
-                   text-white"
+                   text-slate-900 dark:text-white"
         >
             Collection — ${escapeHtml(folder.name)}
         </h2>
@@ -2602,14 +2614,15 @@
                     value="${escapeAttr(currentTags)}"
                     class="h-9 w-full
                            rounded-md
-                           border border-slate-700
-                           bg-slate-950 px-3
-                           text-xs outline-none
-                           focus:border-cyan-500"
+           border border-slate-300 dark:border-slate-700
+           bg-white dark:bg-slate-950 px-3
+           text-xs text-slate-900 dark:text-slate-100
+           outline-none
+           focus:border-cyan-500"
                 >
                 <p
                     class="mt-1 text-[10px]
-                           text-slate-600"
+                           text-slate-500 dark:text-slate-600"
                 >
                     Separate tags with commas.
                 </p>
@@ -2619,7 +2632,7 @@
                 <label class="mb-1 block text-xs text-slate-500">Annotation</label>
                 <textarea
                     id="collectionAnnotationInput"
-                    class="h-20 w-full rounded-md border border-slate-700 bg-slate-950 p-2 text-xs outline-none focus:border-cyan-500"
+                    class="h-20 w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 p-2 text-xs text-slate-900 dark:text-slate-100 outline-none focus:border-cyan-500"
                     placeholder="Optional notes..."
                 >${escapeHtml(currentAnnotation)}</textarea>
             </div>
@@ -2635,10 +2648,10 @@
                 type="button"
                 data-modal-close
                 class="rounded-md
-                       border border-slate-700
+                       border border-slate-300 dark:border-slate-700
                        px-3 py-1.5
-                       text-xs text-slate-400
-                       hover:bg-slate-800"
+                       text-xs text-slate-600 dark:text-slate-400
+                       hover:bg-slate-100 dark:hover:bg-slate-800"
             >
                 Cancel
             </button>
@@ -2752,7 +2765,7 @@
                    border border-slate-700
                    bg-slate-950 p-3
                    text-xs leading-5
-                   text-slate-300
+                   text-slate-800 dark:text-slate-300
                    outline-none
                    focus:border-cyan-500"
         >${escapeHtml(folder.annotation || "")}</textarea>
@@ -2866,16 +2879,16 @@
             class="my-4 max-h-48
                    overflow-y-auto
                    rounded-lg
-                   border border-slate-800"
+                   border border-slate-200 dark:border-slate-800"
         >
 
             ${folders
-              .map(
-                (folder) => `
+        .map(
+          (folder) => `
 
                             <div
                                 class="border-b
-                                       border-slate-800
+                                       border-slate-200 dark:border-slate-800
                                        px-3 py-2
                                        last:border-0"
                             >
@@ -2883,7 +2896,7 @@
                                 <p
                                     class="font-mono
                                            text-xs
-                                           text-slate-300"
+                                           text-slate-800 dark:text-slate-300"
                                 >
                                     ${escapeHtml(folder.name)}
                                 </p>
@@ -2893,19 +2906,18 @@
                                            text-[10px]
                                            text-slate-600"
                                 >
-                                    ${
-                                      Array.isArray(folder.endpoints)
-                                        ? folder.endpoints.length
-                                        : 0
-                                    }
+                                    ${Array.isArray(folder.endpoints)
+              ? folder.endpoints.length
+              : 0
+            }
                                     endpoints
                                 </p>
 
                             </div>
 
                         `,
-              )
-              .join("")}
+        )
+        .join("")}
 
         </div>
 
@@ -2977,7 +2989,7 @@
 
         <p
             class="text-xs leading-5
-                   text-slate-400"
+                 text-slate-800 dark:text-slate-300"
         >
             Import is not currently provided
             by the backend collection API.
@@ -2986,9 +2998,9 @@
 
         <div
             class="mt-4 rounded-lg
-                   border border-slate-800
-                   bg-slate-950/60 p-3
-                   text-xs text-slate-400"
+                  border border-slate-200 dark:border-slate-800
+bg-slate-100 dark:bg-slate-950/60 p-3
+                   text-xs  text-slate-800 dark:text-slate-300"
         >
             ${state.folders.length}
             collections are currently loaded
@@ -3000,17 +3012,19 @@
             class="mt-4 flex justify-end"
         >
 
-            <button
-                type="button"
-                data-modal-close
-                class="rounded-md
-                       border border-slate-700
-                       px-3 py-1.5
-                       text-xs text-slate-400
-                       hover:bg-slate-800"
-            >
-                Close
-            </button>
+           <button
+    type="button"
+    data-modal-close
+    class="rounded-md
+           border border-slate-300 dark:border-slate-700
+           px-3 py-1.5
+           text-xs
+           text-slate-800 dark:text-slate-300
+           hover:bg-slate-100 dark:hover:bg-slate-800
+           hover:border-slate-400 dark:hover:border-slate-600"
+>
+    Close
+</button>
 
         </div>
 
@@ -3036,7 +3050,7 @@
 
         <p
             class="text-xs leading-5
-                   text-slate-400"
+                   text-slate-800 dark:text-slate-300"
         >
             Export is not currently provided
             by the backend collection API.
@@ -3045,29 +3059,28 @@
 
         <div
             class="my-4 rounded-lg
-                   border border-slate-800
-                   bg-slate-950/60 p-3"
+                   border border-slate-200 dark:border-slate-800
+bg-slate-100 dark:bg-slate-950/60 p-3"
         >
 
-            ${
-              targets.length
-                ? targets
-                    .map(
-                      (folder) => `
+            ${targets.length
+        ? targets
+          .map(
+            (folder) => `
 
                                 <div
                                     class="flex
                                            items-center
                                            justify-between
                                            border-b
-                                           border-slate-800
+                                           border-slate-200 dark:border-slate-800
                                            py-2 last:border-0"
                                 >
 
                                     <span
                                         class="truncate
                                                text-xs
-                                               text-slate-300"
+                                              text-slate-800 dark:text-slate-300"
                                     >
                                         ${escapeHtml(folder.name)}
                                     </span>
@@ -3078,20 +3091,19 @@
                                                text-[10px]
                                                text-slate-600"
                                     >
-                                        ${
-                                          Array.isArray(folder.endpoints)
-                                            ? folder.endpoints.length
-                                            : 0
-                                        }
+                                        ${Array.isArray(folder.endpoints)
+                ? folder.endpoints.length
+                : 0
+              }
                                         endpoints
                                     </span>
 
                                 </div>
 
                             `,
-                    )
-                    .join("")
-                : `
+          )
+          .join("")
+        : `
                         <span
                             class="text-xs
                                    text-slate-600"
@@ -3099,7 +3111,7 @@
                             Select a collection first.
                         </span>
                       `
-            }
+      }
 
         </div>
 
@@ -3108,17 +3120,19 @@
             class="flex justify-end"
         >
 
-            <button
-                type="button"
-                data-modal-close
-                class="rounded-md
-                       border border-slate-700
-                       px-3 py-1.5
-                       text-xs text-slate-400
-                       hover:bg-slate-800"
-            >
-                Close
-            </button>
+           <button
+    type="button"
+    data-modal-close
+    class="rounded-md
+           border border-slate-300 dark:border-slate-700
+           px-3 py-1.5
+           text-xs
+           text-slate-800 dark:text-slate-300
+           hover:bg-slate-100 dark:hover:bg-slate-800
+           hover:border-slate-400 dark:hover:border-slate-600"
+>
+    Close
+</button>
 
         </div>
 

@@ -1,4 +1,3 @@
-
 import { Editor } from 'https://esm.sh/@tiptap/core@2.11.5';
 import StarterKit from 'https://esm.sh/@tiptap/starter-kit@2.11.5';
 import Link from 'https://esm.sh/@tiptap/extension-link@2.11.5';
@@ -85,7 +84,7 @@ function editorMarkup(web) {
     <section class="edit-frontpage-modal" aria-label="Edit WebView front page">
       <header class="flex items-center justify-between gap-3 mb-4">
         <div>
-          <h2 class="text-sm font-semibold text-white">Edit WebView Front Page</h2>
+          <h2 class="text-sm font-semibold text-slate-800 dark:text-white">Edit WebView Front Page</h2>
           <p class="mt-1 text-[11px] text-slate-500">${escapeHtml(web.name || web.title || 'WebView')}</p>
         </div>
         <span id="frontPageSaveStatus" class="text-[11px] text-slate-500" role="status">Loading content…</span>
@@ -112,8 +111,8 @@ function editorMarkup(web) {
       <div id="frontPageRte" class="frontpage-rte-surface" aria-label="Front-page rich text editor"></div>
 
       <footer class="flex items-center justify-end gap-2 mt-4">
-        <button type="button" data-modal-close class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">Cancel</button>
-        <button id="saveFrontPageContent" type="button" class="rounded-md bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-cyan-500">Save content</button>
+        <button type="button" data-modal-close class="rounded-md border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-xs text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
+        <button id="saveFrontPageContent" type="button" class="rounded-md bg-slate-900 dark:bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800 dark:hover:bg-cyan-500">Save content</button>
       </footer>
     </section>
   `;
@@ -123,7 +122,8 @@ function setStatus(message, isError = false) {
   const status = document.getElementById('frontPageSaveStatus');
   if (!status) return;
   status.textContent = message;
-  status.classList.toggle('text-red-400', isError);
+  status.classList.toggle('text-red-600', isError);
+  status.classList.toggle('dark:text-red-400', isError);
   status.classList.toggle('text-slate-500', !isError);
 }
 

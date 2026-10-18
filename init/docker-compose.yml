@@ -6,8 +6,7 @@
 # whatever you set it to gets auto-created the same way. The backend and
 # the seed container both use it (the seed drops the demo bundle into the
 # storage folder's imports area, so it must see the same folder).
-x-edms-storage: &edms-storage "../../edms-data:/app/edms_root"
-
+x-edms-storage: &edms-storage "../../edms-data:/app/edms_root:Z"
 services:
   webserver:
     build:
@@ -22,7 +21,7 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ../backend/webserver/data:/app/data
+      - ../backend/webserver/data:/app/data:Z
       - webserver-data:/app/edms_data
       # The storage folder - set once, at the top of this file.
       - *edms-storage
@@ -40,7 +39,7 @@ services:
     image: hashedtokens-edms-frontend:v1.0
     container_name: hashedtokens-edms-frontend
     ports:
-      - "3911:80"  # per the folder-schema doc — open localhost:3911 for the UI
+      - "3911:80" # per the folder-schema doc — open localhost:3911 for the UI
     depends_on:
       - webserver
     networks:
