@@ -14,7 +14,7 @@ use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
-use crate::table_view::{check_item_format, takeout_item, ViewPurpose};
+use crate::table_view::{check_item_format, format_size, takeout_item, ViewPurpose};
 use std::io::Read;
 
 /// `E0001-AAA-request-1.json` -> `E0042-AAA-request-1.json` when the file
@@ -100,6 +100,95 @@ pub struct ViewTakeoutRequest {
     /// EQP folder can't).
     pub manifest: Value,
     pub manifest_file: String,
+    /// Write `Tables-meta.md` (with the takeout facts) even when the view has
+    /// no Tables yet. A RepoView has Tables; a WebView doesn't.
+    #[serde(default)]
+    pub create_meta_if_missing: bool,
+}
+
+/// Name of the section `run_takeout` adds to `Tables-meta.md`.
+const TAKEOUT_HEADING: &str = "## Takeout";
+/// Who a takeout says made it (Ravi, 2026-10-18).
+const TAKEOUT_AUTHOR: &str = "hashedtokens-edms";
+const TAKEOUT_VERSION: &str = "1.0";
+
+/// The pretty-printed (2-space indent, trailing newline) form of a JSON text,
+/// or `None` if it isn't valid JSON.
+pub fn pretty_json(text: &str) -> Option<String> {
+    let value: Value = serde_json::from_str(text).ok()?;
+    let mut out = serde_json::to_string_pretty(&value).ok()?;
+    out.push('\n');
+    Some(out)
+}
+
+/// Re-formats every `.json` file under `dir` so a person can read it (a
+/// takeout is meant to be opened, shared and diffed). A file that isn't valid
+/// JSON is left exactly as it is, and one that is already pretty isn't
+/// rewritten. Returns how many files changed.
+pub fn pretty_print_json_tree(dir: &Path) -> std::io::Result<usize> {
+    let mut changed = 0;
+    for entry in walkdir::WalkDir::new(dir).into_iter().filter_map(|e| e.ok()) {
+        if !entry.file_type().is_file() {
+            continue;
+        }
+        let path = entry.path();
+        let is_json = path.extension().map_or(false, |e| e.eq_ignore_ascii_case("json"));
+        if !is_json {
+            continue;
+        }
+        let Ok(text) = std::fs::read_to_string(path) else { continue };
+        if let Some(pretty) = pretty_json(&text) {
+            if pretty != text {
+                std::fs::write(path, pretty)?;
+                changed += 1;
+            }
+        }
+    }
+    Ok(changed)
+}
+
+/// Adds the takeout's own facts to `Tables-meta.md`: when it was made, by
+/// what, the format version, how big it is, how many EQP files and Tables it
+/// holds. Any earlier takeout section is replaced. Returns whether a meta file
+/// was written (a view with no Tables has none unless `create_if_missing`).
+pub fn write_takeout_meta(dest: &Path, create_if_missing: bool, eqp_files: usize) -> std::io::Result<bool> {
+    let meta_path = dest.join("Tables-meta.md");
+    let mut meta = match std::fs::read_to_string(&meta_path) {
+        Ok(text) => text,
+        Err(_) if create_if_missing => "# Tables-meta\n\n".to_string(),
+        Err(_) => return Ok(false),
+    };
+    if let Some(at) = meta.find(&format!("\n{TAKEOUT_HEADING}")) {
+        meta.truncate(at);
+    }
+    let mut tables = 0usize;
+    let mut bytes = 0u64;
+    for entry in walkdir::WalkDir::new(dest).into_iter().filter_map(|e| e.ok()) {
+        if !entry.file_type().is_file() {
+            continue;
+        }
+        let name = entry.file_name().to_string_lossy();
+        if name == "Tables-meta.md" {
+            continue;
+        }
+        if name.starts_with("Tables-") && name.ends_with(".md") {
+            tables += 1;
+        }
+        bytes += entry.metadata().map(|m| m.len()).unwrap_or(0);
+    }
+    while meta.ends_with("\n\n") {
+        meta.pop();
+    }
+    if !meta.ends_with('\n') {
+        meta.push('\n');
+    }
+    meta.push_str(&format!(
+        "\n{TAKEOUT_HEADING}\n\n- created: {}\n- author: {TAKEOUT_AUTHOR}\n- version: {TAKEOUT_VERSION}\n- size: {}\n- EQP file count: {eqp_files}\n- Tables: {tables}\n",
+        chrono::Utc::now().format("%Y-%m-%d %H:%M:%S"),
+        format_size(bytes),
+    ));
+    std::fs::write(&meta_path, meta)?;
+    Ok(true)
 }
 
 /// Copies the view folder (index stripped) and each endpoint's EQP data into
@@ -150,6 +239,13 @@ pub fn run_takeout(req: &ViewTakeoutRequest, progress: &mut dyn FnMut(Value)) ->
     let manifest_text = serde_json::to_string_pretty(&req.manifest).map_err(|e| e.to_string())?;
     std::fs::write(dest.join(&req.manifest_file), manifest_text).map_err(|e| e.to_string())?;
 
+    // Readable JSON everywhere (the EQP files are stored minified), then the
+    // takeout's own facts - they need the final sizes and counts.
+    progress(progress_json("formatting JSON", total, total));
+    let pretty = pretty_print_json_tree(&dest).map_err(|e| format!("couldn't format the JSON files: {e}"))?;
+    let meta_written = write_takeout_meta(&dest, req.create_meta_if_missing, files)
+        .map_err(|e| format!("couldn't write Tables-meta.md: {e}"))?;
+
     Ok(json!({
         "ok": missing.is_empty(),
         "destination": result.destination,
@@ -158,6 +254,8 @@ pub fn run_takeout(req: &ViewTakeoutRequest, progress: &mut dyn FnMut(Value)) ->
         "eqp_files_copied": files,
         "index_files_stripped": result.sqlite_files_stripped,
         "missing_eqp_data": missing,
+        "json_files_formatted": pretty,
+        "tables_meta_written": meta_written,
         "manifest": req.manifest_file
     }))
 }
@@ -473,6 +571,7 @@ mod tests {
             ],
             manifest: json!({ "format": "edms-repoview" }),
             manifest_file: "repoview-manifest.json".into(),
+            create_meta_if_missing: false,
         }
     }
 
@@ -505,6 +604,12 @@ mod tests {
         assert_eq!(out["eqp_files_copied"], 2);
         assert_eq!(out["index_files_stripped"], 1);
         assert_eq!(out["endpoints"], 3);
+        // every JSON file in the takeout is readable now (the fixture's are one line)
+        let req_file = std::fs::read_to_string(dest.join("globalEQPData/E0001-AAA/E0001-AAA-request-1.json")).unwrap();
+        assert!(req_file.ends_with('\n'), "pretty files end with a newline");
+        assert!(out["json_files_formatted"].as_u64().unwrap() >= 1);
+        // Tables-meta.md: the fixture had no Tables, so no meta unless asked
+        assert_eq!(out["tables_meta_written"], false);
 
         let last = reports.last().expect("progress was reported");
         assert_eq!(last["done"], 3);
@@ -584,6 +689,94 @@ mod tests {
         assert!(out["items"][2]["error"].is_null(), "a bad item must not stop the good ones");
         assert!(root.join("eqp/E0044-AAA/E0044-AAA-request-1.json").is_file());
         assert!(!root.join("eqp/E0042-AAA").exists());
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    // ── pretty printing and the takeout section of Tables-meta.md ──
+
+    #[test]
+    fn json_is_pretty_printed_with_two_space_indent_and_a_final_newline() {
+        let out = pretty_json(r#"{"a":1,"b":[1,2],"c":{"d":null}}"#).unwrap();
+        assert!(out.contains("\n  \"a\": 1,"), "{out}");
+        assert!(out.contains("\n    \"d\": null"), "{out}");
+        assert!(out.ends_with("}\n"));
+        // reading it back gives the same data
+        let a: Value = serde_json::from_str(&out).unwrap();
+        let b: Value = serde_json::from_str(r#"{"a":1,"b":[1,2],"c":{"d":null}}"#).unwrap();
+        assert_eq!(a, b);
+        // already pretty: nothing to do
+        assert_eq!(pretty_json(&out).unwrap(), out);
+        // not JSON: no answer
+        assert!(pretty_json("not json {").is_none());
+        assert!(pretty_json("").is_none());
+    }
+
+    #[test]
+    fn only_valid_json_files_are_reformatted_and_only_once() {
+        let root = temp_dir("pretty");
+        std::fs::create_dir_all(root.join("a/b")).unwrap();
+        std::fs::write(root.join("a/one.json"), r#"{"x":1}"#).unwrap();
+        std::fs::write(root.join("a/b/two.JSON"), r#"[1,2,3]"#).unwrap();
+        std::fs::write(root.join("a/broken.json"), "{ not valid").unwrap();
+        std::fs::write(root.join("a/notes.txt"), r#"{"x":1}"#).unwrap();
+        std::fs::write(root.join("a/table.md"), "| a |").unwrap();
+
+        assert_eq!(pretty_print_json_tree(&root).unwrap(), 2);
+        assert!(std::fs::read_to_string(root.join("a/one.json")).unwrap().contains("\n  \"x\": 1"));
+        assert!(std::fs::read_to_string(root.join("a/b/two.JSON")).unwrap().contains("\n  1,"));
+        // anything else is left byte for byte
+        assert_eq!(std::fs::read_to_string(root.join("a/broken.json")).unwrap(), "{ not valid");
+        assert_eq!(std::fs::read_to_string(root.join("a/notes.txt")).unwrap(), r#"{"x":1}"#);
+        assert_eq!(std::fs::read_to_string(root.join("a/table.md")).unwrap(), "| a |");
+        // a second pass has nothing left to do
+        assert_eq!(pretty_print_json_tree(&root).unwrap(), 0);
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn the_takeout_facts_are_added_to_the_meta_file_and_replace_an_earlier_set() {
+        let root = temp_dir("meta");
+        std::fs::write(
+            root.join("Tables-meta.md"),
+            "# Tables-meta\n\nApproach: Endpoint Segments\n\n| File | First Segment | Last Segment | Count |\n|---|---|---|---|\n| Tables-001.md | /a | /b | 2 |\n",
+        )
+        .unwrap();
+        std::fs::write(root.join("Tables-001.md"), "| EID |").unwrap();
+        std::fs::write(root.join("Tables-002.md"), "| EID |").unwrap();
+        std::fs::write(root.join("front-page.json"), "{}").unwrap();
+
+        assert!(write_takeout_meta(&root, false, 11).unwrap());
+        let meta = std::fs::read_to_string(root.join("Tables-meta.md")).unwrap();
+        // the original content is untouched, so the approach is still readable
+        assert!(meta.contains("Approach: Endpoint Segments"));
+        assert!(meta.contains("| Tables-001.md | /a | /b | 2 |"));
+        assert!(meta.contains("\n## Takeout\n"), "{meta}");
+        assert!(meta.contains("- author: hashedtokens-edms"));
+        assert!(meta.contains("- version: 1.0"));
+        assert!(meta.contains("- EQP file count: 11"));
+        assert!(meta.contains("- Tables: 2"), "two Tables files, not counting the meta: {meta}");
+        assert!(meta.contains("- size: "));
+        let created = meta.lines().find(|l| l.starts_with("- created: ")).unwrap();
+        assert_eq!(created.len(), "- created: 2026-10-17 06:42:08".len(), "{created}");
+
+        // writing it again replaces the section instead of stacking another
+        write_takeout_meta(&root, false, 12).unwrap();
+        let again = std::fs::read_to_string(root.join("Tables-meta.md")).unwrap();
+        assert_eq!(again.matches("## Takeout").count(), 1);
+        assert!(again.contains("- EQP file count: 12") && !again.contains("- EQP file count: 11"));
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn a_view_without_tables_only_gets_a_meta_file_when_asked_to() {
+        let root = temp_dir("meta-missing");
+        assert!(!write_takeout_meta(&root, false, 3).unwrap());
+        assert!(!root.join("Tables-meta.md").exists());
+
+        assert!(write_takeout_meta(&root, true, 3).unwrap());
+        let meta = std::fs::read_to_string(root.join("Tables-meta.md")).unwrap();
+        assert!(meta.starts_with("# Tables-meta"));
+        assert!(meta.contains("- EQP file count: 3") && meta.contains("- Tables: 0"));
         std::fs::remove_dir_all(root).unwrap();
     }
 
