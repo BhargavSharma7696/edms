@@ -1553,7 +1553,7 @@
     const count = state.selected.size;
 
     let menuHtml = `
-              <div class="px-3 py-2 text-[10px] font-semibold tracking-wide text-slate-500 uppercase border-slate-200 dark:border-slate-800">
+              <div class="px-3 py-2 text-[10px] font-semibold tracking-wide text-slate-700 dark:text-slate-300 uppercase border-slate-200 dark:border-slate-900">
                   ${count > 1 ? `${count} Endpoints Selected` : "Endpoint Options"}
               </div>
               
@@ -1564,7 +1564,7 @@
       menuHtml += `
                   <button type="button" id="ctxEditTags" class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
                       <svg class="h-3.5 w-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                          <path d="M20.5 13.5 13.5 20.5 a2 2 0 0 1-2.8 0L4 13.8V4h9.8l6.7 6.7 a2 2 0 0 1 0 2.8Z" />
+                            <path d="M20.5 13.5 13.5 20.5 a2 2 0 0 1-2.8 0L4 13.8V4h9.8l6.7 6.7 a2 2 0 0 1 0 2.8Z" />
                           <circle cx="8.5" cy="8.5" r="1" />
                       </svg>
                       Modify

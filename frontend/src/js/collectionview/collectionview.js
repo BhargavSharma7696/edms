@@ -961,17 +961,19 @@
 
                 <button
                     type="button"
-                    class="folder-tag
-                           inline-flex
-                           rounded
-                           bg-slate-200 dark:bg-slate-800
-                           px-1.5 py-0.5
-                           text-[10px]
-                           text-sky-600 dark:text-sky-300
-
-                           transition
-                           hover:bg-sky-500/20
-                           hover:text-sky-200"
+                   class="folder-tag
+       inline-flex
+       rounded
+       border border-transparent
+       bg-slate-200 dark:bg-slate-800
+       px-1.5 py-0.5
+       text-[10px]
+       text-sky-600 dark:text-sky-300
+       transition
+       hover:border-blue-500 dark:hover:border-blue-400
+       hover:bg-sky-100 dark:hover:bg-sky-500/20
+       hover:text-blue-700 dark:hover:text-sky-200
+       hover:ring-1 hover:ring-blue-400/50"
                     data-tag="${escapeAttr(tag)}"
                 >
                     ${escapeHtml(tag)}
@@ -2219,7 +2221,7 @@
 
         <h2
             class="mb-4 text-sm font-semibold
-                   text-white"
+                   text-slate-900 dark:text-white"
         >
             Rename Collection
         </h2>
@@ -2230,9 +2232,10 @@
             value="${escapeAttr(folder.name)}"
             class="mb-4 h-9 w-full
                    rounded-md
-                   border border-slate-700
-                   bg-slate-950 px-3
-                   text-xs outline-none
+                   border border-slate-300 dark:border-slate-700
+                   bg-white dark:bg-slate-950 px-3
+                   text-xs text-slate-900 dark:text-slate-100
+                   outline-none
                    focus:border-cyan-500"
         >
 
@@ -2246,10 +2249,10 @@
                 type="button"
                 data-modal-close
                 class="rounded-md
-                       border border-slate-700
+                       border border-slate-300 dark:border-slate-700
                        px-3 py-1.5
-                       text-xs text-slate-400
-                       hover:bg-slate-800"
+                       text-xs text-slate-600 dark:text-slate-400
+                       hover:bg-slate-100 dark:hover:bg-slate-800"
             >
                 Cancel
             </button>
@@ -2259,11 +2262,11 @@
                 id="confirmRename"
                 type="button"
                 class="rounded-md
-                       bg-cyan-600
+                       bg-slate-900 dark:bg-cyan-600
                        px-3 py-1.5
                        text-xs font-medium
                        text-white
-                       hover:bg-cyan-500"
+                       hover:bg-slate-800 dark:hover:bg-cyan-500"
             >
                 Save
             </button>
@@ -2331,7 +2334,7 @@
 
         <h2
             class="mb-4 text-sm font-semibold
-                   text-white"
+                   text-slate-900 dark:text-white"
         >
             Collection — ${escapeHtml(folder.name)}
         </h2>
@@ -2345,14 +2348,15 @@
                     value="${escapeAttr(currentTags)}"
                     class="h-9 w-full
                            rounded-md
-                           border border-slate-700
-                           bg-slate-950 px-3
-                           text-xs outline-none
-                           focus:border-cyan-500"
+           border border-slate-300 dark:border-slate-700
+           bg-white dark:bg-slate-950 px-3
+           text-xs text-slate-900 dark:text-slate-100
+           outline-none
+           focus:border-cyan-500"
                 >
                 <p
                     class="mt-1 text-[10px]
-                           text-slate-600"
+                           text-slate-500 dark:text-slate-600"
                 >
                     Separate tags with commas.
                 </p>
@@ -2362,7 +2366,7 @@
                 <label class="mb-1 block text-xs text-slate-500">Annotation</label>
                 <textarea
                     id="collectionAnnotationInput"
-                    class="h-20 w-full rounded-md border border-slate-700 bg-slate-950 p-2 text-xs outline-none focus:border-cyan-500"
+                    class="h-20 w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 p-2 text-xs text-slate-900 dark:text-slate-100 outline-none focus:border-cyan-500"
                     placeholder="Optional notes..."
                 >${escapeHtml(currentAnnotation)}</textarea>
             </div>
@@ -2378,10 +2382,10 @@
                 type="button"
                 data-modal-close
                 class="rounded-md
-                       border border-slate-700
+                       border border-slate-300 dark:border-slate-700
                        px-3 py-1.5
-                       text-xs text-slate-400
-                       hover:bg-slate-800"
+                       text-xs text-slate-600 dark:text-slate-400
+                       hover:bg-slate-100 dark:hover:bg-slate-800"
             >
                 Cancel
             </button>

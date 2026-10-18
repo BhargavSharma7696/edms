@@ -265,10 +265,6 @@ async function initCollectionContext() {
             'collectionContextCount'
         );
 
-    const clearBtn =
-        document.getElementById(
-            'clearCollectionFilter'
-        );
 
     if (nameEl) {
         nameEl.textContent =
@@ -290,24 +286,6 @@ async function initCollectionContext() {
         banner.classList.add('flex');
     }
 
-    if (clearBtn) {
-        clearBtn.addEventListener(
-            'click',
-            () => {
-
-                activeCollectionFilter = null;
-                activeCollectionEndpointIds = null;
-
-                if (banner) {
-                    banner.classList.add('hidden');
-                    banner.classList.remove('flex');
-                }
-
-                applyTestFilters();
-
-            }
-        );
-    }
 
     /*
      * Re-apply filters now that the collection
@@ -1343,7 +1321,7 @@ function getActiveSidebarItems() {
                         history.endpointId,
 
                     qpId:
-                        history.qpId,
+                        history.qpId ?? history.requestNumber,
 
                     method:
                         history.method ||
@@ -1684,14 +1662,9 @@ function createTestEndpointCard(item) {
                    text-slate-500">
 
             <span></span>
-
-            <span>
-                ${isHistory
-            ? (item.qpId !== undefined && item.qpId !== null
-                ? `QP ${escapeHTML(String(item.qpId))}`
-                : "")
-            : getQPCountLabel(endpoint)}
-            </span>
+<span>
+    ${getQPCountLabel(endpoint)}
+</span>
 
         </div>
     `;
@@ -2705,13 +2678,13 @@ function renderTestQP(
             button.className = `
                 qp-btn
                 w-full
-                min-h-10
+                min-h-8
                 rounded-md
                 border
                 border-slate-300 dark:border-slate-700
                 bg-slate-200 dark:bg-slate-800
                 px-1
-                py-2
+                py-1
                 text-xs
                 text-slate-700 dark:text-slate-300
                 hover:bg-cyan-500
@@ -3800,6 +3773,8 @@ function setupRunner() {
     const saveMenu = document.getElementById("saveMenu");
     const btnUpdateQP = document.getElementById("btnUpdateQP");
     const btnCreateQP = document.getElementById("btnCreateQP");
+    const btnSaveCurrentCollection = document.getElementById("btnSaveCurrentCollection");
+    const btnSaveCurrentCollectionSep = document.getElementById("btnSaveCurrentCollectionSep");
     const btnAddToCollection = document.getElementById("btnAddToCollection");
     const addToCollectionModal = document.getElementById("addToCollectionModal");
     const closeAddToCollectionModal = document.getElementById("closeAddToCollectionModal");
@@ -3821,8 +3796,28 @@ function setupRunner() {
                 } else {
                     btnUpdateQP.style.display = "none";
                 }
+
+                // Show "Save to Current Collection" only when inside a collection context
+                if (activeCollectionFilter) {
+                    if (btnSaveCurrentCollection) {
+                        btnSaveCurrentCollection.classList.remove("hidden");
+                        btnSaveCurrentCollection.classList.add("flex");
+                    }
+                    if (btnSaveCurrentCollectionSep) {
+                        btnSaveCurrentCollectionSep.classList.remove("hidden");
+                    }
+                } else {
+                    if (btnSaveCurrentCollection) {
+                        btnSaveCurrentCollection.classList.add("hidden");
+                        btnSaveCurrentCollection.classList.remove("flex");
+                    }
+                    if (btnSaveCurrentCollectionSep) {
+                        btnSaveCurrentCollectionSep.classList.add("hidden");
+                    }
+                }
             }
         });
+
 
         document.addEventListener("click", event => {
             if (!saveDropdownContainer.contains(event.target)) {
@@ -3914,6 +3909,38 @@ function setupRunner() {
                 console.error("Error creating QP:", e);
             }
         });
+        if (btnSaveCurrentCollection) {
+            btnSaveCurrentCollection.addEventListener("click", async event => {
+                event.preventDefault();
+                event.stopPropagation();
+                saveMenu.classList.add("hidden");
+
+                const endpoint = selectedTestEndpoint;
+                if (!endpoint) {
+                    window.alert("No endpoint selected.");
+                    return;
+                }
+                if (!activeCollectionFilter) {
+                    window.alert("No active collection context.");
+                    return;
+                }
+
+                try {
+                    await window.EdmsAPI.addActiveBookmark(activeCollectionFilter, endpoint.id);
+                    try {
+                        await window.EdmsAPI.saveActiveBookmark(activeCollectionFilter, endpoint.id);
+                    } catch (e) {
+                        console.warn("REST saveActiveBookmark returned an error, but WS may have succeeded", e);
+                    }
+                    console.log(`Saved endpoint ${endpoint.id} to current collection '${activeCollectionFilter}'`);
+                    await loadBookmarksFromBackend();
+                    applyTestFilters();
+                } catch (e) {
+                    console.error("Error saving to current collection:", e);
+                    window.alert("Failed to save to current collection: " + e.message);
+                }
+            });
+        }
 
         if (btnAddToCollection) {
             btnAddToCollection.addEventListener("click", async event => {
@@ -6071,7 +6098,6 @@ function updateContentTabButtons(
 // ============================================================
 // PANEL CONTROLS
 // ============================================================
-
 function setupPanelControls() {
 
     setupPanelControlSet(
@@ -6085,6 +6111,9 @@ function setupPanelControls() {
         responseBox,
         requestBox
     );
+
+    addPanelExtras("request", requestBox, requestContent);
+    addPanelExtras("response", responseBox, responseContent);
 
 }
 
@@ -6194,57 +6223,77 @@ function collapsePanel(panel) {
 }
 
 // ============================================================
-// FULLSCREEN
+// FULLSCREEN  (Request + Response maximize / minimize together)
 // ============================================================
 
-function togglePanelFullscreen(
-    panel,
-    siblingPanel
-) {
+let panelsMaximized = false;
 
-    const isFullscreen =
-        panel.dataset.fullscreen ===
-        "true";
+const MAX_WRAPPER_CLASSES = [
+    "bg-slate-100",
+    "dark:bg-[#06111F]",
+    "border",
+    "border-slate-300",
+    "dark:border-slate-700/40",
+    "shadow-2xl"
+];
 
-    resetPanels();
+function applyPanelsMaximized(maximized) {
 
-    if (isFullscreen) return;
+    panelsMaximized = maximized;
 
-    panel.dataset.fullscreen =
-        "true";
+    const wrapper = requestBox?.parentElement;
 
-    panel.style.position =
-        "fixed";
+    if (!wrapper) return;
 
-    panel.style.inset =
-        "16px";
+    if (maximized) {
 
-    panel.style.zIndex =
-        "50";
+        wrapper.style.position = "fixed";
+        wrapper.style.inset = "40px";
+        wrapper.style.zIndex = "50";
+        wrapper.style.padding = "16px";
+        wrapper.style.borderRadius = "12px";
+        wrapper.style.overflow = "auto";
+        // dimmed backdrop behind the maximized panels
+        wrapper.style.boxShadow = "0 0 0 100vmax rgba(2, 6, 23, 0.6)";
 
-    panel.style.height =
-        "auto";
+        wrapper.classList.add(...MAX_WRAPPER_CLASSES);
 
-    panel.style.maxHeight =
-        "calc(100vh - 32px)";
+    } else {
 
-    panel.style.display =
-        "flex";
+        wrapper.removeAttribute("style");
 
-    if (siblingPanel) {
-
-        siblingPanel.style.display =
-            "none";
+        wrapper.classList.remove(...MAX_WRAPPER_CLASSES);
 
     }
 
+    [requestBox, responseBox].forEach(panel => {
+        if (panel) {
+            panel.dataset.fullscreen = String(maximized);
+        }
+    });
+
 }
+
+function togglePanelFullscreen() {
+
+    // The maximize button on EITHER panel toggles BOTH panels
+    applyPanelsMaximized(!panelsMaximized);
+
+}
+
+document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && panelsMaximized) {
+        applyPanelsMaximized(false);
+    }
+});
 
 // ============================================================
 // RESET PANELS
 // ============================================================
 
 function resetPanels() {
+
+    applyPanelsMaximized(false);
 
     [
         requestBox,
@@ -6254,15 +6303,8 @@ function resetPanels() {
 
             if (!panel) return;
 
-            panel.dataset.fullscreen =
-                "false";
-
             panel.dataset.closed =
                 "false";
-
-            panel.removeAttribute(
-                "style"
-            );
 
             Array.from(
                 panel.children
@@ -6279,6 +6321,170 @@ function resetPanels() {
     );
 
 }
+
+// ============================================================
+// COPY BUTTON + SIZE LABEL (added to both panels)
+// ============================================================
+
+function formatByteSize(text) {
+
+    const bytes = new Blob([String(text ?? "")]).size;
+
+    if (bytes < 1024) return `${bytes} B`;
+
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+
+    return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+
+}
+
+// Runs onChange for typing AND for code that sets textarea.value
+function watchTextareaValue(textarea, onChange) {
+
+    const descriptor =
+        Object.getOwnPropertyDescriptor(
+            HTMLTextAreaElement.prototype,
+            "value"
+        );
+
+    Object.defineProperty(textarea, "value", {
+
+        get() {
+            return descriptor.get.call(this);
+        },
+
+        set(newValue) {
+            descriptor.set.call(this, newValue);
+            onChange();
+        },
+
+        configurable: true
+
+    });
+
+    textarea.addEventListener("input", onChange);
+
+}
+
+async function copyTextToClipboard(text) {
+
+    try {
+
+        await navigator.clipboard.writeText(text);
+
+    } catch {
+
+        // fallback for non-secure contexts
+        const temp = document.createElement("textarea");
+        temp.value = text;
+        temp.style.position = "fixed";
+        temp.style.opacity = "0";
+        document.body.appendChild(temp);
+        temp.select();
+        document.execCommand("copy");
+        temp.remove();
+
+    }
+
+}
+
+const COPY_ICON = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round" class="w-4 h-4">
+        <rect x="9" y="9" width="11" height="11" rx="2"></rect>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+    </svg>`;
+
+const CHECK_ICON = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round" class="w-4 h-4">
+        <polyline points="20 6 9 17 4 12"></polyline>
+    </svg>`;
+
+function addPanelExtras(panelName, panel, textarea) {
+
+    if (!panel || !textarea) return;
+
+    // ---- Find panel header ----
+    const fullscreenButton =
+        document.getElementById(`${panelName}Fullscreen`);
+
+    const header = fullscreenButton?.parentElement;
+
+    // ---- Copy button (before fullscreen button) ----
+    if (
+        fullscreenButton &&
+        !document.getElementById(`${panelName}Copy`)
+    ) {
+        const copyButton = document.createElement("button");
+
+        copyButton.id = `${panelName}Copy`;
+        copyButton.type = "button";
+        copyButton.title = "Copy";
+        copyButton.innerHTML = COPY_ICON;
+
+        copyButton.className = `
+            rounded-md p-1.5
+            text-slate-500 dark:text-slate-400
+            transition hover:bg-slate-200
+            dark:hover:bg-slate-700
+            hover:text-cyan-600 dark:hover:text-cyan-400
+        `;
+
+        copyButton.addEventListener("click", async event => {
+            event.preventDefault();
+
+            await copyTextToClipboard(textarea.value);
+
+            copyButton.innerHTML = CHECK_ICON;
+            copyButton.title = "Copied";
+
+            setTimeout(() => {
+                copyButton.innerHTML = COPY_ICON;
+                copyButton.title = "Copy";
+            }, 1200);
+        });
+
+        fullscreenButton.parentElement.insertBefore(
+            copyButton,
+            fullscreenButton
+        );
+    }
+
+    // ---- Size label (top-right of the panel header) ----
+    if (
+        header &&
+        !document.getElementById(`${panelName}Size`)
+    ) {
+        const sizeLabel = document.createElement("span");
+
+        sizeLabel.id = `${panelName}Size`;
+
+        sizeLabel.className = `
+            text-[10px]
+            text-slate-500 dark:text-slate-400
+            whitespace-nowrap
+            mr-2
+        `;
+
+        const update = () => {
+            sizeLabel.textContent =
+                formatByteSize(textarea.value);
+        };
+
+        // Insert the size label before the copy button.
+        const copyButton =
+            document.getElementById(`${panelName}Copy`);
+
+        header.insertBefore(sizeLabel, copyButton || fullscreenButton);
+
+        watchTextareaValue(textarea, update);
+        update();
+    }
+}
+
 
 // ============================================================
 // SIDEBAR TABS
