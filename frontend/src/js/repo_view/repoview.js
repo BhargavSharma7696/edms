@@ -1147,8 +1147,78 @@
 
 
     // ============================================================
+    // TAG INPUT HELPER
+    // ============================================================
+
+    function setupTagInput({ listElId, inputElId, addBtnElId, initialTags = [] }) {
+        const listEl = document.getElementById(listElId);
+        const inputEl = document.getElementById(inputElId);
+        const addBtnEl = document.getElementById(addBtnElId);
+        const tags = [...new Set((initialTags || []).map(t => String(t).trim()).filter(Boolean))];
+
+        function render() {
+            if (!listEl) return;
+            listEl.innerHTML = tags.map((tag, index) => `
+<span class="inline-flex items-center gap-1.5 rounded-md
+             border border-cyan-700/40 dark:border-cyan-500/30
+             bg-cyan-200 dark:bg-cyan-500/10
+             px-2 py-0.5 text-xs
+             text-cyan-900 dark:text-cyan-300">
+                                 <span>${escapeHtml(tag)}</span>
+                    <button type="button" data-remove-tag-index="${index}" class="ml-0.5 rounded px-1 leading-none
+       text-cyan-800 dark:text-cyan-400
+       hover:bg-cyan-300 dark:hover:bg-cyan-500/30
+       hover:text-cyan-950 dark:hover:text-white
+       transition cursor-pointer""Remove ${escapeAttr(tag)}">&times;</button>
+                </span>
+            `).join('');
+        }
+
+        function addTagFromInput() {
+            if (!inputEl) return;
+            const raw = inputEl.value;
+            if (!raw || !raw.trim()) return;
+            raw.split(',').map(t => t.trim()).filter(Boolean).forEach(item => {
+                if (!tags.includes(item)) tags.push(item);
+            });
+            inputEl.value = '';
+            render();
+        }
+
+        inputEl?.addEventListener('keydown', event => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                event.stopPropagation();
+                addTagFromInput();
+            }
+        });
+
+        addBtnEl?.addEventListener('click', event => {
+            event.preventDefault();
+            addTagFromInput();
+        });
+
+        listEl?.addEventListener('click', event => {
+            const btn = event.target.closest('[data-remove-tag-index]');
+            if (!btn) return;
+            event.preventDefault();
+            const idx = parseInt(btn.dataset.removeTagIndex, 10);
+            if (!isNaN(idx) && idx >= 0 && idx < tags.length) {
+                tags.splice(idx, 1);
+                render();
+            }
+        });
+
+        render();
+        return { getTags: () => { addTagFromInput(); return [...tags]; } };
+    }
+
+
+    // ============================================================
     // CREATE
     // ============================================================
+
+    let activeCreateTagHelper = null;
 
     async function openCreateModal() {
 
@@ -1164,8 +1234,52 @@
                 <option value="" disabled selected>Loading collections...</option>
             </select>
 
-            <label class="mb-1 block text-[11px] text-slate-500">Tags</label>
-            <input id="createTags" class="mb-3 h-9 w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-600" placeholder="api, production, users">
+           <label class="mb-1 block text-[11px] text-slate-500">Tags</label>
+
+<input
+    id="createTags"
+    class="mb-3 h-9 w-full rounded-md
+           border border-slate-300 dark:border-slate-700
+           bg-white dark:bg-slate-950
+           px-3 text-xs
+           text-slate-800 dark:text-slate-200
+           placeholder:text-slate-400 dark:placeholder:text-slate-600
+           outline-none focus:border-cyan-500"
+    placeholder="api, production, users"
+>
+
+<div id="createTagsList"
+     class="mb-2 flex flex-wrap gap-1.5 empty:hidden">
+</div>
+
+<div class="mb-3 flex items-center gap-2">
+    <input
+        id="createTagInput"
+        class="h-9 flex-1 rounded-md
+               border border-slate-300 dark:border-slate-700
+               bg-white dark:bg-slate-950
+               px-3 text-xs
+               text-slate-800 dark:text-slate-200
+               placeholder:text-slate-400 dark:placeholder:text-slate-600
+               outline-none focus:border-cyan-500"
+        placeholder="Type a tag and press Enter"
+    >
+
+    <button
+        id="createAddTagBtn"
+        type="button"
+        class="h-9 rounded-md border
+               border-slate-300 dark:border-slate-700
+               bg-slate-100 dark:bg-slate-800
+               px-3 text-xs
+               text-slate-700 dark:text-slate-300
+               hover:bg-slate-200 dark:hover:bg-slate-700
+               hover:text-slate-900 dark:hover:text-white
+               transition"
+    >
+        Add
+    </button>
+</div>
 
             <label class="mb-1 block text-[11px] text-slate-500">Annotation</label>
             <textarea id="createAnnotation" class="mb-4 h-20 w-full resize-none rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-xs outline-none focus:border-cyan-500 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-600" placeholder="Repository description..."></textarea>
@@ -1176,6 +1290,13 @@
             </div>
 
         `);
+
+        activeCreateTagHelper = setupTagInput({
+            listElId: 'createTagsList',
+            inputElId: 'createTagInput',
+            addBtnElId: 'createAddTagBtn',
+            initialTags: []
+        });
 
         document.getElementById('confirmCreate')?.addEventListener('click', createRepo);
 
@@ -1244,8 +1365,7 @@
                 return;
             }
 
-            const tagsInput = document.getElementById('createTags')?.value || '';
-            const tags = tagsInput.split(',').map(tag => tag.trim()).filter(Boolean);
+            const tags = activeCreateTagHelper ? activeCreateTagHelper.getTags() : [];
 
             for (const t of tags) {
                 if (window.EdmsAPI && typeof window.EdmsAPI.addRepoviewMembershipTag === 'function') {
@@ -1662,8 +1782,15 @@
                     <div class="rounded-md border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/60 p-3">
                         <div class="text-xs font-medium text-slate-900 dark:text-white mb-1">Merge</div>
                         <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-2">Merge sources into the existing "${escapeHtml(targetName)}" Repo View.</p>
-                        <button id="conflictMergeBtn" type="button" class="rounded bg-amber-600 px-2.5 py-1 text-xs text-white hover:bg-amber-500">Merge into "${escapeHtml(targetName)}"</button>
-                    </div>
+<button
+    id="conflictMergeBtn"
+    type="button"
+    class="rounded bg-orange-600 px-2.5 py-1 text-xs text-white
+           hover:bg-orange-700 active:bg-orange-800
+           dark:bg-amber-700 dark:hover:bg-amber-600 dark:active:bg-amber-800
+           transition">
+    Merge into "${escapeHtml(targetName)}"
+</button>                    </div>
                 ` : ''}
                 ${options.includes('rename') ? `
                     <div class="rounded-md border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/60 p-3">

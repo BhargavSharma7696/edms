@@ -7,69 +7,169 @@
   "use strict";
 
   const MOCK_WEBVIEW = {
-    id: "mock-about-collection",
-    name: "About Collection — Demo Preview",
+    id: "mock-content-error",
+    name: "Content Unavailable — Error Preview",
     annotation: "MOCK DATA · Backend not connected",
     isMock: true,
     content: {
       type: "doc",
       content: [
-        { type: "heading", attrs: { level: 1 }, content: [{ type: "text", text: "Welcome to the Collection" }] },
-        { type: "paragraph", content: [
-          { type: "text", text: "This is a " },
-          { type: "text", marks: [{ type: "bold" }], text: "demo WebView page" },
-          { type: "text", text: " rendered from mock Tiptap JSON. It demonstrates the formatting your editor can save and the final page can display." }
-        ]},
-        { type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "Formatting examples" }] },
-        { type: "paragraph", content: [
-          { type: "text", text: "You can use " },
-          { type: "text", marks: [{ type: "bold" }], text: "bold text" },
-          { type: "text", text: ", " },
-          { type: "text", marks: [{ type: "italic" }], text: "italic text" },
-          { type: "text", text: ", " },
-          { type: "text", marks: [{ type: "strike" }], text: "strikethrough" },
-          { type: "text", text: ", and inline code such as " },
-          { type: "text", marks: [{ type: "code" }], text: "npm run dev" },
-          { type: "text", text: ". You can also add a link: " },
-          { type: "text", marks: [{ type: "link", attrs: { href: "https://example.com" } }], text: "example.com" },
-          { type: "text", text: "." }
-        ]},
-        { type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "A short checklist" }] },
-        { type: "bulletList", content: [
-          { type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "Headings and paragraphs" }] }] },
-          { type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "Bulleted and numbered lists" }] }] },
-          { type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "Quotes, code blocks, and separators" }] }] }
-        ]},
-        { type: "orderedList", attrs: { start: 1 }, content: [
-          { type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "Write content in the RTE." }] }] },
-          { type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "Save the Tiptap JSON to the backend." }] }] },
-          { type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "Render the saved document as this HTML page." }] }] }
-        ]},
-        { type: "blockquote", content: [{ type: "paragraph", content: [{ type: "text", text: "This is a mock preview. It is not loaded from the backend yet." }] }] },
-        { type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "Code block" }] },
-        { type: "codeBlock", content: [{ type: "text", text: "function greet(name) {\n  return `Hello, ${name}!`;\n}\n\nconsole.log(greet(\"WebView\"));" }] },
-        { type: "horizontalRule" },
-        { type: "paragraph", content: [{ type: "text", text: "When the API is connected, this demo content will automatically be replaced by the selected WebView's saved content." }] }
-      ]
-    }
+        {
+          type: "heading",
+          attrs: { level: 1 },
+          content: [{ type: "text", text: "Content Unavailable" }],
+        },
+        {
+          type: "paragraph",
+          content: [
+            {
+              type: "text",
+              text: "We couldn't retrieve the latest content for this page. The content may not have been updated successfully, or the server may have encountered an issue while fetching it.",
+            },
+          ],
+        },
+        {
+          type: "heading",
+          attrs: { level: 2 },
+          content: [{ type: "text", text: "What you can do" }],
+        },
+        {
+          type: "bulletList",
+          content: [
+            {
+              type: "listItem",
+              content: [
+                {
+                  type: "paragraph",
+                  content: [
+                    {
+                      type: "text",
+                      text: "Retry loading the page to fetch the latest saved content.",
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              type: "listItem",
+              content: [
+                {
+                  type: "paragraph",
+                  content: [
+                    {
+                      type: "text",
+                      text: "If you were editing this page, reopen the editor and try saving your changes again.",
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              type: "listItem",
+              content: [
+                {
+                  type: "paragraph",
+                  content: [
+                    {
+                      type: "text",
+                      text: "Check your network connection and ensure the server is accessible.",
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+        {
+          type: "heading",
+          attrs: { level: 2 },
+          content: [{ type: "text", text: "Still experiencing this issue?" }],
+        },
+        {
+          type: "paragraph",
+          content: [
+            {
+              type: "text",
+              text: "If the problem persists after retrying, please contact the ",
+            },
+            {
+              type: "text",
+              marks: [{ type: "bold" }],
+              text: "HashedToken support team",
+            },
+            {
+              type: "text",
+              text: " and provide the page details along with any error messages you encountered. Our team will help investigate the issue.",
+            },
+          ],
+        },
+        {
+          type: "blockquote",
+          content: [
+            {
+              type: "paragraph",
+              content: [
+                {
+                  type: "text",
+                  text: "Your changes may not have been saved successfully. Before leaving the editor, verify that your latest changes have been saved to avoid losing your work.",
+                },
+              ],
+            },
+          ],
+        },
+        {
+          type: "horizontalRule",
+        },
+        {
+          type: "paragraph",
+          content: [
+            {
+              type: "text",
+              text: "We apologize for the inconvenience and appreciate your patience while we resolve this issue.",
+            },
+          ],
+        },
+      ],
+    },
   };
 
-  const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-  })[char]);
+  const escapeHtml = (value) =>
+    String(value ?? "").replace(
+      /[&<>"']/g,
+      (char) =>
+        ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        })[char],
+    );
 
   function renderMarks(text, marks = []) {
     let output = escapeHtml(text).replace(/\n/g, "<br>");
     for (const mark of marks) {
       switch (mark.type) {
-        case "bold": output = `<strong>${output}</strong>`; break;
-        case "italic": output = `<em>${output}</em>`; break;
-        case "strike": output = `<s>${output}</s>`; break;
-        case "code": output = `<code>${output}</code>`; break;
-        case "underline": output = `<u>${output}</u>`; break;
+        case "bold":
+          output = `<strong>${output}</strong>`;
+          break;
+        case "italic":
+          output = `<em>${output}</em>`;
+          break;
+        case "strike":
+          output = `<s>${output}</s>`;
+          break;
+        case "code":
+          output = `<code>${output}</code>`;
+          break;
+        case "underline":
+          output = `<u>${output}</u>`;
+          break;
         case "link": {
           const href = String(mark.attrs?.href || "#");
-          const safeHref = /^(https?:|mailto:|\/|#)/i.test(href) ? escapeHtml(href) : "#";
+          const safeHref = /^(https?:|mailto:|\/|#)/i.test(href)
+            ? escapeHtml(href)
+            : "#";
           output = `<a href="${safeHref}" target="_blank" rel="noopener noreferrer">${output}</a>`;
           break;
         }
@@ -80,31 +180,43 @@
 
   function renderNode(node) {
     if (!node || typeof node !== "object") return "";
-    const children = Array.isArray(node.content) ? node.content.map(renderNode).join("") : "";
+    const children = Array.isArray(node.content)
+      ? node.content.map(renderNode).join("")
+      : "";
     switch (node.type) {
-      case "doc": return children;
-      case "text": return renderMarks(node.text || "", node.marks || []);
-      case "paragraph": return `<p>${children || "<br>"}</p>`;
+      case "doc":
+        return children;
+      case "text":
+        return renderMarks(node.text || "", node.marks || []);
+      case "paragraph":
+        return `<p>${children || "<br>"}</p>`;
       case "heading": {
         const level = Math.min(6, Math.max(1, Number(node.attrs?.level) || 1));
         return `<h${level}>${children}</h${level}>`;
       }
-      case "bulletList": return `<ul>${children}</ul>`;
+      case "bulletList":
+        return `<ul>${children}</ul>`;
       case "orderedList": {
         const start = Math.max(1, Number(node.attrs?.start) || 1);
         return `<ol start="${start}">${children}</ol>`;
       }
-      case "listItem": return `<li>${children}</li>`;
-      case "blockquote": return `<blockquote>${children}</blockquote>`;
-      case "codeBlock": return `<pre><code>${(node.content || []).map((child) => escapeHtml(child.text || "")).join("")}</code></pre>`;
-      case "horizontalRule": return "<hr>";
-      case "hardBreak": return "<br>";
+      case "listItem":
+        return `<li>${children}</li>`;
+      case "blockquote":
+        return `<blockquote>${children}</blockquote>`;
+      case "codeBlock":
+        return `<pre><code>${(node.content || []).map((child) => escapeHtml(child.text || "")).join("")}</code></pre>`;
+      case "horizontalRule":
+        return "<hr>";
+      case "hardBreak":
+        return "<br>";
       case "image": {
         const src = String(node.attrs?.src || "");
         if (!/^(https?:|data:image\/)/i.test(src)) return "";
         return `<img src="${escapeHtml(src)}" alt="${escapeHtml(node.attrs?.alt || "")}">`;
       }
-      default: return children;
+      default:
+        return children;
     }
   }
 
@@ -181,21 +293,34 @@
 
   async function fetchWebViewFromBackend(id, options = {}) {
     const name = options.name || id;
-    const endpoint = options.endpoint || (window.WEBVIEW_FRONT_PAGE_API_URL
-      ? window.WEBVIEW_FRONT_PAGE_API_URL.replace(':name', encodeURIComponent(String(name))).replace(':id', encodeURIComponent(String(name)))
-      : `/api/webview/${encodeURIComponent(String(name))}/front-page`);
+    const endpoint =
+      options.endpoint ||
+      (window.WEBVIEW_FRONT_PAGE_API_URL
+        ? window.WEBVIEW_FRONT_PAGE_API_URL.replace(
+            ":name",
+            encodeURIComponent(String(name)),
+          ).replace(":id", encodeURIComponent(String(name)))
+        : `/api/webview/${encodeURIComponent(String(name))}/front-page`);
     const response = await fetch(endpoint, {
       method: "GET",
       headers: { Accept: "application/json" },
-      signal: options.signal
+      signal: options.signal,
     });
-    if (!response.ok) throw new Error(`WebView API returned HTTP ${response.status}`);
+    if (!response.ok)
+      throw new Error(`WebView API returned HTTP ${response.status}`);
     const data = await response.json();
     // Accept either a direct WebView object or { data: WebView } API responses.
     const web = data && data.data ? data.data : data;
-    const frontPage = web ? (web.front_page || web.content || web.frontpageContent || web.frontPageContent) : null;
+    const frontPage = web
+      ? web.front_page ||
+        web.content ||
+        web.frontpageContent ||
+        web.frontPageContent
+      : null;
     if (!web || !frontPage || typeof frontPage !== "object") {
-      throw new Error("API response did not contain a Tiptap JSON 'front_page' document");
+      throw new Error(
+        "API response did not contain a Tiptap JSON 'front_page' document",
+      );
     }
     web.front_page = frontPage;
     web.content = frontPage;
@@ -212,14 +337,22 @@
       } else {
         web = await fetchWebViewFromBackend(id, options);
       }
-      const frontPage = web ? (web.front_page || web.content || web.frontpageContent || web.frontPageContent) : null;
+      const frontPage = web
+        ? web.front_page ||
+          web.content ||
+          web.frontpageContent ||
+          web.frontPageContent
+        : null;
       if (!web || !frontPage || typeof frontPage !== "object") {
         throw new Error("No WebView front_page returned");
       }
       web.front_page = frontPage;
       web.content = frontPage;
     } catch (error) {
-      console.warn("WebView preview is using mock data because the API is unavailable:", error);
+      console.warn(
+        "WebView preview is using mock data because the API is unavailable:",
+        error,
+      );
       web = { ...MOCK_WEBVIEW };
       usingMock = true;
     }
@@ -229,7 +362,9 @@
     const previewWindow = window.open("", "_blank");
 
     if (!previewWindow) {
-      alert("The preview was blocked by your browser. Allow pop-ups for this site and try again.");
+      alert(
+        "The preview was blocked by your browser. Allow pop-ups for this site and try again.",
+      );
       return { webview: web, html: page, isMock: usingMock, opened: false };
     }
 

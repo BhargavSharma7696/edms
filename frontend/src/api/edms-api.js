@@ -1531,16 +1531,119 @@
 
 
     async function mergeDataViewFolder(
-        folder
+        folder,
+        body
     ) {
 
         return http(
             'POST',
-            `/dataview/${encodeURIComponent(folder)}/merge`
+            `/dataview/${encodeURIComponent(folder)}/merge`,
+            body
         );
 
     }
 
+
+    function listenForMergeNotification(
+        folder,
+        onReady,
+        timeoutMs = 10000
+    ) {
+
+        let settled = false;
+        const sockets = [];
+        let timer = null;
+
+        const cleanup = () => {
+            if (timer) {
+                clearTimeout(timer);
+                timer = null;
+            }
+            sockets.forEach(ws => {
+                try {
+                    ws.onmessage = null;
+                    ws.onerror = null;
+                    ws.onclose = null;
+                    ws.close();
+                } catch {}
+            });
+            sockets.length = 0;
+        };
+
+        const trigger = (data) => {
+            if (settled) return;
+            settled = true;
+            cleanup();
+            if (typeof onReady === 'function') {
+                onReady(data);
+            }
+        };
+
+        // Fallback timer in case websocket is unavailable or silent
+        if (timeoutMs > 0) {
+            timer = setTimeout(() => {
+                trigger({ type: 'timeout_fallback' });
+            }, timeoutMs);
+        }
+
+        // Try connecting to /jobs/ws and shared WS /test-view/run
+        const endpoints = ['/jobs/ws', '/test-view/run'];
+        if (folder) {
+            endpoints.push(`/dataview/${encodeURIComponent(folder)}/active`);
+        }
+
+        endpoints.forEach(path => {
+            try {
+                const ws = createWebSocket(path);
+                sockets.push(ws);
+
+                ws.onmessage = (event) => {
+                    try {
+                        const msg = typeof event.data === 'string'
+                            ? JSON.parse(event.data)
+                            : event.data;
+
+                        const eventType = msg?.event?.type || msg?.type || msg?.event;
+                        const op = msg?.op || msg?.event?.payload?.op || msg?.payload?.op;
+
+                        if (
+                            eventType === 'ExportReady' ||
+                            eventType === 'ViewIoDone' ||
+                            eventType === 'FolderBecameActive' ||
+                            op === 'export_merge' ||
+                            msg?.status === 'done' ||
+                            msg?.status === 'completed'
+                        ) {
+                            trigger(msg);
+                        }
+                    } catch (e) {
+                        console.warn('[EDMS-API] Error parsing merge WS event:', e);
+                    }
+                };
+
+                ws.onerror = () => {};
+            } catch (err) {
+                console.warn(`[EDMS-API] Could not connect WS to ${path}:`, err);
+            }
+        });
+
+        return cleanup;
+    }
+
+    function removeCollectionEndpoint(
+        collectionId,
+        endpointId
+    ) {
+
+        return http(
+            'POST',
+            `/collections/${encodeURIComponent(collectionId)}/endpoints/remove`,
+            {
+                endpoint_id: endpointId
+            }
+        );
+
+    }
 
     function activateDataViewFolder(
         folder
@@ -3073,6 +3176,9 @@
 
         deleteDataViewFolder,
         mergeDataViewFolder,
+        mergeCollections: mergeDataViewFolder,
+        listenForMergeNotification,
+        removeCollectionEndpoint,
         activateDataViewFolder,
 
 

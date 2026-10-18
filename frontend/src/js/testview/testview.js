@@ -3942,6 +3942,39 @@ function setupRunner() {
             });
         }
 
+        if (btnSaveCurrentCollection) {
+            btnSaveCurrentCollection.addEventListener("click", async event => {
+                event.preventDefault();
+                event.stopPropagation();
+                saveMenu.classList.add("hidden");
+
+                const endpoint = selectedTestEndpoint;
+                if (!endpoint) {
+                    window.alert("No endpoint selected.");
+                    return;
+                }
+                if (!activeCollectionFilter) {
+                    window.alert("No active collection context.");
+                    return;
+                }
+
+                try {
+                    await window.EdmsAPI.addActiveBookmark(activeCollectionFilter, endpoint.id);
+                    try {
+                        await window.EdmsAPI.saveActiveBookmark(activeCollectionFilter, endpoint.id);
+                    } catch (e) {
+                        console.warn("REST saveActiveBookmark returned an error, but WS may have succeeded", e);
+                    }
+                    console.log(`Saved endpoint ${endpoint.id} to current collection '${activeCollectionFilter}'`);
+                    await loadBookmarksFromBackend();
+                    applyTestFilters();
+                } catch (e) {
+                    console.error("Error saving to current collection:", e);
+                    window.alert("Failed to save to current collection: " + e.message);
+                }
+            });
+        }
+
         if (btnAddToCollection) {
             btnAddToCollection.addEventListener("click", async event => {
                 event.preventDefault();

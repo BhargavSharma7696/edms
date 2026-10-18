@@ -207,26 +207,74 @@
           endpoint_str: info.endpoint_str ?? endpoint.endpoint_str ?? "",
           annotation: info.annotation ?? endpoint.annotation,
           method: info.method ?? endpoint.method ?? "",
-          tags: Array.isArray(info.tags) ? info.tags : (Array.isArray(endpoint.tags) ? endpoint.tags : []),
+          tags: Array.isArray(info.tags)
+            ? info.tags
+            : Array.isArray(endpoint.tags)
+              ? endpoint.tags
+              : [],
         };
       });
 
-      if (window.EdmsAPI && typeof window.EdmsAPI.listEndpointTags === "function") {
-        await Promise.all(
-          state.endpoints.map(async (endpoint) => {
-            try {
-              const res = await window.EdmsAPI.listEndpointTags(getEndpointId(endpoint));
-              const data = res?.data ?? res;
-              if (data && Array.isArray(data.tags)) {
-                endpoint.tags = data.tags;
-              } else if (Array.isArray(data)) {
-                endpoint.tags = data;
+      const preloadTasks = [];
+
+      if (
+        window.EdmsAPI &&
+        typeof window.EdmsAPI.listEndpointTags === "function"
+      ) {
+        preloadTasks.push(
+          Promise.all(
+            state.endpoints.map(async (endpoint) => {
+              try {
+                const res = await window.EdmsAPI.listEndpointTags(
+                  getEndpointId(endpoint),
+                );
+                const data = res?.data ?? res;
+                if (data && Array.isArray(data.tags)) {
+                  endpoint.tags = data.tags;
+                } else if (Array.isArray(data)) {
+                  endpoint.tags = data;
+                }
+              } catch (e) {
+                console.error(
+                  "Failed to load tags for",
+                  getEndpointId(endpoint),
+                  e,
+                );
               }
-            } catch (e) {
-              console.error("Failed to load tags for", getEndpointId(endpoint), e);
-            }
-          })
+            }),
+          ),
         );
+      }
+
+      if (
+        window.EdmsAPI &&
+        typeof window.EdmsAPI.listQPs === "function"
+      ) {
+        preloadTasks.push(
+          Promise.all(
+            state.endpoints.map(async (endpoint) => {
+              try {
+                const res = await window.EdmsAPI.listQPs(
+                  getEndpointId(endpoint),
+                );
+                const data = res?.data ?? res;
+                const qps = data?.qps ?? (Array.isArray(data) ? data : []);
+                endpoint.qpCount = Array.isArray(qps) ? qps.length : 0;
+              } catch (e) {
+                console.error(
+                  "Failed to load QPs for",
+                  getEndpointId(endpoint),
+                  e,
+                );
+                endpoint.qpCount = 0;
+              }
+            }),
+          ),
+        );
+      }
+
+      if (preloadTasks.length > 0) {
+        await Promise.all(preloadTasks);
       }
 
       state.filtered = [...state.endpoints];
@@ -268,11 +316,17 @@
 
       const matchesMethod = state.method === "all" || method === state.method;
 
-      const matchesTags = state.tags.size === 0 || [...state.tags].every((tag) => tags.includes(tag));
+      const matchesTags =
+        state.tags.size === 0 ||
+        [...state.tags].every((tag) => tags.includes(tag));
 
       const endpointSegments = getEndpointSegments(path);
 
-      const matchesSegments = state.segments.size === 0 || [...state.segments].every((segment) => endpointSegments.includes(segment));
+      const matchesSegments =
+        state.segments.size === 0 ||
+        [...state.segments].every((segment) =>
+          endpointSegments.includes(segment),
+        );
 
       return matchesSearch && matchesMethod && matchesTags && matchesSegments;
     });
@@ -372,6 +426,31 @@
     const tags = Array.isArray(endpoint.tags) ? endpoint.tags : [];
 
     const annotation = endpoint.annotation || "—";
+    const qpCount =
+      typeof endpoint.qpCount === "number"
+        ? endpoint.qpCount
+        : "—";
+
+    if (
+      typeof endpoint.qpCount !== "number" &&
+      window.EdmsAPI &&
+      typeof window.EdmsAPI.listQPs === "function"
+    ) {
+      window.EdmsAPI.listQPs(endpointId)
+        .then((res) => {
+          const data = res?.data ?? res;
+          const qps = data?.qps ?? (Array.isArray(data) ? data : []);
+          const count = Array.isArray(qps) ? qps.length : 0;
+          endpoint.qpCount = count;
+          const badge = row.querySelector(".qp-count-badge");
+          if (badge) {
+            badge.textContent = count;
+          }
+        })
+        .catch((error) => {
+          console.error("Error listing QP:", error);
+        });
+    }
 
     row.dataset.id = endpointId;
 
@@ -593,10 +672,15 @@
       if (res.ok) {
         const data = res.data;
         if (data && Array.isArray(data.qps)) {
-          qps = data.qps.map(qp => ({
+          qps = data.qps.map((qp) => ({
             id: qp.request_number,
-            name: String(qp.request_number)
+            name: String(qp.request_number),
           }));
+          endpoint.qpCount = data.qps.length;
+          const badge = document.querySelector(`tr[data-id="${eid}"] .qp-count-badge`);
+          if (badge) {
+            badge.textContent = endpoint.qpCount;
+          }
         }
       }
     } catch (e) {
@@ -812,7 +896,9 @@
   // ============================================================
 
   function getEndpointSegments(endpointPath) {
-    return String(endpointPath || "").split("/").filter(Boolean);
+    return String(endpointPath || "")
+      .split("/")
+      .filter(Boolean);
   }
 
   function wireSidebar() {
@@ -900,12 +986,14 @@
           setTagFilter(tag, checkbox.checked);
         });
 
-        wrapper.querySelector(".tag-filter-button").addEventListener("click", (e) => {
-          e.preventDefault();
-          const checked = !state.tags.has(tag);
-          checkbox.checked = checked;
-          setTagFilter(tag, checked);
-        });
+        wrapper
+          .querySelector(".tag-filter-button")
+          .addEventListener("click", (e) => {
+            e.preventDefault();
+            const checked = !state.tags.has(tag);
+            checkbox.checked = checked;
+            setTagFilter(tag, checked);
+          });
 
         container.appendChild(wrapper);
       });
@@ -954,12 +1042,14 @@
           setSegmentFilter(segment, checkbox.checked);
         });
 
-        wrapper.querySelector(".segment-filter-button").addEventListener("click", (e) => {
-          e.preventDefault();
-          const checked = !state.segments.has(segment);
-          checkbox.checked = checked;
-          setSegmentFilter(segment, checked);
-        });
+        wrapper
+          .querySelector(".segment-filter-button")
+          .addEventListener("click", (e) => {
+            e.preventDefault();
+            const checked = !state.segments.has(segment);
+            checkbox.checked = checked;
+            setSegmentFilter(segment, checked);
+          });
 
         container.appendChild(wrapper);
       });
@@ -1211,7 +1301,9 @@
     document.getElementById("methodFilter").value = "all";
 
     // Uncheck sidebar inputs
-    document.querySelectorAll(".tag-checkbox, .segment-checkbox").forEach(cb => cb.checked = false);
+    document
+      .querySelectorAll(".tag-checkbox, .segment-checkbox")
+      .forEach((cb) => (cb.checked = false));
 
     applyFilters();
   }
@@ -1316,6 +1408,15 @@
         selectedQPId = null;
         document.getElementById("deleteQP").disabled = true;
         document.getElementById("detailsOverlay")?.classList.add("hidden");
+        if (state.selectedEndpoint) {
+          if (typeof state.selectedEndpoint.qpCount === "number") {
+            state.selectedEndpoint.qpCount = Math.max(0, state.selectedEndpoint.qpCount - qpsToDelete.length);
+          }
+          const badge = document.querySelector(`tr[data-id="${eid}"] .qp-count-badge`);
+          if (badge && typeof state.selectedEndpoint.qpCount === "number") {
+            badge.textContent = state.selectedEndpoint.qpCount;
+          }
+        }
         // Re-select endpoint to refresh QP sidebar
         selectEndpoint(state.selectedEndpoint);
       } catch (e) {
@@ -1467,10 +1568,16 @@
     * older prototype data still works.
     */
 
-    return String(endpoint.endpoint_id ?? endpoint.id ?? endpoint.endpoint ?? Math.random());
+    return String(
+      endpoint.endpoint_id ?? endpoint.id ?? endpoint.endpoint ?? Math.random(),
+    );
   }
 
   function getQPCount(endpoint) {
+    if (typeof endpoint.qpCount === "number") {
+      return endpoint.qpCount;
+    }
+
     if (Array.isArray(endpoint.queryParams)) {
       return endpoint.queryParams.length;
     }
@@ -1553,47 +1660,64 @@
     const count = state.selected.size;
 
     let menuHtml = `
-              <div class="px-3 py-2 text-[10px] font-semibold tracking-wide text-slate-700 dark:text-slate-300 uppercase border-slate-200 dark:border-slate-900">
-                  ${count > 1 ? `${count} Endpoints Selected` : "Endpoint Options"}
-              </div>
-              
-              <div class="p-1">
-          `;
+<div class="border-b border-slate-200 dark:border-slate-800
+            px-3 py-2 text-[10px] font-semibold tracking-wide
+            uppercase text-slate-500 dark:text-slate-400">
+              ${count > 1 ? `${count} Endpoints Selected` : "Endpoint Options"}
+            </div>
+            
+            <div class="p-1">
+        `;
 
     if (count === 1) {
       menuHtml += `
-                  <button type="button" id="ctxEditTags" class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
-                      <svg class="h-3.5 w-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                            <path d="M20.5 13.5 13.5 20.5 a2 2 0 0 1-2.8 0L4 13.8V4h9.8l6.7 6.7 a2 2 0 0 1 0 2.8Z" />
-                          <circle cx="8.5" cy="8.5" r="1" />
-                      </svg>
-                      Modify
-                  </button>
-              `;
+                <button type="button" id="ctxEditTags" class="flex w-full items-center gap-2 rounded px-2 py-1.5
+       text-left text-xs
+       text-slate-700 dark:text-slate-300
+       hover:bg-slate-100 dark:hover:bg-slate-800
+       hover:text-slate-900 dark:hover:text-white
+       transition">
+                    <svg class="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <path d="M20.5 13.5 13.5 20.5 a2 2 0 0 1-2.8 0L4 13.8V4h9.8l6.7 6.7 a2 2 0 0 1 0 2.8Z" />
+                        <circle cx="8.5" cy="8.5" r="1" />
+                    </svg>
+                    Modify
+                </button>
+            `;
     }
 
     menuHtml += `
-                  <button type="button" id="ctxManageTags" class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
-                      <svg class="h-3.5 w-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                          <path d="M20.5 13.5 13.5 20.5 a2 2 0 0 1-2.8 0L4 13.8V4h9.8l6.7 6.7 a2 2 0 0 1 0 2.8Z" />
-                          <circle cx="8.5" cy="8.5" r="1" />
-                      </svg>
-                      Manage Tags (Bulk)
-                  </button>
-              </div>
-              
-              <div class="border-t border-slate-200 dark:border-slate-800 p-1">
-                  <button type="button" id="ctxRemoveEndpoint" class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs text-rose-400 hover:bg-rose-500/10 hover:text-rose-300">
-                      <svg class="h-3.5 w-3.5 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                          <path d="M4 7h16" />
-                          <path d="M10 11v6M14 11v6" />
-                          <path d="M6 7l1 13h10l1-13" />
-                          <path d="M9 7V4h6v3" />
-                      </svg>
-                      Remove from Collection
-                  </button>
-              </div>
-          `;
+                <button type="button" id="ctxManageTags" class="flex w-full items-center gap-2 rounded px-2 py-1.5
+       text-left text-xs
+       text-slate-700 dark:text-slate-300
+       hover:bg-slate-100 dark:hover:bg-slate-800
+       hover:text-slate-900 dark:hover:text-white
+       transition">
+                    <svg class="h-3.5 w-3.5 text-slate-500 dark:text-slate-400"" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <path d="M20.5 13.5 13.5 20.5 a2 2 0 0 1-2.8 0L4 13.8V4h9.8l6.7 6.7 a2 2 0 0 1 0 2.8Z" />
+                        <circle cx="8.5" cy="8.5" r="1" />
+                    </svg>
+                    Manage Tags (Bulk)
+                </button>
+            </div>
+            
+           <div class="border-t border-slate-200 dark:border-slate-800 p-1">
+                <button type="button" id="ctxRemoveEndpoint" class="flex w-full items-center gap-2 rounded px-2 py-1.5
+       text-left text-xs
+       text-rose-600 dark:text-rose-400
+       hover:bg-rose-500/10
+       hover:text-rose-700 dark:hover:text-rose-300
+       transition">
+                    <svg class="h-3.5 w-3.5 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <path d="M4 7h16" />
+                        <path d="M10 11v6M14 11v6" />
+                        <path d="M6 7l1 13h10l1-13" />
+                        <path d="M9 7V4h6v3" />
+                    </svg>
+                    Remove from Collection
+                </button>
+            </div>
+        `;
 
     contextMenu.innerHTML = menuHtml;
     contextMenu.classList.remove("hidden");
@@ -1613,21 +1737,17 @@
 
     // Bind events
     if (count === 1) {
-      document
-        .getElementById("ctxEditTags")
-        ?.addEventListener("click", () => {
-          closeContextMenu();
-          openTagEditor(endpoint);
-        });
+      document.getElementById("ctxEditTags")?.addEventListener("click", () => {
+        closeContextMenu();
+        openTagEditor(endpoint);
+      });
     }
 
-    document
-      .getElementById("ctxManageTags")
-      .addEventListener("click", () => {
-        closeContextMenu();
-        const btn = document.getElementById("tagsManager");
-        if (btn) btn.click();
-      });
+    document.getElementById("ctxManageTags").addEventListener("click", () => {
+      closeContextMenu();
+      const btn = document.getElementById("tagsManager");
+      if (btn) btn.click();
+    });
 
     document
       .getElementById("ctxRemoveEndpoint")
@@ -1645,27 +1765,29 @@
     const currentAnnotation = endpoint.annotation || "";
 
     const endpointId = getEndpointId(endpoint);
-    const pathText = endpoint.endpoint ? ` — ${escapeHtml(endpoint.endpoint)}` : "";
+    const pathText = endpoint.endpoint
+      ? ` — ${escapeHtml(endpoint.endpoint)}`
+      : "";
 
     openModal(
       `Endpoint — ${escapeHtml(endpointId)}${pathText}`,
       `
-                  <div class="space-y-4">
-                      <div>
-                          <label class="mb-1 block text-xs text-slate-500">Tags</label>
-                          <input id="tagEditorInput" value="${escapeAttr(currentTags)}" class="h-9 w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500">
-                          <p class="mt-1 text-[10px] text-slate-600">Separate tags with commas.</p>
-                      </div>
-                      <div>
-                          <label class="mb-1 block text-xs text-slate-500">Annotation</label>
-                          <textarea id="annotationEditorInput" class="h-20 w-full rounded-md border border-slate-700 bg-slate-950 p-2 text-xs outline-none focus:border-cyan-500" placeholder="Optional notes...">${escapeHtml(currentAnnotation)}</textarea>
-                      </div>
-                      <div class="flex justify-end gap-2">
-                          <button type="button" data-modal-close class="rounded-md border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-xs text-slate-400 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
-                          <button id="saveTagsBtn" type="button" class="rounded-md bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-cyan-500">Save</button>
-                      </div>
-                  </div>
-              `,
+                <div class="space-y-4">
+                    <div>
+                        <label class="mb-1 block text-xs text-slate-500">Tags</label>
+                        <input id="tagEditorInput" value="${escapeAttr(currentTags)}" class="h-9 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-500">
+                        <p class="mt-1 text-[10px] text-slate-600">Separate tags with commas.</p>
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs text-slate-500">Annotation</label>
+                        <textarea id="annotationEditorInput" class="h-20 w-full rounded-md border border-slate-700 bg-slate-950 p-2 text-xs outline-none focus:border-cyan-500" placeholder="Optional notes...">${escapeHtml(currentAnnotation)}</textarea>
+                    </div>
+                    <div class="flex justify-end gap-2">
+                        <button type="button" data-modal-close class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">Cancel</button>
+                        <button id="saveTagsBtn" type="button" class="rounded-md bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-cyan-500">Save</button>
+                    </div>
+                </div>
+            `,
     );
 
     document
@@ -1673,7 +1795,9 @@
       ?.addEventListener("click", async () => {
         const btn = document.getElementById("saveTagsBtn");
         const input = document.getElementById("tagEditorInput");
-        const annotationInput = document.getElementById("annotationEditorInput");
+        const annotationInput = document.getElementById(
+          "annotationEditorInput",
+        );
 
         btn.disabled = true;
         btn.textContent = "Saving...";
@@ -1682,9 +1806,7 @@
           .split(",")
           .map((tag) => tag.trim())
           .filter(Boolean);
-        const oldTags = Array.isArray(endpoint.tags)
-          ? [...endpoint.tags]
-          : [];
+        const oldTags = Array.isArray(endpoint.tags) ? [...endpoint.tags] : [];
         const oldTagSet = new Set(oldTags);
         const newTagSet = new Set(newTags);
 
@@ -1708,8 +1830,14 @@
             await api.addEndpointTag(getEndpointId(endpoint), tag);
           }
 
-          if (isAnnotationChanged && typeof api.setEndpointAnnotation === "function") {
-            await api.setEndpointAnnotation(getEndpointId(endpoint), newAnnotation);
+          if (
+            isAnnotationChanged &&
+            typeof api.setEndpointAnnotation === "function"
+          ) {
+            await api.setEndpointAnnotation(
+              getEndpointId(endpoint),
+              newAnnotation,
+            );
             endpoint.annotation = newAnnotation;
           }
 
@@ -1734,19 +1862,19 @@
         openModal(
           "Remove Endpoints",
           `
-                      <div class="space-y-4">
-                          <p class="text-xs text-slate-700 dark:text-slate-300">
-                              Are you sure you want to remove ${state.selected.size} endpoint${state.selected.size === 1 ? "" : "s"} from this collection?
-                          </p>
-                          <p class="text-[10px] text-slate-500">
-                              This will not delete the endpoints from the system, only from this collection.
-                          </p>
-                          <div class="flex justify-end gap-2 pt-2">
-                              <button type="button" class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800" data-modal-close>Cancel</button>
-                              <button id="confirmRemove" type="button" class="rounded-md bg-rose-600/90 px-3 py-1.5 text-xs font-medium text-white hover:bg-rose-500">Remove</button>
-                          </div>
-                      </div>
-                  `,
+                    <div class="space-y-4">
+                        <p class="text-xs text-slate-300">
+                            Are you sure you want to remove ${state.selected.size} endpoint${state.selected.size === 1 ? "" : "s"} from this collection?
+                        </p>
+                        <p class="text-[10px] text-slate-500">
+                            This will not delete the endpoints from the system, only from this collection.
+                        </p>
+                        <div class="flex justify-end gap-2 pt-2">
+                            <button type="button" class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800" data-modal-close>Cancel</button>
+                            <button id="confirmRemove" type="button" class="rounded-md bg-rose-600/90 px-3 py-1.5 text-xs font-medium text-white hover:bg-rose-500">Remove</button>
+                        </div>
+                    </div>
+                `,
         );
 
         const confirmBtn = document.getElementById("confirmRemove");
@@ -1758,9 +1886,9 @@
             const api = window.EdmsAPI;
             if (!api) return closeModal();
 
-            const folderId = new URLSearchParams(
-              window.location.search,
-            ).get("folder");
+            const folderId = new URLSearchParams(window.location.search).get(
+              "folder",
+            );
 
             try {
               const ids = Array.from(state.selected);
