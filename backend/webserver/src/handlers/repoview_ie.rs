@@ -344,6 +344,9 @@ fn takeout_blocking(flavor: Flavor, state: &AppState, name: &str, dest_name: Opt
             "endpoints": endpoints,
             "manifest": manifest,
             "manifest_file": MANIFEST_FILE,
+            // A RepoView's takeout always gets a Tables-meta.md with the
+            // takeout's own facts; a WebView has no Tables to describe.
+            "create_meta_if_missing": flavor.has_tables(),
         }),
         3000,
     );

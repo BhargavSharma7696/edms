@@ -4,8 +4,9 @@
 //! naturally replaces whatever the other produced; `Tables-meta.md` names
 //! the approach on its first line so the folder is self-describing.
 //!
-//! - [B] Endpoint Segments — generic, no tags needed. One row per endpoint:
-//!   its URL path (scheme/host stripped), EID, method; sorted by path.
+//! - [B] Endpoint Segments — generic, no tags needed. One row per endpoint
+//!   (EID, CRUD Type, Endpoint, QP, Annotation, Tags - Ravi, 2026-10-18),
+//!   sorted by the endpoint's URL path.
 //! - [A] Sorted Tags — a tag -> segment-count pivot: one line per tag,
 //!   listing every distinct segment under it with how many endpoints have
 //!   that (tag, segment) pair. An endpoint with several tags counts once
@@ -32,7 +33,7 @@ use std::path::Path as FsPath;
 
 use crate::{
     handlers::{
-        repoview_index::snapshot_endpoints,
+        repoview_combine::read_index,
         view_catalog::{open_catalog, open_existing_membership, repoview_dir, validate_repoview_name},
     },
     state::AppState,
@@ -83,7 +84,9 @@ impl Approach {
 
     fn table_header(self) -> &'static str {
         match self {
-            Self::EndpointSegments => "| Segment Path | EID | Method |\n|---|---|---|\n",
+            Self::EndpointSegments => {
+                "| EID | CRUD Type | Endpoint | QP | Annotation | Tags |\n|---|---|---|---|---|---|\n"
+            }
             Self::SortedTags => "| Tag | Endpoint Segments |\n|---|---|\n",
         }
     }
@@ -98,10 +101,55 @@ impl Approach {
     }
 }
 
+/// One endpoint's saved QP, as the index snapshot holds it.
+#[derive(Debug, Clone, PartialEq)]
+struct QpInfo {
+    number: i32,
+    status_code: Option<i32>,
+    response_time_ms: Option<i32>,
+}
+
 struct MemberRow {
+    /// Only for sorting and for the meta table's first/last labels.
     segment_path: String,
+    /// The full URL, as shown in the Endpoint column.
+    endpoint_str: String,
     endpoint_id: String,
     method: String,
+    annotation: Option<String>,
+    tags: Vec<String>,
+    qps: Vec<QpInfo>,
+}
+
+/// The QP column: each saved QP as `number: status time`, e.g.
+/// `1: 200 297ms, 2: 404 120ms`. A QP that never got a response reads
+/// `3: no response`; an endpoint with no QPs shows `-`.
+fn qp_cell(qps: &[QpInfo]) -> String {
+    if qps.is_empty() {
+        return "-".to_string();
+    }
+    qps.iter()
+        .map(|q| match (q.status_code, q.response_time_ms) {
+            (Some(code), Some(ms)) => format!("{}: {code} {ms}ms", q.number),
+            (Some(code), None) => format!("{}: {code}", q.number),
+            (None, _) => format!("{}: no response", q.number),
+        })
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+/// One Endpoint Segments row, columns in the order Ravi asked for (the
+/// same as Data View): EID, CRUD Type, Endpoint, QP, Annotation, Tags.
+fn endpoint_row(m: &MemberRow) -> String {
+    format!(
+        "| {} | {} | {} | {} | {} | {} |",
+        m.endpoint_id,
+        md_cell(&m.method),
+        md_cell(&m.endpoint_str),
+        md_cell(&qp_cell(&m.qps)),
+        md_cell(m.annotation.as_deref().unwrap_or("")),
+        md_cell(&m.tags.join(", ")),
+    )
 }
 
 /// Strips scheme + host from a URL, keeping the path as-is - including
@@ -264,12 +312,31 @@ pub(crate) fn generate_tables_blocking(
 
     // Straight from the RepoView's own index - it describes itself,
     // so these files don't depend on the central tables at all.
-    let mut members: Vec<MemberRow> = snapshot_endpoints(&membership)?
-        .into_iter()
-        .map(|(endpoint_id, endpoint_str, method)| MemberRow {
-            segment_path: segment_path(&endpoint_str),
-            endpoint_id,
-            method,
+    let index = read_index(&membership)?;
+    let mut tags_by_eid: HashMap<&str, Vec<String>> = HashMap::new();
+    for (eid, tag) in &index.tags {
+        tags_by_eid.entry(eid.as_str()).or_default().push(tag.clone());
+    }
+    let mut qps_by_eid: HashMap<&str, Vec<QpInfo>> = HashMap::new();
+    for ((eid, number), qp) in &index.qps {
+        qps_by_eid.entry(eid.as_str()).or_default().push(QpInfo {
+            number: *number,
+            status_code: qp.status_code,
+            response_time_ms: qp.response_time_ms,
+        });
+    }
+    let mut members: Vec<MemberRow> = index
+        .endpoints
+        .iter()
+        .filter(|(eid, _)| index.members.contains(*eid))
+        .map(|(eid, row)| MemberRow {
+            segment_path: segment_path(&row.endpoint_str),
+            endpoint_str: row.endpoint_str.clone(),
+            endpoint_id: eid.clone(),
+            method: row.method.clone().unwrap_or_else(|| "UNCLASSIFIED".to_string()),
+            annotation: row.annotation.clone(),
+            tags: tags_by_eid.remove(eid.as_str()).unwrap_or_default(),
+            qps: qps_by_eid.remove(eid.as_str()).unwrap_or_default(),
         })
         .collect();
 
@@ -289,28 +356,14 @@ pub(crate) fn generate_tables_blocking(
                 .iter()
                 .map(|m| Item {
                     key: m.segment_path.clone(),
-                    row: format!(
-                        "| {} | {} | {} |",
-                        md_cell(&m.segment_path),
-                        m.endpoint_id,
-                        m.method
-                    ),
+                    row: endpoint_row(m),
                 })
                 .collect()
         }
         Approach::SortedTags => {
-            let mut tags_by_endpoint: HashMap<String, Vec<String>> = HashMap::new();
-            for (eid, tag) in membership.list_all_endpoint_tags().map_err(|e| format!("{e:?}"))? {
-                tags_by_endpoint.entry(eid).or_default().push(tag);
-            }
             let pairs: Vec<(String, Vec<String>)> = members
                 .iter()
-                .map(|m| {
-                    (
-                        m.segment_path.clone(),
-                        tags_by_endpoint.remove(&m.endpoint_id).unwrap_or_default(),
-                    )
-                })
+                .map(|m| (m.segment_path.clone(), m.tags.clone()))
                 .collect();
             build_tag_lines(&pairs)
                 .into_iter()
@@ -606,6 +659,76 @@ mod tests {
 
     fn item(key: &str) -> Item {
         Item { key: key.to_string(), row: format!("| {key} |") }
+    }
+
+    fn member(eid: &str, method: &str, url: &str) -> MemberRow {
+        MemberRow {
+            segment_path: segment_path(url),
+            endpoint_str: url.to_string(),
+            endpoint_id: eid.to_string(),
+            method: method.to_string(),
+            annotation: None,
+            tags: vec![],
+            qps: vec![],
+        }
+    }
+
+    #[test]
+    fn the_endpoint_table_has_ravis_columns_in_ravis_order() {
+        let header = Approach::EndpointSegments.table_header();
+        assert!(
+            header.starts_with("| EID | CRUD Type | Endpoint | QP | Annotation | Tags |\n"),
+            "{header}"
+        );
+        assert!(!header.contains("Segment Path"), "the column is called Endpoint now");
+        // header and separator have the same number of columns as a row
+        let mut lines = header.lines();
+        let cols = |l: &str| l.matches('|').count();
+        assert_eq!(cols(lines.next().unwrap()), cols(lines.next().unwrap()));
+        assert_eq!(cols(&endpoint_row(&member("E0001-AAA", "GET", "https://x.com/a"))), cols(header.lines().next().unwrap()));
+    }
+
+    #[test]
+    fn a_row_shows_the_full_url_its_qps_annotation_and_tags() {
+        let mut m = member("E0001-AAA", "GET", "https://api.example.com/posts/1");
+        m.annotation = Some("Fetch one post".to_string());
+        m.tags = vec!["read-only".to_string(), "stable".to_string()];
+        m.qps = vec![
+            QpInfo { number: 1, status_code: Some(200), response_time_ms: Some(297) },
+            QpInfo { number: 2, status_code: Some(404), response_time_ms: Some(120) },
+        ];
+        assert_eq!(
+            endpoint_row(&m),
+            "| E0001-AAA | GET | https://api.example.com/posts/1 | 1: 200 297ms, 2: 404 120ms | Fetch one post | read-only, stable |"
+        );
+    }
+
+    #[test]
+    fn qp_cells_cover_no_qps_no_response_and_missing_timing() {
+        assert_eq!(qp_cell(&[]), "-");
+        let no_response = QpInfo { number: 3, status_code: None, response_time_ms: None };
+        assert_eq!(qp_cell(&[no_response]), "3: no response");
+        let no_timing = QpInfo { number: 1, status_code: Some(204), response_time_ms: None };
+        assert_eq!(qp_cell(&[no_timing]), "1: 204");
+    }
+
+    #[test]
+    fn an_annotation_cannot_break_out_of_its_cell() {
+        let mut m = member("E0001-AAA", "POST", "https://x.com/a");
+        m.annotation = Some("a | b\nsecond line".to_string());
+        m.tags = vec!["x|y".to_string()];
+        let row = endpoint_row(&m);
+        assert!(row.contains("a \\| b second line"), "{row}");
+        assert!(row.contains("x\\|y"), "{row}");
+        assert!(!row.contains('\n'));
+        // still exactly six cells: the escaped pipes aren't separators
+        assert_eq!(row.replace("\\|", "").matches('|').count(), 7);
+    }
+
+    #[test]
+    fn an_endpoint_without_annotation_or_tags_leaves_those_cells_empty() {
+        let row = endpoint_row(&member("E0002-AAA", "DELETE", "https://x.com/a"));
+        assert_eq!(row, "| E0002-AAA | DELETE | https://x.com/a | - |  |  |");
     }
 
     #[test]
