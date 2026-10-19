@@ -149,7 +149,10 @@ async fn main() {
 // Progress goes out as extra callbacks with task `view_io_progress`.
 
 fn is_view_io_task(task: &str) -> bool {
-    matches!(task, "view_takeout" | "view_import_copy" | "view_unzip" | "view_table_check")
+    matches!(
+        task,
+        "view_takeout" | "view_import_copy" | "view_unzip" | "view_table_check" | "collection_merge"
+    )
 }
 
 async fn dispatch_view_io(task: &str, payload: Value, port: u16) -> (bool, Value, Option<String>) {
@@ -249,6 +252,24 @@ async fn dispatch_view_io(task: &str, payload: Value, port: u16) -> (bool, Value
             })
             .await;
             let _ = poster.await;
+            match worked {
+                Ok(Ok(mut result)) => {
+                    result["job_id"] = json!(job_id);
+                    (true, result, None)
+                }
+                Ok(Err(e)) => fail(e),
+                Err(e) => fail(e.to_string()),
+            }
+        }
+        // Merge collections (whole, or only the endpoints carrying chosen
+        // tags) into a new or existing collection. No progress reports: it
+        // is quick, and the result says what happened.
+        "collection_merge" => {
+            let req: compute::tagops::collection_merge::CollectionMergeRequest = match serde_json::from_value(payload) {
+                Ok(r) => r,
+                Err(e) => return fail(format!("payload deserialise error: {e}")),
+            };
+            let worked = tokio::task::spawn_blocking(move || compute::tagops::collection_merge::run_collection_merge(&req)).await;
             match worked {
                 Ok(Ok(mut result)) => {
                     result["job_id"] = json!(job_id);
