@@ -2757,6 +2757,28 @@
 
 
     // ============================================================
+    // MERGE JOB LISTENER
+    // ============================================================
+
+    /**
+     * listenForMergeJob — scoped variant of listenForJob for merge operations.
+     *
+     * The 202 response from POST /collections/:target/merge (or the legacy
+     * /dataview/:target/merge) carries { job_id }.  Pass that id here so the
+     * WS listener and poll-fallback only fire for this specific job, not for
+     * any concurrent ViewIoDone event on the socket.
+     *
+     * @param {string}   jobId      - job_id from the 202 body
+     * @param {Function} onComplete - called with job data on success
+     * @param {Function} onError    - called with job data on failure
+     * @returns {{ cancel: Function }}
+     */
+    function listenForMergeJob(jobId, onComplete, onError) {
+        return listenForJob(jobId, onComplete, onError);
+    }
+
+
+    // ============================================================
     // QP (REQUEST/RESPONSE PAIRS)
     // ============================================================
 
@@ -3178,6 +3200,7 @@
         mergeDataViewFolder,
         mergeCollections: mergeDataViewFolder,
         listenForMergeNotification,
+        listenForMergeJob,
         removeCollectionEndpoint,
         activateDataViewFolder,
 
