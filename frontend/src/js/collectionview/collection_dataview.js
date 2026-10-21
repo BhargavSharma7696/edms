@@ -960,24 +960,53 @@
   // FULLSCREEN
   // ============================================
 
-  async function togglePanelFullscreen(panelId) {
+  function togglePanelFullscreen(panelId) {
     const panel = document.getElementById(panelId);
 
     if (!panel) return;
 
-    try {
-      if (document.fullscreenElement === panel) {
-        await document.exitFullscreen();
-      } else {
-        if (document.fullscreenElement) {
-          await document.exitFullscreen();
-        }
+    const wrapper = panel.parentElement;
 
-        await panel.requestFullscreen();
-      }
-    } catch (error) {
-      console.error("Failed to toggle fullscreen:", error);
+    if (!wrapper) return;
+
+    // Restore the original layout.
+    if (panel.dataset.fullscreen === "true") {
+      wrapper.removeAttribute("style");
+      panel.dataset.fullscreen = "false";
+      return;
     }
+
+    // Keep the enlarged view within the viewport.
+    wrapper.style.position = "fixed";
+    wrapper.style.top = "24px";
+    wrapper.style.right = "24px";
+    wrapper.style.bottom = "24px";
+    wrapper.style.left = "24px";
+
+    wrapper.style.width = "auto";
+    wrapper.style.height = "auto";
+    wrapper.style.maxWidth = "none";
+    wrapper.style.maxHeight = "none";
+
+    wrapper.style.boxSizing = "border-box";
+    wrapper.style.zIndex = "9999";
+
+    wrapper.style.padding = "12px";
+    wrapper.style.margin = "0";
+    wrapper.style.borderRadius = "12px";
+
+    // Prevent the wrapper from overflowing the viewport.
+    wrapper.style.overflow = "hidden";
+
+    // Constrain the flex layout to the available height.
+    wrapper.style.minHeight = "0";
+    wrapper.style.display = "flex";
+    wrapper.style.flexDirection = "row";
+    wrapper.style.alignItems = "stretch";
+
+    wrapper.style.boxShadow = "0 0 0 100vmax rgba(2, 6, 23, 0.6)";
+
+    panel.dataset.fullscreen = "true";
   }
 
   // Keep renderEndpointDetails as alias for legacy call-sites
