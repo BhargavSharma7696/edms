@@ -844,7 +844,7 @@
     if (resStatus) {
       resStatus.textContent = response.status
         ? String(response.status)
-        : "Prototype";
+        : "";
       resStatus.className = `mt-0.5 text-[11px] font-semibold ${
         response.status >= 200 && response.status < 300
           ? "text-emerald-600 dark:text-emerald-400"
