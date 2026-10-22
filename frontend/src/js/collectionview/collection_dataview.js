@@ -874,6 +874,10 @@
       );
     }
 
+    // Update size indicators
+    updatePanelSize("request");
+    updatePanelSize("response");
+
     // ============================================
     // REQUEST / RESPONSE PANEL ACTIONS
     // ============================================
@@ -893,6 +897,31 @@
       .getElementById("responseCopy")
       ?.addEventListener("click", () => copyPanelContent("response"));
   }
+
+  function formatByteSize(text) {
+    const bytes = new Blob([String(text ?? "")]).size;
+
+    if (bytes < 1024) return `${bytes} B`;
+
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+
+    return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+  }
+
+  function updatePanelSize(panelType) {
+    const content = getActivePanelContent(panelType);
+    const sizeEl = document.getElementById(
+      panelType === "request" ? "requestSize" : "responseSize",
+    );
+    if (!sizeEl) return;
+
+    if (!content || content.trim() === "Not available") {
+      sizeEl.textContent = formatByteSize("");
+    } else {
+      sizeEl.textContent = formatByteSize(content);
+    }
+  }
+
   function getActivePanelContent(panelType) {
     const isRequest = panelType === "request";
 
@@ -1623,6 +1652,7 @@
         reqBodyTab.classList.remove(...inactiveTabClass);
         reqHeadersTab.classList.add(...inactiveTabClass);
         reqHeadersTab.classList.remove(...activeTabClass);
+        updatePanelSize("request");
       });
 
       reqHeadersTab.addEventListener("click", () => {
@@ -1632,6 +1662,7 @@
         reqHeadersTab.classList.remove(...inactiveTabClass);
         reqBodyTab.classList.add(...inactiveTabClass);
         reqBodyTab.classList.remove(...activeTabClass);
+        updatePanelSize("request");
       });
     }
 
@@ -1656,6 +1687,7 @@
         resBodyTab.classList.remove(...inactiveTabClass);
         resHeadersTab.classList.add(...inactiveTabClass);
         resHeadersTab.classList.remove(...activeTabClass);
+        updatePanelSize("response");
       });
 
       resHeadersTab.addEventListener("click", () => {
@@ -1665,6 +1697,7 @@
         resHeadersTab.classList.remove(...inactiveTabClass);
         resBodyTab.classList.add(...inactiveTabClass);
         resBodyTab.classList.remove(...activeTabClass);
+        updatePanelSize("response");
       });
     }
   }
