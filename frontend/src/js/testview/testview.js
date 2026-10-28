@@ -1700,7 +1700,7 @@ function createTestEndpointCard(item) {
 
         </div>
 
-        ${item.type !== "history" && baseUrl ? `
+        ${item.type === "history" && baseUrl ? `
                 <div class="mt-2.5 text-xs text-slate-400 font-mono truncate">
                     ${baseUrl}
                 </div>
